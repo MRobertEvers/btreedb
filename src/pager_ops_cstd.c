@@ -11,7 +11,7 @@ open(void** file, char const* filename)
 {
 	FILE* fp = fopen(filename, "rb+");
 	if( !fp )
-		fp = fopen(filename, "wrb+");
+		fp = fopen(filename, "wb+");
 
 	if( fp )
 	{
@@ -61,10 +61,6 @@ write(void* file, void* buffer, int offset, int write_size, int* bytes_written)
 
 	write_result = fwrite(buffer, write_size, 1, file);
 	if( write_result != 1 )
-		return PAGER_WRITE_ERR;
-
-	seek_result = fflush(file);
-	if( seek_result != 0 )
 		return PAGER_WRITE_ERR;
 
 	return PAGER_OK;
