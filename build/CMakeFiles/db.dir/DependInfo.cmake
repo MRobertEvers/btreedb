@@ -12,6 +12,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/matthewevers/Documents/git_repos/btree_db/src/btree.c" "CMakeFiles/db.dir/src/btree.c.o" "gcc" "CMakeFiles/db.dir/src/btree.c.o.d"
   "/Users/matthewevers/Documents/git_repos/btree_db/src/main.c" "CMakeFiles/db.dir/src/main.c.o" "gcc" "CMakeFiles/db.dir/src/main.c.o.d"
   "/Users/matthewevers/Documents/git_repos/btree_db/src/pager.c" "CMakeFiles/db.dir/src/pager.c.o" "gcc" "CMakeFiles/db.dir/src/pager.c.o.d"
+  "/Users/matthewevers/Documents/git_repos/btree_db/src/pager_ops_cstd.c" "CMakeFiles/db.dir/src/pager_ops_cstd.c.o" "gcc" "CMakeFiles/db.dir/src/pager_ops_cstd.c.o.d"
   )
 
 # Targets to which this target links.

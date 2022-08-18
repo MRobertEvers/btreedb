@@ -1,4 +1,7 @@
 {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
+    "files.associations": {
+        "pager_ops.h": "c"
+    },
 }

@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/db.dir/src/main.c.o.d"
   "CMakeFiles/db.dir/src/pager.c.o"
   "CMakeFiles/db.dir/src/pager.c.o.d"
+  "CMakeFiles/db.dir/src/pager_ops_cstd.c.o"
+  "CMakeFiles/db.dir/src/pager_ops_cstd.c.o.d"
   "db"
   "db.pdb"
 )

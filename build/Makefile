@@ -129,12 +129,26 @@ db/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/build
 .PHONY : db/fast
 
+#=============================================================================
+# Target rules for targets named test
+
+# Build rule for target.
+test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test
+.PHONY : test
+
+# fast build rule for target.
+test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/build
+.PHONY : test/fast
+
 src/binary_search.o: src/binary_search.c.o
 .PHONY : src/binary_search.o
 
 # target to build an object file
 src/binary_search.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.o
 .PHONY : src/binary_search.c.o
 
 src/binary_search.i: src/binary_search.c.i
@@ -143,6 +157,7 @@ src/binary_search.i: src/binary_search.c.i
 # target to preprocess a source file
 src/binary_search.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.i
 .PHONY : src/binary_search.c.i
 
 src/binary_search.s: src/binary_search.c.s
@@ -151,6 +166,7 @@ src/binary_search.s: src/binary_search.c.s
 # target to generate assembly for a file
 src/binary_search.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.s
 .PHONY : src/binary_search.c.s
 
 src/btree.o: src/btree.c.o
@@ -159,6 +175,7 @@ src/btree.o: src/btree.c.o
 # target to build an object file
 src/btree.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree.c.o
 .PHONY : src/btree.c.o
 
 src/btree.i: src/btree.c.i
@@ -167,6 +184,7 @@ src/btree.i: src/btree.c.i
 # target to preprocess a source file
 src/btree.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree.c.i
 .PHONY : src/btree.c.i
 
 src/btree.s: src/btree.c.s
@@ -175,6 +193,7 @@ src/btree.s: src/btree.c.s
 # target to generate assembly for a file
 src/btree.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree.c.s
 .PHONY : src/btree.c.s
 
 src/main.o: src/main.c.o
@@ -207,6 +226,7 @@ src/pager.o: src/pager.c.o
 # target to build an object file
 src/pager.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager.c.o
 .PHONY : src/pager.c.o
 
 src/pager.i: src/pager.c.i
@@ -215,6 +235,7 @@ src/pager.i: src/pager.c.i
 # target to preprocess a source file
 src/pager.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager.c.i
 .PHONY : src/pager.c.i
 
 src/pager.s: src/pager.c.s
@@ -223,7 +244,83 @@ src/pager.s: src/pager.c.s
 # target to generate assembly for a file
 src/pager.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager.c.s
 .PHONY : src/pager.c.s
+
+src/pager_ops_cstd.o: src/pager_ops_cstd.c.o
+.PHONY : src/pager_ops_cstd.o
+
+# target to build an object file
+src/pager_ops_cstd.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager_ops_cstd.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_ops_cstd.c.o
+.PHONY : src/pager_ops_cstd.c.o
+
+src/pager_ops_cstd.i: src/pager_ops_cstd.c.i
+.PHONY : src/pager_ops_cstd.i
+
+# target to preprocess a source file
+src/pager_ops_cstd.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager_ops_cstd.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_ops_cstd.c.i
+.PHONY : src/pager_ops_cstd.c.i
+
+src/pager_ops_cstd.s: src/pager_ops_cstd.c.s
+.PHONY : src/pager_ops_cstd.s
+
+# target to generate assembly for a file
+src/pager_ops_cstd.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/pager_ops_cstd.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_ops_cstd.c.s
+.PHONY : src/pager_ops_cstd.c.s
+
+src/pager_test.o: src/pager_test.c.o
+.PHONY : src/pager_test.o
+
+# target to build an object file
+src/pager_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.o
+.PHONY : src/pager_test.c.o
+
+src/pager_test.i: src/pager_test.c.i
+.PHONY : src/pager_test.i
+
+# target to preprocess a source file
+src/pager_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.i
+.PHONY : src/pager_test.c.i
+
+src/pager_test.s: src/pager_test.c.s
+.PHONY : src/pager_test.s
+
+# target to generate assembly for a file
+src/pager_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.s
+.PHONY : src/pager_test.c.s
+
+src/test.o: src/test.c.o
+.PHONY : src/test.o
+
+# target to build an object file
+src/test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.c.o
+.PHONY : src/test.c.o
+
+src/test.i: src/test.c.i
+.PHONY : src/test.i
+
+# target to preprocess a source file
+src/test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.c.i
+.PHONY : src/test.c.i
+
+src/test.s: src/test.c.s
+.PHONY : src/test.s
+
+# target to generate assembly for a file
+src/test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/test.c.s
+.PHONY : src/test.c.s
 
 # Help Target
 help:
@@ -234,6 +331,7 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... db"
+	@echo "... test"
 	@echo "... src/binary_search.o"
 	@echo "... src/binary_search.i"
 	@echo "... src/binary_search.s"
@@ -246,6 +344,15 @@ help:
 	@echo "... src/pager.o"
 	@echo "... src/pager.i"
 	@echo "... src/pager.s"
+	@echo "... src/pager_ops_cstd.o"
+	@echo "... src/pager_ops_cstd.i"
+	@echo "... src/pager_ops_cstd.s"
+	@echo "... src/pager_test.o"
+	@echo "... src/pager_test.i"
+	@echo "... src/pager_test.s"
+	@echo "... src/test.o"
+	@echo "... src/test.i"
+	@echo "... src/test.s"
 .PHONY : help
 
 

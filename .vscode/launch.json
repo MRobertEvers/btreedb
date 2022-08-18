@@ -10,6 +10,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/db",
             "cwd": "${workspaceRoot}",
+        },
+        {
+            "name": "Debug Test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/test",
+            "cwd": "${workspaceRoot}",
         }
     ]
 }

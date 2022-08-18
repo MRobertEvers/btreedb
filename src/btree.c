@@ -140,25 +140,19 @@ btree_alloc(struct BTree** r_tree)
 }
 
 enum btree_e
-btree_init(struct BTree* tree)
+btree_dealloc(struct BTree* tree)
 {
-	enum pager_e pager_result = PAGER_OK;
+	free(tree);
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_init(struct BTree* tree, struct Pager* pager)
+{
 	enum btree_e btree_result = BTREE_OK;
 
 	tree->root = 0;
-
-	pager_result = pager_alloc(&tree->pager);
-	if( pager_result != PAGER_OK )
-		return BTREE_UNK_ERR;
-
-	// 4Kb
-	pager_result = pager_init(tree->pager, 0x1000);
-	if( pager_result != PAGER_OK )
-		return BTREE_UNK_ERR;
-
-	pager_result = pager_open(tree->pager, "test.db");
-	if( pager_result != PAGER_OK )
-		return BTREE_UNK_ERR;
+	tree->pager = pager;
 
 	btree_result = btree_load_root(tree);
 	if( btree_result != BTREE_OK )

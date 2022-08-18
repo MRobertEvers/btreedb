@@ -1,7 +1,6 @@
 #include "pager.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,18 +45,25 @@ pager_alloc(struct Pager** r_pager)
 	return PAGER_OK;
 }
 enum pager_e
-pager_dealloc(struct Pager** pager)
+pager_dealloc(struct Pager* pager)
 {
 	free(pager);
 	return PAGER_OK;
 }
 
 enum pager_e
-pager_init(struct Pager* r_pager, int pager_size)
+pager_init(struct Pager* pager, struct PagerOps* ops, int page_size)
 {
-	memset(r_pager, 0x00, sizeof(*r_pager));
-	r_pager->page_size = pager_size;
+	memset(pager, 0x00, sizeof(*pager));
+	pager->page_size = page_size;
+	pager->ops = ops;
 
+	return PAGER_OK;
+}
+
+enum pager_e
+pager_deinit(struct Pager* pager)
+{
 	return PAGER_OK;
 }
 
@@ -74,64 +80,47 @@ pager_open(struct Pager* pager, char* pager_str)
 		pager_str,
 		min(sizeof(pager->pager_name_str) - 1, strlen(pager_str)));
 
-	FILE* fp = fopen(pager->pager_name_str, "r+");
-	if( !fp )
-		fp = fopen(pager->pager_name_str, "wr+");
-
-	if( fp )
-	{
-		pager->file = fp;
-		return PAGER_OK;
-	}
-	else
-	{
-		return PAGER_OPEN_ERR;
-	}
+	return pager->ops->open(&pager->file, pager->pager_name_str);
 }
 
 enum pager_e
 pager_close(struct Pager* pager)
 {
-	if( fclose(pager->file) == 0 )
-		return PAGER_OK;
-	else
-		return PAGER_UNK_ERR;
+	return pager->ops->close(pager->file);
+}
+
+enum pager_e
+pager_destroy(struct Pager* pager)
+{
+	pager_close(pager);
+	pager_deinit(pager);
+	pager_dealloc(pager);
 }
 
 enum pager_e
 pager_read_page(struct Pager* pager, struct Page* page)
 {
+	assert(pager->ops);
 	assert(page->page_id);
 
 	int offset = pager->page_size * (page->page_id - 1);
-	unsigned int pages_read;
-	int seek_result;
+	int pages_read;
 
-	seek_result = fseek(pager->file, offset, SEEK_SET);
-	if( seek_result != 0 )
-		return PAGER_SEEK_ERR;
-
-	pages_read = fread(page->page_buffer, pager->page_size, 1, pager->file);
-	if( pages_read != 1 )
-		memset(page->page_buffer, 0x00, pager->page_size);
-
-	return PAGER_OK;
+	return pager->ops->read(
+		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
 }
 
 enum pager_e
 pager_write_page(struct Pager* pager, struct Page* page)
 {
+	assert(pager->ops);
 	int offset = pager->page_size * (page->page_id - 1);
-	int seek_result;
 	int write_result;
 
-	seek_result = fseek(pager->file, offset, SEEK_SET);
-	if( seek_result != 0 )
-		return PAGER_SEEK_ERR;
-
-	write_result = fwrite(page->page_buffer, pager->page_size, 1, pager->file);
-	if( write_result != 1 )
-		return PAGER_WRITE_ERR;
-
-	return PAGER_OK;
+	return pager->ops->write(
+		pager->file,
+		page->page_buffer,
+		offset,
+		pager->page_size,
+		&write_result);
 }
