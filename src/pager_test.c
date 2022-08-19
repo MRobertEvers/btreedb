@@ -22,7 +22,7 @@ pager_test_read_write_cstd()
 	pager_read_page(pager, page);
 
 	memcpy(page->page_buffer, buffer, sizeof(buffer));
-	printf("%s\n", page->page_buffer);
+	// printf("%s\n", page->page_buffer);
 
 	pager_write_page(pager, page);
 
@@ -30,7 +30,7 @@ pager_test_read_write_cstd()
 
 	pager_read_page(pager, page);
 
-	printf("%s\n", page->page_buffer);
+	// printf("%s\n", page->page_buffer);
 	result = memcmp(page->page_buffer, buffer, sizeof(buffer)) == 0;
 
 end:

@@ -162,6 +162,13 @@ btree_init(struct BTree* tree, struct Pager* pager)
 }
 
 enum btree_e
+btree_deinit(struct BTree* tree)
+{
+	// TODO: Nodes?
+	return BTREE_OK;
+}
+
+enum btree_e
 btree_insert(struct BTree* tree, int key, void* data, int data_size)
 {
 	enum btree_e result = BTREE_OK;
