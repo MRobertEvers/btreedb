@@ -34,7 +34,7 @@ pager_test_read_write_cstd()
 	result = memcmp(page->page_buffer, buffer, sizeof(buffer)) == 0;
 
 end:
-	pager_page_deinit(pager, page);
+	pager_page_deinit(page);
 	pager_page_dealloc(page);
 
 	pager_destroy(pager);

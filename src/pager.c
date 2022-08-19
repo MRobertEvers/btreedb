@@ -30,7 +30,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 }
 
 enum pager_e
-pager_page_deinit(struct Pager* pager, struct Page* page)
+pager_page_deinit(struct Page* page)
 {
 	free(page->page_buffer);
 	memset(page, 0x00, sizeof(*page));
@@ -105,9 +105,14 @@ pager_read_page(struct Pager* pager, struct Page* page)
 
 	int offset = pager->page_size * (page->page_id - 1);
 	int pages_read;
+	enum pager_e pager_result;
 
-	return pager->ops->read(
+	// TODO: Wait for result.
+	page->loaded = 1;
+
+	pager_result = pager->ops->read(
 		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
+	return pager_result;
 }
 
 enum pager_e

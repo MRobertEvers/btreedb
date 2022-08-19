@@ -37,3 +37,29 @@ end:
 
 	return result;
 }
+
+int
+btree_test_split_root_node()
+{
+	int result = 1;
+	struct Pager* pager;
+	pager_cstd_new(&pager, "split_root_node.db");
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	btree_init(tree, pager);
+
+	char billy[] = "billy";
+	char ruth[] = "ruth";
+	btree_insert(tree, 12, billy, sizeof(billy));
+	btree_insert(tree, 1, ruth, sizeof(ruth));
+
+	split_node(tree, tree->root);
+
+	// end:
+	// 	btree_deinit(tree);
+	// 	btree_dealloc(tree);
+
+	// 	return result;
+	return 0;
+}

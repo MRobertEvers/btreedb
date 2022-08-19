@@ -14,6 +14,7 @@ struct Pager
 struct Page
 {
 	int page_id;
+	char loaded;
 
 	void* page_buffer;
 };
@@ -21,7 +22,7 @@ struct Page
 enum pager_e pager_page_alloc(struct Pager*, struct Page**);
 enum pager_e pager_page_dealloc(struct Page*);
 enum pager_e pager_page_init(struct Pager*, struct Page*, int);
-enum pager_e pager_page_deinit(struct Pager*, struct Page*);
+enum pager_e pager_page_deinit(struct Page*);
 
 enum pager_e pager_alloc(struct Pager**);
 enum pager_e pager_dealloc(struct Pager*);

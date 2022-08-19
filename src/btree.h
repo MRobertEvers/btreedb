@@ -16,8 +16,12 @@ enum btree_e
 
 struct BTreePageHeader
 {
-	unsigned int num_keys;
 	char is_leaf;
+	char persisted;
+	unsigned int num_keys;
+	unsigned int right_child;
+
+	// Offset from cell_base_offset
 	unsigned int cell_high_water_offset;
 };
 
@@ -38,13 +42,23 @@ struct BTreeNode
 	struct Page* page; // Page backing this node.
 };
 
+struct BTreeHeader
+{
+	int page_high_water;
+};
+
 struct BTree
 {
+	struct BTreeHeader* header;
 	struct Pager* pager;
 	struct BTreeNode* root;
 };
 
+enum btree_e split_node(struct BTree* tree, struct BTreeNode* node);
+
 enum btree_e btree_node_alloc(struct BTree*, struct BTreeNode**);
+enum btree_e btree_node_dealloc(struct BTreeNode*);
+enum btree_e btree_node_deinit(struct BTreeNode*);
 enum btree_e
 btree_node_init_from_page(struct BTree*, struct Page*, struct BTreeNode*);
 

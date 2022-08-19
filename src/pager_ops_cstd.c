@@ -45,6 +45,7 @@ read(void* file, void* buffer, int offset, int read_size, int* bytes_read)
 	result = fread(buffer, read_size, 1, file);
 	if( result != 1 )
 		memset(buffer, 0x00, read_size);
+	// return PAGER_READ_ERR;
 
 	return PAGER_OK;
 }
