@@ -8,7 +8,7 @@
 #define BTREE_HEADER_SIZE 100
 
 static int
-get_node_cell_offset(struct BTreeNode* node)
+get_node_size(struct BTreeNode* node)
 {
 	// 4kb
 	return 0x1000 - (node->page_number == 1 ? BTREE_HEADER_SIZE : 0);
@@ -42,11 +42,10 @@ insert_data_into_node(
 
 	node->keys[index].key = key;
 	node->keys[index].cell_offset =
-
 		node->header->cell_high_water_offset + calc_cell_size(data_size);
 	node->header->num_keys += 1;
 
-	char* cell = get_node_buffer(node) + get_node_cell_offset(node) -
+	char* cell = get_node_buffer(node) + get_node_size(node) -
 				 node->keys[index].cell_offset;
 	memcpy(cell, &data_size, sizeof(data_size));
 
@@ -99,10 +98,8 @@ read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 	memset(cell, 0x00, sizeof(struct CellData));
 	int offset = node->keys[index].cell_offset;
 
-	char* cell_buffer =
-		get_node_buffer(node) + get_node_cell_offset(node) - offset;
+	char* cell_buffer = get_node_buffer(node) + get_node_size(node) - offset;
 
-	// memcpy(&cell->size, cell_buffer, sizeof (cell->size));
 	cell->size = (int*)cell_buffer;
 	cell->pointer = &cell->size[1];
 }
@@ -161,7 +158,7 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 		get_node_buffer(node),
 		get_node_buffer(parent),
 		// TODO: Offset must be the same...
-		get_node_cell_offset(parent));
+		get_node_size(parent));
 
 	pager_write_page(tree->pager, node->page);
 	pager_write_page(tree->pager, left->page);
