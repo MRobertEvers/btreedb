@@ -21,6 +21,12 @@ get_node_buffer(struct BTreeNode* node)
 		   (node->page_number == 1 ? BTREE_HEADER_SIZE : 0);
 }
 
+static int
+calc_cell_size(int size)
+{
+	return size + sizeof(int);
+}
+
 static enum btree_e
 insert_data_into_node(
 	struct BTreeNode* node,
@@ -37,20 +43,16 @@ insert_data_into_node(
 	node->keys[index].key = key;
 	node->keys[index].cell_offset =
 
-		node->header->cell_high_water_offset +
-		data_size
-		// Include int in size to record length of data.
-		+ sizeof(int);
+		node->header->cell_high_water_offset + calc_cell_size(data_size);
 	node->header->num_keys += 1;
 
-	// TODO: Page Size
 	char* cell = get_node_buffer(node) + get_node_cell_offset(node) -
 				 node->keys[index].cell_offset;
 	memcpy(cell, &data_size, sizeof(data_size));
 
 	cell = cell + sizeof(data_size);
 	memcpy(cell, data, data_size);
-	node->header->cell_high_water_offset += data_size + sizeof(int);
+	node->header->cell_high_water_offset += calc_cell_size(data_size);
 
 	return BTREE_OK;
 }
@@ -114,26 +116,18 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 	struct BTreeNode* right = NULL;
 	struct BTreeNode* parent = NULL;
 
-	struct Page* temp_page = NULL;
+	struct Page* left_page = NULL;
 	struct Page* parent_page = NULL;
 	struct Page* right_page = NULL;
 
-	pager_page_alloc(tree->pager, &temp_page);
-	pager_page_init(tree->pager, temp_page, tree->header->page_high_water);
-	btree_node_alloc(tree, &left);
-	btree_node_init_from_page(tree, temp_page, left);
+	page_create(tree->pager, &left_page, tree->header->page_high_water);
+	btree_node_create_from_page(tree, &left, left_page);
 
-	pager_page_alloc(tree->pager, &parent_page);
-	pager_page_init(tree->pager, parent_page, node->page_number);
-	// pager_read_page(tree->pager, parent_page);
-	btree_node_alloc(tree, &parent);
-	btree_node_init_from_page(tree, parent_page, parent);
+	page_create(tree->pager, &parent_page, node->page_number);
+	btree_node_create_from_page(tree, &parent, parent_page);
 
-	pager_page_alloc(tree->pager, &right_page);
-	pager_page_init(tree->pager, right_page, tree->header->page_high_water + 1);
-	// pager_read_page(tree->pager, right_page);
-	btree_node_alloc(tree, &right);
-	btree_node_init_from_page(tree, right_page, right);
+	page_create(tree->pager, &right_page, tree->header->page_high_water + 1);
+	btree_node_create_from_page(tree, &right, right_page);
 
 	for( int i = 0; i < node->header->num_keys; i++ )
 	{
@@ -174,32 +168,25 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 	pager_write_page(tree->pager, right->page);
 
 end:
-	btree_node_deinit(left);
-	btree_node_dealloc(left);
-	pager_page_deinit(temp_page);
-	pager_page_dealloc(temp_page);
+	btree_node_destroy(tree, left);
+	page_destroy(tree->pager, left_page);
 
-	btree_node_deinit(right);
-	btree_node_dealloc(right);
-	pager_page_deinit(right_page);
-	pager_page_dealloc(right_page);
+	btree_node_destroy(tree, right);
+	page_destroy(tree->pager, right_page);
 
-	btree_node_deinit(parent);
-	btree_node_dealloc(parent);
-	pager_page_deinit(parent_page);
-	pager_page_dealloc(parent_page);
+	btree_node_destroy(tree, parent);
+	page_destroy(tree->pager, parent_page);
+
+	return BTREE_OK;
 }
 
 static enum btree_e
-btree_page_new(struct BTree* tree, struct Page** r_page, int page_number)
+btree_page_create_and_load(
+	struct BTree* tree, struct Page** r_page, int page_number)
 {
 	enum pager_e pager_status = PAGER_OK;
 
-	pager_status = pager_page_alloc(tree->pager, r_page);
-	if( pager_status != PAGER_OK )
-		return BTREE_UNK_ERR;
-
-	pager_status = pager_page_init(tree->pager, *r_page, page_number);
+	pager_status = page_create(tree->pager, r_page, page_number);
 	if( pager_status != PAGER_OK )
 		return BTREE_UNK_ERR;
 
@@ -215,45 +202,41 @@ btree_load_root(struct BTree* tree)
 {
 	enum btree_e result = BTREE_OK;
 
-	struct Page* page = 0;
-	result = btree_page_new(tree, &page, 1);
+	struct Page* page = NULL;
+	result = btree_page_create_and_load(tree, &page, 1);
 	if( result != BTREE_OK )
 		return result;
 
-	result = btree_node_alloc(tree, &tree->root);
-	if( result != BTREE_OK )
-		return result;
-
-	result = btree_node_init_from_page(tree, page, tree->root);
+	result = btree_node_create_from_page(tree, &tree->root, page);
 	if( result != BTREE_OK )
 		return result;
 
 	return BTREE_OK;
 }
 
-enum btree_e
+static enum btree_e
 btree_node_alloc(struct BTree* tree, struct BTreeNode** r_node)
 {
 	*r_node = (struct BTreeNode*)malloc(sizeof(struct BTreeNode));
 	return BTREE_OK;
 }
 
-enum btree_e
+static enum btree_e
 btree_node_dealloc(struct BTreeNode* node)
 {
 	free(node);
 	return BTREE_OK;
 }
 
-enum btree_e
+static enum btree_e
 btree_node_deinit(struct BTreeNode* node)
 {
 	return BTREE_OK;
 }
 
-enum btree_e
+static enum btree_e
 btree_node_init_from_page(
-	struct BTree* tree, struct Page* page, struct BTreeNode* node)
+	struct BTree* tree, struct BTreeNode* node, struct Page* page)
 {
 	int offset = page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
 	void* data = ((char*)page->page_buffer) + offset;
@@ -264,6 +247,24 @@ btree_node_init_from_page(
 	// Trick to get a pointer to the address immediately after the header.
 	node->keys = (struct BTreePageKey*)&node->header[1];
 
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_node_create_from_page(
+	struct BTree* tree, struct BTreeNode** r_node, struct Page* page)
+{
+	btree_node_alloc(tree, r_node);
+	btree_node_init_from_page(tree, *r_node, page);
+
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_node_destroy(struct BTree* tree, struct BTreeNode* node)
+{
+	btree_node_deinit(node);
+	btree_node_dealloc(node);
 	return BTREE_OK;
 }
 

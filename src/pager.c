@@ -4,21 +4,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum pager_e
+static enum pager_e
 pager_page_alloc(struct Pager* pager, struct Page** r_page)
 {
 	*r_page = (struct Page*)malloc(sizeof(struct Page));
 	return PAGER_OK;
 }
 
-enum pager_e
+static enum pager_e
 pager_page_dealloc(struct Page* page)
 {
 	free(page);
 	return PAGER_OK;
 }
 
-enum pager_e
+static enum pager_e
 pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 {
 	memset(page, 0x00, sizeof(*page));
@@ -29,11 +29,30 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	return PAGER_OK;
 }
 
-enum pager_e
+static enum pager_e
 pager_page_deinit(struct Page* page)
 {
 	free(page->page_buffer);
 	memset(page, 0x00, sizeof(*page));
+
+	return PAGER_OK;
+}
+
+enum pager_e
+page_create(struct Pager* pager, struct Page** r_page, int page_number)
+{
+	pager_page_alloc(pager, r_page);
+	pager_page_init(pager, *r_page, page_number);
+
+	// TODO: Errors
+	return PAGER_OK;
+}
+
+enum pager_e
+page_destroy(struct Pager* pager, struct Page* page)
+{
+	pager_page_deinit(page);
+	pager_page_dealloc(page);
 
 	return PAGER_OK;
 }

@@ -3,6 +3,8 @@
 
 #include "pager_ops.h"
 
+#define PAGE_CREATE_NEW_PAGE 0
+
 struct Pager
 {
 	char pager_name_str[32];
@@ -19,10 +21,8 @@ struct Page
 	void* page_buffer;
 };
 
-enum pager_e pager_page_alloc(struct Pager*, struct Page**);
-enum pager_e pager_page_dealloc(struct Page*);
-enum pager_e pager_page_init(struct Pager*, struct Page*, int);
-enum pager_e pager_page_deinit(struct Page*);
+enum pager_e page_create(struct Pager*, struct Page**, int);
+enum pager_e page_destroy(struct Pager*, struct Page*);
 
 enum pager_e pager_alloc(struct Pager**);
 enum pager_e pager_dealloc(struct Pager*);

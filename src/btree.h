@@ -56,11 +56,9 @@ struct BTree
 
 enum btree_e split_node(struct BTree* tree, struct BTreeNode* node);
 
-enum btree_e btree_node_alloc(struct BTree*, struct BTreeNode**);
-enum btree_e btree_node_dealloc(struct BTreeNode*);
-enum btree_e btree_node_deinit(struct BTreeNode*);
 enum btree_e
-btree_node_init_from_page(struct BTree*, struct Page*, struct BTreeNode*);
+btree_node_create_from_page(struct BTree*, struct BTreeNode**, struct Page*);
+enum btree_e btree_node_destroy(struct BTree*, struct BTreeNode*);
 
 enum btree_e btree_alloc(struct BTree**);
 enum btree_e btree_dealloc(struct BTree*);

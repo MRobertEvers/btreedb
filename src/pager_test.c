@@ -16,8 +16,7 @@ pager_test_read_write_cstd()
 	pager_cstd_new(&pager, "test_.db");
 
 	struct Page* page;
-	pager_page_alloc(pager, &page);
-	pager_page_init(pager, page, 1);
+	page_create(pager, &page, 1);
 
 	pager_read_page(pager, page);
 
@@ -34,8 +33,7 @@ pager_test_read_write_cstd()
 	result = memcmp(page->page_buffer, buffer, sizeof(buffer)) == 0;
 
 end:
-	pager_page_deinit(page);
-	pager_page_dealloc(page);
+	page_destroy(pager, page);
 
 	pager_destroy(pager);
 	remove("test_.db");
