@@ -3,6 +3,7 @@
 #include "btree.h"
 #include "pager_ops_cstd.h"
 
+#include <string.h>
 int
 btree_test_insert_root_with_space()
 {
@@ -18,6 +19,9 @@ btree_test_insert_root_with_space()
 	char ruth[] = "ruth";
 	btree_insert(tree, 12, billy, sizeof(billy));
 	btree_insert(tree, 1, ruth, sizeof(ruth));
+
+	// Hack
+	pager_read_page(pager, tree->root->page);
 
 	if( tree->root->header->num_keys != 2 )
 	{
@@ -42,6 +46,9 @@ int
 btree_test_split_root_node()
 {
 	int result = 1;
+	struct Page* page = 0;
+	struct BTreeNode* node = 0;
+
 	struct Pager* pager;
 	pager_cstd_new(&pager, "split_root_node.db");
 
@@ -51,15 +58,47 @@ btree_test_split_root_node()
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
+	char charlie[] = "charlie";
 	btree_insert(tree, 12, billy, sizeof(billy));
+	btree_insert(tree, 2, charlie, sizeof(charlie));
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 
 	split_node(tree, tree->root);
+
+	pager_read_page(tree->pager, tree->root->page);
+	btree_node_init_from_page(tree, tree->root, tree->root->page);
+
+	struct Cursor* cursor = create_cursor(tree);
+
+	char found = 0;
+	btree_traverse_to(cursor, 2, &found);
+
+	if( !found )
+		return 0;
+
+	page_create(tree->pager, &page, cursor->current_page_id);
+	pager_read_page(tree->pager, page);
+	btree_node_create_from_page(tree, &node, page);
+
+	if( node->header->num_keys != 2 )
+		return 0;
+
+	struct CellData cell;
+	read_cell(node, cursor->current_key, &cell);
+
+	if( *cell.size != sizeof(charlie) )
+		return 0;
+
+	if( memcmp(cell.pointer, charlie, sizeof(charlie)) != 0 )
+		return 0;
+
+	btree_node_destroy(tree, node);
+	page_destroy(tree->pager, page);
 
 	// end:
 	// 	btree_deinit(tree);
 	// 	btree_dealloc(tree);
 
 	// 	return result;
-	return 0;
+	return 1;
 }

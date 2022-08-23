@@ -54,6 +54,27 @@ struct BTree
 	struct BTreeNode* root;
 };
 
+struct Cursor
+{
+	struct BTree* tree;
+	int current_page_id;
+
+	int current_key;
+};
+
+struct CellData
+{
+	void* pointer;
+	int* size;
+};
+
+enum btree_e btree_node_init_from_page(
+	struct BTree* tree, struct BTreeNode* node, struct Page* page);
+
+void read_cell(struct BTreeNode* node, int index, struct CellData* cell);
+
+struct Cursor* create_cursor(struct BTree* tree);
+
 enum btree_e split_node(struct BTree* tree, struct BTreeNode* node);
 
 enum btree_e
@@ -66,5 +87,5 @@ enum btree_e btree_init(struct BTree* tree, struct Pager* pager);
 enum btree_e btree_deinit(struct BTree* tree);
 
 enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
-
+enum btree_e btree_traverse_to(struct Cursor* cursor, int key, char* found);
 #endif

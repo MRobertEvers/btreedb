@@ -10,6 +10,7 @@ struct Pager
 	char pager_name_str[32];
 	struct PagerOps* ops;
 	int page_size;
+	int max_page;
 	void* file;
 };
 

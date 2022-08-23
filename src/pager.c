@@ -99,7 +99,11 @@ pager_open(struct Pager* pager, char* pager_str)
 		pager_str,
 		min(sizeof(pager->pager_name_str) - 1, strlen(pager_str)));
 
-	return pager->ops->open(&pager->file, pager->pager_name_str);
+	enum pager_e opened = pager->ops->open(&pager->file, pager->pager_name_str);
+	int size = pager->ops->size(pager->file);
+	pager->max_page = size / 0x1000;
+
+	return PAGER_OK;
 }
 
 enum pager_e
@@ -114,6 +118,7 @@ pager_destroy(struct Pager* pager)
 	pager_close(pager);
 	pager_deinit(pager);
 	pager_dealloc(pager);
+	return PAGER_OK;
 }
 
 enum pager_e
@@ -125,6 +130,13 @@ pager_read_page(struct Pager* pager, struct Page* page)
 	int offset = pager->page_size * (page->page_id - 1);
 	int pages_read;
 	enum pager_e pager_result;
+
+	if( page->page_id > pager->max_page )
+	{
+		// Hack
+		pager->ops->write(
+			pager->file, "", page->page_id * pager->page_size, 1, &pages_read);
+	}
 
 	// TODO: Wait for result.
 	page->loaded = 1;
@@ -141,10 +153,14 @@ pager_write_page(struct Pager* pager, struct Page* page)
 	int offset = pager->page_size * (page->page_id - 1);
 	int write_result;
 
-	return pager->ops->write(
+	pager->ops->write(
 		pager->file,
 		page->page_buffer,
 		offset,
 		pager->page_size,
 		&write_result);
+
+	pager->max_page = pager->ops->size(pager->file) / 0x1000;
+
+	return PAGER_OK;
 }

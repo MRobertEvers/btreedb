@@ -24,6 +24,13 @@ open(void** file, char const* filename)
 	}
 }
 
+static int
+size(void* file)
+{
+	fseek(file, 0L, SEEK_END);
+	return ftell(file);
+}
+
 static enum pager_e
 close(void* file)
 {
@@ -44,8 +51,7 @@ read(void* file, void* buffer, int offset, int read_size, int* bytes_read)
 
 	result = fread(buffer, read_size, 1, file);
 	if( result != 1 )
-		memset(buffer, 0x00, read_size);
-	// return PAGER_READ_ERR;
+		return PAGER_READ_ERR;
 
 	return PAGER_OK;
 }
@@ -71,7 +77,8 @@ struct PagerOps CStdOps = {
 	.open = &open,	 //
 	.close = &close, //
 	.read = &read,	 //
-	.write = &write	 //
+	.write = &write, //
+	.size = &size	 //
 };
 
 enum pager_e

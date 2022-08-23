@@ -71,7 +71,8 @@ binary_search_keys(
 
 		if( arr[mid].key == key )
 		{
-			*found = 1;
+			if( found )
+				*found = 1;
 			return mid;
 		}
 		else if( arr[mid].key < key )
@@ -87,11 +88,12 @@ binary_search_keys(
 	return left;
 }
 
-struct CellData
-{
-	void* pointer;
-	int* size;
-};
+// struct CellData
+// {
+// 	void* pointer;
+// 	int* size;
+// };
+
 void
 read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 {
@@ -126,18 +128,20 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 	page_create(tree->pager, &right_page, tree->header->page_high_water + 1);
 	btree_node_create_from_page(tree, &right, right_page);
 
+	int first_half = ((node->header->num_keys + 1) / 2);
 	for( int i = 0; i < node->header->num_keys; i++ )
 	{
 		struct CellData cell = {0};
 		int key = node->keys[i].key;
 		read_cell(node, i, &cell);
-		if( i < node->header->num_keys / 2 )
+		if( i < first_half )
 		{
-			insert_data_into_node(left, i / 2, key, cell.pointer, *cell.size);
+			insert_data_into_node(left, i, key, cell.pointer, *cell.size);
 		}
 		else
 		{
-			insert_data_into_node(right, i / 2, key, cell.pointer, *cell.size);
+			insert_data_into_node(
+				right, (i - first_half), key, cell.pointer, *cell.size);
 		}
 	}
 
@@ -145,7 +149,7 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 		parent,
 		0,
 		left->keys[left->header->num_keys - 1].key,
-		&node->page_number,
+		&left->page_number,
 		sizeof(unsigned int));
 
 	parent->header->is_leaf = 0;
@@ -231,7 +235,7 @@ btree_node_deinit(struct BTreeNode* node)
 	return BTREE_OK;
 }
 
-static enum btree_e
+enum btree_e
 btree_node_init_from_page(
 	struct BTree* tree, struct BTreeNode* node, struct Page* page)
 {
@@ -253,6 +257,11 @@ btree_node_create_from_page(
 {
 	btree_node_alloc(tree, r_node);
 	btree_node_init_from_page(tree, *r_node, page);
+	// struct BTreeNode* node = *r_node;
+	// if( !node->header->persisted )
+	// {
+	// 	node->header->is_leaf = 1;
+	// }
 
 	return BTREE_OK;
 }
@@ -290,6 +299,9 @@ btree_init_from_root_node(struct BTree* tree, struct BTreeNode* root)
 		root->header->is_leaf = 1;
 
 		tree->header->page_high_water = 2;
+
+		// TODO: Eventually use a pager page cache.
+		pager_write_page(tree->pager, tree->root->page);
 	}
 
 	return BTREE_OK;
@@ -323,6 +335,17 @@ btree_deinit(struct BTree* tree)
 	return BTREE_OK;
 }
 
+struct Cursor*
+create_cursor(struct BTree* tree)
+{
+	struct Cursor* cursor = (struct Cursor*)malloc(sizeof(struct Cursor));
+
+	cursor->tree = tree;
+	cursor->current_key = 0;
+	cursor->current_page_id = tree->root->page_number;
+	return cursor;
+}
+
 enum btree_e
 btree_insert(struct BTree* tree, int key, void* data, int data_size)
 {
@@ -330,18 +353,74 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	int index = 0;
 	char found = 0;
 
-	struct BTreeNode* node = tree->root;
+	struct Cursor* cursor = create_cursor(tree);
 
-	index = binary_search_keys(node->keys, node->header->num_keys, key, &found);
+	index = btree_traverse_to(cursor, key, &found);
 
-	result = insert_data_into_node(node, index, key, data, data_size);
+	struct Page* page = NULL;
+	struct BTreeNode* node = NULL;
+	page_create(tree->pager, &page, cursor->current_page_id);
+	pager_read_page(tree->pager, page);
+	btree_node_create_from_page(tree, &node, page);
 
-	pager_write_page(tree->pager, tree->root->page);
-	// do
-	// {
-	// 	if( result != BTREE_OK )
-	// 		break;
-	// } while( node );
+	result =
+		insert_data_into_node(node, cursor->current_key, key, data, data_size);
+
+	pager_write_page(tree->pager, page);
+
+	btree_node_destroy(tree, node);
+	page_destroy(tree->pager, page);
+
+	// TODO: Hack; eventually use page cache
+	if( cursor->current_page_id == tree->root->page_number )
+	{
+		pager_read_page(tree->pager, tree->root->page);
+		btree_node_init_from_page(tree, tree->root, tree->root->page);
+	}
+
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_traverse_to(struct Cursor* cursor, int key, char* found)
+{
+	int index = 0;
+	struct Page* page = NULL;
+	struct BTreeNode* node = NULL;
+	struct CellData cell;
+	btree_node_alloc(cursor->tree, &node);
+	page_create(cursor->tree->pager, &page, 0);
+
+	do
+	{
+		page->page_id = cursor->current_page_id;
+		pager_read_page(cursor->tree->pager, page);
+		btree_node_init_from_page(cursor->tree, node, page);
+
+		index =
+			binary_search_keys(node->keys, node->header->num_keys, key, found);
+
+		if( node->header->is_leaf )
+		{
+			// return index
+			cursor->current_key = index;
+		}
+		else
+		{
+			if( index == node->header->num_keys )
+			{
+				cursor->current_page_id = node->header->right_child;
+			}
+			else
+			{
+				read_cell(node, index, &cell);
+				memcpy(&cursor->current_page_id, cell.pointer, *cell.size);
+			}
+		}
+	} while( !node->header->is_leaf );
+
+	page_destroy(cursor->tree->pager, page);
+	btree_node_dealloc(node);
 
 	return BTREE_OK;
 }

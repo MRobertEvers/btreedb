@@ -23,6 +23,7 @@ struct PagerOps
 		int write_size,
 		int* bytes_written);
 	enum pager_e (*close)(void*);
+	int (*size)(void*);
 };
 
 #endif
