@@ -3,6 +3,7 @@
 #include "btree.h"
 #include "pager_ops_cstd.h"
 
+#include <stdio.h>
 #include <string.h>
 int
 btree_test_insert_root_with_space()
@@ -38,7 +39,7 @@ btree_test_insert_root_with_space()
 end:
 	btree_deinit(tree);
 	btree_dealloc(tree);
-
+	remove("test_.db");
 	return result;
 }
 
@@ -94,11 +95,7 @@ btree_test_split_root_node()
 
 	btree_node_destroy(tree, node);
 	page_destroy(tree->pager, page);
+	remove("split_root_node.db");
 
-	// end:
-	// 	btree_deinit(tree);
-	// 	btree_dealloc(tree);
-
-	// 	return result;
 	return 1;
 }
