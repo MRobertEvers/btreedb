@@ -40,3 +40,30 @@ end:
 
 	return result;
 }
+
+int
+pager_test_page_loads_caching()
+{
+	char buffer[] = "test_string";
+	char page_filename[] = "test_caching_.db";
+	int result = 0;
+	struct Pager* pager;
+	pager_cstd_new(&pager, page_filename);
+
+	struct Page* page_one;
+	pager_load(pager, &page_one, 1);
+
+	struct Page* page_two;
+	pager_load(pager, &page_two, 1);
+
+	result = page_one->page_buffer == page_two->page_buffer;
+
+end:
+	remove(page_filename);
+
+	// TODO: Free pages in cache?
+
+	pager_destroy(pager);
+
+	return result;
+}

@@ -85,12 +85,9 @@ enum pager_e
 pager_cstd_new(struct Pager** r_pager, char* filename)
 {
 	enum pager_e pager_result;
-	pager_result = pager_alloc(r_pager);
-	if( pager_result != PAGER_OK )
-		return pager_result;
 
 	// 4Kb
-	pager_result = pager_init(*r_pager, &CStdOps, 0x1000);
+	pager_result = pager_create(r_pager, &CStdOps, 0x1000);
 	if( pager_result != PAGER_OK )
 		return pager_result;
 

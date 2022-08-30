@@ -57,6 +57,89 @@ page_destroy(struct Pager* pager, struct Page* page)
 	return PAGER_OK;
 }
 
+int
+find_in_cache(struct Pager* pager, int page_id)
+{
+	int left = 0;
+	int right = pager->page_cache_size - 1;
+	int mid = 0;
+
+	while( left <= right )
+	{
+		mid = (right - left) / 2 + left;
+
+		if( pager->page_cache[mid].page_id == page_id )
+		{
+			return mid;
+		}
+		else if( pager->page_cache[mid].page_id < page_id )
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			right = mid - 1;
+		}
+	}
+
+	return left;
+}
+
+// enum pager_e
+// insert_into_cache(struct Pager* pager, struct Page* page)
+// {}
+
+enum pager_e
+page_load_into_cache(struct Pager* pager, int page_number, struct Page** r_page)
+{
+	// TODO: Evict?
+	assert(pager->page_cache_size < pager->page_cache_capacity);
+
+	int insert_location = find_in_cache(pager, page_number);
+
+	memmove(
+		&pager->page_cache[insert_location + 1],
+		&pager->page_cache[insert_location],
+		sizeof(pager->page_cache[0]) *
+			(pager->page_cache_capacity - insert_location - 1));
+	struct PageCacheKey* pck = &pager->page_cache[insert_location];
+
+	pck->page_id = page_number;
+	pager_page_alloc(pager, &pck->page);
+	pager_page_init(pager, pck->page, page_number);
+	pager_read_page(pager, pck->page);
+
+	pager->page_cache_size += 1;
+
+	*r_page = pck->page;
+
+	return PAGER_OK;
+}
+
+enum pager_e
+pager_load(struct Pager* pager, struct Page** r_page, int page_number)
+{
+	struct PageCacheKey* pck = NULL;
+	int cache_index = 0;
+	cache_index = find_in_cache(pager, page_number);
+	if( cache_index < pager->page_cache_size )
+	{
+		pck = &pager->page_cache[cache_index];
+	}
+
+	if( pck != NULL )
+	{
+		*r_page = pck->page;
+	}
+	else
+	{
+		page_load_into_cache(pager, page_number, r_page);
+	}
+
+	// TODO: Errors
+	return PAGER_OK;
+}
+
 enum pager_e
 pager_alloc(struct Pager** r_pager)
 {
@@ -77,12 +160,30 @@ pager_init(struct Pager* pager, struct PagerOps* ops, int page_size)
 	pager->page_size = page_size;
 	pager->ops = ops;
 
+	pager->page_cache_size = 0;
+	pager->page_cache_capacity = 5;
+	pager->page_cache = (struct PageCacheKey*)malloc(
+		pager->page_cache_capacity * sizeof(struct PageCacheKey));
+	memset(
+		pager->page_cache,
+		0x00,
+		pager->page_cache_capacity * sizeof(struct PageCacheKey));
+
 	return PAGER_OK;
 }
 
 enum pager_e
 pager_deinit(struct Pager* pager)
 {
+	for( int i = 0; i < pager->page_cache_size; i++ )
+	{
+		page_destroy(pager, pager->page_cache[i].page);
+	}
+
+	free(pager->page_cache);
+	pager->page_cache = NULL;
+	pager->page_cache_size = 0;
+
 	return PAGER_OK;
 }
 
@@ -110,6 +211,22 @@ enum pager_e
 pager_close(struct Pager* pager)
 {
 	return pager->ops->close(pager->file);
+}
+
+enum pager_e
+pager_create(struct Pager** r_pager, struct PagerOps* ops, int page_size)
+{
+	enum pager_e pager_result;
+	pager_result = pager_alloc(r_pager);
+	if( pager_result != PAGER_OK )
+		return pager_result;
+
+	// 4Kb
+	pager_result = pager_init(*r_pager, ops, page_size);
+	if( pager_result != PAGER_OK )
+		return pager_result;
+
+	return PAGER_OK;
 }
 
 enum pager_e
