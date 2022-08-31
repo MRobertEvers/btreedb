@@ -2,6 +2,7 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "xaver.clang-format",
     "files.associations": {
-        "pager_ops.h": "c"
+        "pager_ops.h": "c",
+        "page_cache.h": "c"
     },
 }

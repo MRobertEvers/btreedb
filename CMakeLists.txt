@@ -11,6 +11,7 @@ add_executable(db
     src/btree.c
     src/binary_search.c
     src/pager_ops_cstd.c
+    src/page_cache.c
 )
 
 add_executable(test
@@ -21,4 +22,5 @@ add_executable(test
     src/pager_ops_cstd.c
     src/pager_test.c
     src/btree_test.c
+    src/page_cache.c
 )

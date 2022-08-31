@@ -1,6 +1,7 @@
 #include "btree_test.h"
 
 #include "btree.h"
+#include "page_cache.h"
 #include "pager_ops_cstd.h"
 
 #include <stdio.h>
@@ -10,7 +11,10 @@ btree_test_insert_root_with_space()
 {
 	int result = 1;
 	struct Pager* pager;
-	pager_cstd_new(&pager, "test_.db");
+
+	struct PageCache* cache = NULL;
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, cache, "test_.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -51,7 +55,9 @@ btree_test_split_root_node()
 	struct BTreeNode* node = 0;
 
 	struct Pager* pager;
-	pager_cstd_new(&pager, "split_root_node.db");
+	struct PageCache* cache = NULL;
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, NULL, "split_root_node.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -77,7 +83,7 @@ btree_test_split_root_node()
 	if( !found )
 		return 0;
 
-	page_create(tree->pager, &page, cursor->current_page_id);
+	page_create(tree->pager, cursor->current_page_id, &page);
 	pager_read_page(tree->pager, page);
 	btree_node_create_from_page(tree, &node, page);
 

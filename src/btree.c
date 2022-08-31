@@ -119,13 +119,13 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 	struct Page* parent_page = NULL;
 	struct Page* right_page = NULL;
 
-	page_create(tree->pager, &left_page, tree->header->page_high_water);
+	page_create(tree->pager, tree->header->page_high_water, &left_page);
 	btree_node_create_from_page(tree, &left, left_page);
 
-	page_create(tree->pager, &parent_page, node->page_number);
+	page_create(tree->pager, node->page_number, &parent_page);
 	btree_node_create_from_page(tree, &parent, parent_page);
 
-	page_create(tree->pager, &right_page, tree->header->page_high_water + 1);
+	page_create(tree->pager, tree->header->page_high_water + 1, &right_page);
 	btree_node_create_from_page(tree, &right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
@@ -187,7 +187,7 @@ btree_page_create_and_load(
 {
 	enum pager_e pager_status = PAGER_OK;
 
-	pager_status = page_create(tree->pager, r_page, page_number);
+	pager_status = page_create(tree->pager, page_number, r_page);
 	if( pager_status != PAGER_OK )
 		return BTREE_UNK_ERR;
 
@@ -359,7 +359,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 	struct Page* page = NULL;
 	struct BTreeNode* node = NULL;
-	page_create(tree->pager, &page, cursor->current_page_id);
+	page_create(tree->pager, cursor->current_page_id, &page);
 	pager_read_page(tree->pager, page);
 	btree_node_create_from_page(tree, &node, page);
 
@@ -389,7 +389,7 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 	struct BTreeNode* node = NULL;
 	struct CellData cell;
 	btree_node_alloc(cursor->tree, &node);
-	page_create(cursor->tree->pager, &page, 0);
+	page_create(cursor->tree->pager, 0, &page);
 
 	do
 	{

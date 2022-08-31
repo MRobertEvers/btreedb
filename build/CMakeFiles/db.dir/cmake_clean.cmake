@@ -5,6 +5,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/db.dir/src/btree.c.o.d"
   "CMakeFiles/db.dir/src/main.c.o"
   "CMakeFiles/db.dir/src/main.c.o.d"
+  "CMakeFiles/db.dir/src/page_cache.c.o"
+  "CMakeFiles/db.dir/src/page_cache.c.o.d"
   "CMakeFiles/db.dir/src/pager.c.o"
   "CMakeFiles/db.dir/src/pager.c.o.d"
   "CMakeFiles/db.dir/src/pager_ops_cstd.c.o"

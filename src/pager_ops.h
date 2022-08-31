@@ -1,15 +1,7 @@
 #ifndef PAGER_OPS_H_
 #define PAGER_OPS_H_
 
-enum pager_e
-{
-	PAGER_OK,
-	PAGER_UNK_ERR,
-	PAGER_OPEN_ERR,
-	PAGER_SEEK_ERR,
-	PAGER_READ_ERR,
-	PAGER_WRITE_ERR,
-};
+#include "pager_e.h"
 
 struct PagerOps
 {

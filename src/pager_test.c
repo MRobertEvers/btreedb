@@ -1,5 +1,6 @@
 #include "pager_test.h"
 
+#include "page_cache.h"
 #include "pager.h"
 #include "pager_ops_cstd.h"
 
@@ -13,10 +14,12 @@ pager_test_read_write_cstd()
 	char buffer[] = "test_string";
 	int result = 0;
 	struct Pager* pager;
-	pager_cstd_new(&pager, "test_.db");
+	struct PageCache* cache = NULL;
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, cache, "test_.db");
 
 	struct Page* page;
-	page_create(pager, &page, 1);
+	page_create(pager, 1, &page);
 
 	pager_read_page(pager, page);
 
@@ -48,13 +51,15 @@ pager_test_page_loads_caching()
 	char page_filename[] = "test_caching_.db";
 	int result = 0;
 	struct Pager* pager;
-	pager_cstd_new(&pager, page_filename);
+	struct PageCache* cache = NULL;
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, cache, page_filename);
 
 	struct Page* page_one;
-	pager_load(pager, &page_one, 1);
+	pager_load(pager, 1, &page_one);
 
 	struct Page* page_two;
-	pager_load(pager, &page_two, 1);
+	pager_load(pager, 1, &page_two);
 
 	result = page_one->page_buffer == page_two->page_buffer;
 

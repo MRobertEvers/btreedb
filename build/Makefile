@@ -244,6 +244,33 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/main.c.s
 .PHONY : src/main.c.s
 
+src/page_cache.o: src/page_cache.c.o
+.PHONY : src/page_cache.o
+
+# target to build an object file
+src/page_cache.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/page_cache.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/page_cache.c.o
+.PHONY : src/page_cache.c.o
+
+src/page_cache.i: src/page_cache.c.i
+.PHONY : src/page_cache.i
+
+# target to preprocess a source file
+src/page_cache.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/page_cache.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/page_cache.c.i
+.PHONY : src/page_cache.c.i
+
+src/page_cache.s: src/page_cache.c.s
+.PHONY : src/page_cache.s
+
+# target to generate assembly for a file
+src/page_cache.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/page_cache.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/page_cache.c.s
+.PHONY : src/page_cache.c.s
+
 src/pager.o: src/pager.c.o
 .PHONY : src/pager.o
 
@@ -368,6 +395,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/page_cache.o"
+	@echo "... src/page_cache.i"
+	@echo "... src/page_cache.s"
 	@echo "... src/pager.o"
 	@echo "... src/pager.i"
 	@echo "... src/pager.s"

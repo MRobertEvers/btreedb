@@ -14,7 +14,9 @@ main()
 	struct BTree* tree;
 
 	struct Pager* pager;
-	pager_cstd_new(&pager, "test.db");
+	struct PageCache* cache = NULL;
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, cache, "test.db");
 
 	btree_alloc(&tree);
 	btree_init(tree, pager);
