@@ -184,6 +184,28 @@ end:
 }
 
 static enum btree_e
+init_new_root_page(struct BTree* tree, struct Page* page)
+{
+	struct BTreeNode temp_node = {0};
+
+	// TODO: Hack need function to get page id before writing...
+	// That way it wont be "PAGE_NEW" here.
+	page->page_id = 1;
+	btree_node_init_from_page(&temp_node, page);
+
+	struct BTreeHeader* temp_btree_header =
+		(struct BTreeHeader*)page->page_buffer;
+
+	temp_node.header->is_leaf = 1;
+
+	temp_btree_header->page_high_water = 2;
+
+	page->page_id = PAGE_CREATE_NEW_PAGE;
+
+	return BTREE_OK;
+}
+
+static enum btree_e
 btree_init_root_page(struct BTree* tree, struct Page** r_page)
 {
 	enum pager_e pager_status = PAGER_OK;
@@ -216,22 +238,6 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 	{
 		return BTREE_UNK_ERR;
 	}
-}
-
-static enum btree_e
-init_new_root_page(struct BTree* tree, struct Page* page)
-{
-	struct BTreeNode temp_node = {0};
-	btree_node_init_from_page(&temp_node, page);
-
-	struct BTreeHeader* temp_btree_header =
-		(struct BTreeHeader*)page->page_buffer;
-
-	temp_node.header->is_leaf = 1;
-
-	temp_btree_header->page_high_water = 2;
-
-	return BTREE_OK;
 }
 
 static enum btree_e
