@@ -197,17 +197,19 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 	{
 		page_create(tree->pager, PAGE_CREATE_NEW_PAGE, r_page);
 
+		init_new_root(tree, *r_page);
+
 		pager_status = pager_write_page(tree->pager, *r_page);
-		if( pager_status != PAGER_OK )
+		if( pager_status == PAGER_OK )
+		{
+			page_commit(tree->pager, *r_page);
+			return BTREE_OK;
+		}
+		else
 		{
 			page_destroy(tree->pager, *r_page);
 			*r_page = NULL;
 			return BTREE_UNK_ERR;
-		}
-		else
-		{
-			page_commit(tree->pager, *r_page);
-			return BTREE_NEED_ROOT_INIT;
 		}
 	}
 	else
@@ -242,9 +244,7 @@ btree_load_root(struct BTree* tree)
 	struct Page* page = NULL;
 	result = btree_init_root_page(tree, &page);
 
-	if( result == BTREE_NEED_ROOT_INIT )
-		init_new_root(tree, page);
-	else if( result != BTREE_OK )
+	if( result != BTREE_OK )
 		return BTREE_UNK_ERR;
 
 	result = btree_node_create_from_page(tree, &tree->root, page);
