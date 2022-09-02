@@ -197,7 +197,7 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 	{
 		page_create(tree->pager, PAGE_CREATE_NEW_PAGE, r_page);
 
-		init_new_root(tree, *r_page);
+		init_new_root_page(tree, *r_page);
 
 		pager_status = pager_write_page(tree->pager, *r_page);
 		if( pager_status == PAGER_OK )
@@ -219,7 +219,7 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 }
 
 static enum btree_e
-init_new_root(struct BTree* tree, struct Page* page)
+init_new_root_page(struct BTree* tree, struct Page* page)
 {
 	struct BTreeNode temp_node = {0};
 	btree_node_init_from_page(&temp_node, page);
@@ -230,8 +230,6 @@ init_new_root(struct BTree* tree, struct Page* page)
 	temp_node.header->is_leaf = 1;
 
 	temp_btree_header->page_high_water = 2;
-
-	pager_write_page(tree->pager, page);
 
 	return BTREE_OK;
 }
