@@ -75,6 +75,7 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
 void read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
 struct Cursor* create_cursor(struct BTree* tree);
+void destroy_cursor(struct Cursor* cursor);
 
 enum btree_e split_node(struct BTree* tree, struct BTreeNode* node);
 

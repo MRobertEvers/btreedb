@@ -88,12 +88,6 @@ binary_search_keys(
 	return left;
 }
 
-// struct CellData
-// {
-// 	void* pointer;
-// 	int* size;
-// };
-
 void
 read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 {
@@ -211,11 +205,7 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 	enum pager_e pager_status = PAGER_OK;
 
 	pager_status = pager_load(tree->pager, 1, r_page);
-	if( pager_status == PAGER_OK )
-	{
-		return BTREE_OK;
-	}
-	else if( pager_status == PAGER_ERR_NIF )
+	if( pager_status == PAGER_ERR_NIF )
 	{
 		page_create(tree->pager, PAGE_CREATE_NEW_PAGE, r_page);
 
@@ -234,9 +224,13 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 			return BTREE_UNK_ERR;
 		}
 	}
-	else
+	else if( pager_status != PAGER_OK )
 	{
 		return BTREE_UNK_ERR;
+	}
+	else
+	{
+		return BTREE_OK;
 	}
 }
 
@@ -247,7 +241,6 @@ btree_load_root(struct BTree* tree)
 
 	struct Page* page = NULL;
 	result = btree_init_root_page(tree, &page);
-
 	if( result != BTREE_OK )
 		return BTREE_UNK_ERR;
 
@@ -372,6 +365,12 @@ create_cursor(struct BTree* tree)
 	return cursor;
 }
 
+void
+destroy_cursor(struct Cursor* cursor)
+{
+	free(cursor);
+}
+
 enum btree_e
 btree_insert(struct BTree* tree, int key, void* data, int data_size)
 {
@@ -413,7 +412,7 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 	int index = 0;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
-	struct CellData cell;
+	struct CellData cell = {0};
 
 	do
 	{
