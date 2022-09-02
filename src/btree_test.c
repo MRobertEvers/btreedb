@@ -13,6 +13,8 @@ btree_test_insert_root_with_space()
 	struct Pager* pager;
 
 	struct PageCache* cache = NULL;
+	remove("test_.db");
+
 	page_cache_create(&cache, 5);
 	pager_cstd_new(&pager, cache, "test_.db");
 
@@ -56,8 +58,9 @@ btree_test_split_root_node()
 
 	struct Pager* pager;
 	struct PageCache* cache = NULL;
+	remove("split_root_node.db");
 	page_cache_create(&cache, 5);
-	pager_cstd_new(&pager, NULL, "split_root_node.db");
+	pager_cstd_new(&pager, cache, "split_root_node.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -73,7 +76,7 @@ btree_test_split_root_node()
 	split_node(tree, tree->root);
 
 	pager_read_page(tree->pager, tree->root->page);
-	btree_node_init_from_page(tree, tree->root, tree->root->page);
+	btree_node_init_from_page(tree->root, tree->root->page);
 
 	struct Cursor* cursor = create_cursor(tree);
 

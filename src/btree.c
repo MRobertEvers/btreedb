@@ -111,21 +111,21 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 {
 	// TODO: Optimize this
 	// TODO: Free list
+	struct BTreeNode* parent = NULL;
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
-	struct BTreeNode* parent = NULL;
 
-	struct Page* left_page = NULL;
 	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
-
-	page_create(tree->pager, tree->header->page_high_water, &left_page);
-	btree_node_create_from_page(tree, &left, left_page);
 
 	page_create(tree->pager, node->page_number, &parent_page);
 	btree_node_create_from_page(tree, &parent, parent_page);
 
-	page_create(tree->pager, tree->header->page_high_water + 1, &right_page);
+	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &left_page);
+	btree_node_create_from_page(tree, &left, left_page);
+
+	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
 	btree_node_create_from_page(tree, &right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
@@ -145,18 +145,22 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 		}
 	}
 
+	// We need to write the pages out to get the page ids.
+	right->header->is_leaf = 1;
+	left->header->is_leaf = 1;
+	pager_write_page(tree->pager, left_page);
+	pager_write_page(tree->pager, right_page);
+
 	insert_data_into_node(
 		parent,
 		0,
 		left->keys[left->header->num_keys - 1].key,
-		&left->page_number,
+		&left_page->page_id,
 		sizeof(unsigned int));
 
 	parent->header->is_leaf = 0;
-	right->header->is_leaf = 1;
-	left->header->is_leaf = 1;
 
-	parent->header->right_child = right->page_number;
+	parent->header->right_child = right_page->page_id;
 
 	memcpy(
 		get_node_buffer(node),
@@ -165,8 +169,6 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 		get_node_size(parent));
 
 	pager_write_page(tree->pager, node->page);
-	pager_write_page(tree->pager, left->page);
-	pager_write_page(tree->pager, right->page);
 
 end:
 	btree_node_destroy(tree, left);
@@ -182,18 +184,52 @@ end:
 }
 
 static enum btree_e
-btree_page_create_and_load(
-	struct BTree* tree, struct Page** r_page, int page_number)
+btree_init_root_page(struct BTree* tree, struct Page** r_page)
 {
 	enum pager_e pager_status = PAGER_OK;
 
-	pager_status = page_create(tree->pager, page_number, r_page);
-	if( pager_status != PAGER_OK )
-		return BTREE_UNK_ERR;
+	pager_status = pager_load(tree->pager, 1, r_page);
+	if( pager_status == PAGER_OK )
+	{
+		return BTREE_OK;
+	}
+	else if( pager_status == PAGER_ERR_NIF )
+	{
+		page_create(tree->pager, PAGE_CREATE_NEW_PAGE, r_page);
 
-	pager_status = pager_read_page(tree->pager, *r_page);
-	if( pager_status != PAGER_OK )
+		pager_status = pager_write_page(tree->pager, *r_page);
+		if( pager_status != PAGER_OK )
+		{
+			page_destroy(tree->pager, *r_page);
+			*r_page = NULL;
+			return BTREE_UNK_ERR;
+		}
+		else
+		{
+			page_commit(tree->pager, *r_page);
+			return BTREE_NEED_ROOT_INIT;
+		}
+	}
+	else
+	{
 		return BTREE_UNK_ERR;
+	}
+}
+
+static enum btree_e
+init_new_root(struct BTree* tree, struct Page* page)
+{
+	struct BTreeNode temp_node = {0};
+	btree_node_init_from_page(&temp_node, page);
+
+	struct BTreeHeader* temp_btree_header =
+		(struct BTreeHeader*)page->page_buffer;
+
+	temp_node.header->is_leaf = 1;
+
+	temp_btree_header->page_high_water = 2;
+
+	pager_write_page(tree->pager, page);
 
 	return BTREE_OK;
 }
@@ -204,9 +240,12 @@ btree_load_root(struct BTree* tree)
 	enum btree_e result = BTREE_OK;
 
 	struct Page* page = NULL;
-	result = btree_page_create_and_load(tree, &page, 1);
-	if( result != BTREE_OK )
-		return result;
+	result = btree_init_root_page(tree, &page);
+
+	if( result == BTREE_NEED_ROOT_INIT )
+		init_new_root(tree, page);
+	else if( result != BTREE_OK )
+		return BTREE_UNK_ERR;
 
 	result = btree_node_create_from_page(tree, &tree->root, page);
 	if( result != BTREE_OK )
@@ -236,8 +275,7 @@ btree_node_deinit(struct BTreeNode* node)
 }
 
 enum btree_e
-btree_node_init_from_page(
-	struct BTree* tree, struct BTreeNode* node, struct Page* page)
+btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 {
 	int offset = page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
 	void* data = ((char*)page->page_buffer) + offset;
@@ -256,12 +294,7 @@ btree_node_create_from_page(
 	struct BTree* tree, struct BTreeNode** r_node, struct Page* page)
 {
 	btree_node_alloc(tree, r_node);
-	btree_node_init_from_page(tree, *r_node, page);
-	// struct BTreeNode* node = *r_node;
-	// if( !node->header->persisted )
-	// {
-	// 	node->header->is_leaf = 1;
-	// }
+	btree_node_init_from_page(*r_node, page);
 
 	return BTREE_OK;
 }
@@ -292,17 +325,6 @@ enum btree_e
 btree_init_from_root_node(struct BTree* tree, struct BTreeNode* root)
 {
 	tree->header = (struct BTreeHeader*)root->page->page_buffer;
-	// TODO: We are using the high water as a trick to see if this page
-	// was initialized already...
-	if( !tree->header->page_high_water )
-	{
-		root->header->is_leaf = 1;
-
-		tree->header->page_high_water = 2;
-
-		// TODO: Eventually use a pager page cache.
-		pager_write_page(tree->pager, tree->root->page);
-	}
 
 	return BTREE_OK;
 }
@@ -375,7 +397,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	if( cursor->current_page_id == tree->root->page_number )
 	{
 		pager_read_page(tree->pager, tree->root->page);
-		btree_node_init_from_page(tree, tree->root, tree->root->page);
+		btree_node_init_from_page(tree->root, tree->root->page);
 	}
 
 	return BTREE_OK;
@@ -386,41 +408,34 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 {
 	int index = 0;
 	struct Page* page = NULL;
-	struct BTreeNode* node = NULL;
+	struct BTreeNode node = {0};
 	struct CellData cell;
-	btree_node_alloc(cursor->tree, &node);
-	page_create(cursor->tree->pager, 0, &page);
 
 	do
 	{
-		page->page_id = cursor->current_page_id;
-		pager_read_page(cursor->tree->pager, page);
-		btree_node_init_from_page(cursor->tree, node, page);
+		pager_load(cursor->tree->pager, cursor->current_page_id, &page);
+		btree_node_init_from_page(&node, page);
 
 		index =
-			binary_search_keys(node->keys, node->header->num_keys, key, found);
+			binary_search_keys(node.keys, node.header->num_keys, key, found);
 
-		if( node->header->is_leaf )
+		if( node.header->is_leaf )
 		{
-			// return index
 			cursor->current_key = index;
 		}
 		else
 		{
-			if( index == node->header->num_keys )
+			if( index == node.header->num_keys )
 			{
-				cursor->current_page_id = node->header->right_child;
+				cursor->current_page_id = node.header->right_child;
 			}
 			else
 			{
-				read_cell(node, index, &cell);
+				read_cell(&node, index, &cell);
 				memcpy(&cursor->current_page_id, cell.pointer, *cell.size);
 			}
 		}
-	} while( !node->header->is_leaf );
-
-	page_destroy(cursor->tree->pager, page);
-	btree_node_dealloc(node);
+	} while( !node.header->is_leaf );
 
 	return BTREE_OK;
 }

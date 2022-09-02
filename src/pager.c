@@ -60,6 +60,20 @@ page_destroy(struct Pager* pager, struct Page* page)
 }
 
 enum pager_e
+page_commit(struct Pager* pager, struct Page* page)
+{
+	assert(page->page_id != 0);
+
+	struct Page* evicted_page = NULL;
+	page_cache_insert(pager->cache, page, &evicted_page);
+
+	if( evicted_page != NULL )
+		page_destroy(pager, evicted_page);
+
+	return PAGER_OK;
+}
+
+enum pager_e
 pager_load(struct Pager* pager, int page_number, struct Page** r_page)
 {
 	enum pager_e result = PAGER_OK;
@@ -70,13 +84,17 @@ pager_load(struct Pager* pager, int page_number, struct Page** r_page)
 	{
 		// Load the page
 		page_create(pager, page_number, r_page);
-		pager_read_page(pager, *r_page);
-
-		struct Page* evicted_page = NULL;
-		page_cache_insert(pager->cache, *r_page, &evicted_page);
-
-		if( evicted_page != NULL )
-			page_destroy(pager, evicted_page);
+		result = pager_read_page(pager, *r_page);
+		if( result == PAGER_READ_ERR )
+		{
+			page_destroy(pager, *r_page);
+			return PAGER_ERR_NIF;
+		}
+		else
+		{
+			page_commit(pager, *r_page);
+			return PAGER_OK;
+		}
 	}
 
 	return PAGER_OK;
@@ -181,13 +199,6 @@ pager_read_page(struct Pager* pager, struct Page* page)
 	int pages_read;
 	enum pager_e pager_result;
 
-	if( page->page_id > pager->max_page )
-	{
-		// Hack
-		pager->ops->write(
-			pager->file, "", page->page_id * pager->page_size, 1, &pages_read);
-	}
-
 	// TODO: Wait for result.
 	page->loaded = 1;
 
@@ -200,8 +211,17 @@ enum pager_e
 pager_write_page(struct Pager* pager, struct Page* page)
 {
 	assert(pager->ops);
-	int offset = pager->page_size * (page->page_id - 1);
 	int write_result;
+	int offset;
+
+	if( page->page_id == PAGE_CREATE_NEW_PAGE )
+	{
+		page->page_id = pager->max_page + 1;
+
+		pager->max_page += 1;
+	}
+
+	offset = pager->page_size * (page->page_id - 1);
 
 	pager->ops->write(
 		pager->file,

@@ -5,6 +5,7 @@ enum pager_e
 {
 	PAGER_OK,
 	PAGER_ERR_CACHE_MISS,
+	PAGER_ERR_NIF, // Not in file
 	PAGER_UNK_ERR,
 	PAGER_OPEN_ERR,
 	PAGER_SEEK_ERR,

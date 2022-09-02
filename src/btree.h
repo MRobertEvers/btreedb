@@ -9,6 +9,7 @@ enum btree_e
 {
 	BTREE_ERR_CHILD_OVERWRITE,
 	BTREE_OK,
+	BTREE_NEED_ROOT_INIT,
 	BTREE_UNK_ERR,
 	BTREE_NEED_ALLOC,
 	BTREE_NEED_PAGE
@@ -68,8 +69,8 @@ struct CellData
 	int* size;
 };
 
-enum btree_e btree_node_init_from_page(
-	struct BTree* tree, struct BTreeNode* node, struct Page* page);
+enum btree_e
+btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
 
 void read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
