@@ -19,7 +19,7 @@ struct Pager
 };
 
 /**
- * @brief Does not use cache
+ * @brief Creates a new non-loaded page object.
  *
  * !Attention! Use commit or destroy when done!
  *
@@ -30,6 +30,17 @@ struct Pager
  */
 enum pager_e
 page_create(struct Pager* pager, int page_id, struct Page** r_page);
+
+/**
+ * @brief Selects the page_id; DOES NOT LOAD THE PAGE.
+ *
+ * Use this for switch which page you want to read.
+ *
+ * @param page
+ * @param r_page
+ * @return enum pager_e
+ */
+enum pager_e page_reselect(struct Page* page, int page_id);
 
 /**
  * @brief Release page; Takes ownership of page

@@ -387,8 +387,7 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 	page_create(cursor->tree->pager, cursor->current_page_id, &page);
 	do
 	{
-		// TODO: Clean this up.
-		page->page_id = cursor->current_page_id;
+		page_reselect(page, cursor->current_page_id);
 		pager_read_page(cursor->tree->pager, page);
 		btree_node_init_from_page(&node, page);
 

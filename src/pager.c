@@ -25,6 +25,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 {
 	memset(page, 0x00, sizeof(*page));
 	page->page_id = page_id;
+	page->loaded = 0;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
 
@@ -46,7 +47,14 @@ page_create(struct Pager* pager, int page_number, struct Page** r_page)
 	pager_page_alloc(pager, r_page);
 	pager_page_init(pager, *r_page, page_number);
 
-	// TODO: Errors
+	return PAGER_OK;
+}
+
+enum pager_e
+page_reselect(struct Page* page, int page_id)
+{
+	page->loaded = 0;
+	page->page_id = page_id;
 	return PAGER_OK;
 }
 
