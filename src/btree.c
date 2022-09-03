@@ -157,10 +157,7 @@ split_node(struct BTree* tree, struct BTreeNode* node)
 	parent->header->right_child = right_page->page_id;
 
 	memcpy(
-		get_node_buffer(node),
-		get_node_buffer(parent),
-		// TODO: Offset must be the same...
-		get_node_size(parent));
+		get_node_buffer(node), get_node_buffer(parent), get_node_size(parent));
 
 	pager_write_page(tree->pager, node->page);
 
@@ -235,23 +232,6 @@ btree_init_root_page(struct BTree* tree, struct Page** r_page)
 }
 
 static enum btree_e
-btree_load_root(struct BTree* tree)
-{
-	enum btree_e result = BTREE_OK;
-
-	struct Page* page = NULL;
-	result = btree_init_root_page(tree, &page);
-	if( result != BTREE_OK )
-		return BTREE_UNK_ERR;
-
-	result = btree_node_create_from_page(tree, &tree->root, page);
-	if( result != BTREE_OK )
-		return result;
-
-	return BTREE_OK;
-}
-
-static enum btree_e
 btree_node_alloc(struct BTree* tree, struct BTreeNode** r_node)
 {
 	*r_node = (struct BTreeNode*)malloc(sizeof(struct BTreeNode));
@@ -318,31 +298,28 @@ btree_dealloc(struct BTree* tree)
 	return BTREE_OK;
 }
 
-enum btree_e
-btree_init_from_root_node(struct BTree* tree, struct BTreeNode* root)
-{
-	tree->header = (struct BTreeHeader*)root->page->page_buffer;
-
-	return BTREE_OK;
-}
+/**
+ * @brief Load the root page into memory and read out information from the btree
+ * header.
+ *
+ * @param tree
+ * @return enum btree_e
+ */
 
 enum btree_e
 btree_init(struct BTree* tree, struct Pager* pager)
 {
 	enum btree_e btree_result = BTREE_OK;
 
-	tree->root = 0;
+	tree->root_page_id = 1;
 	tree->pager = pager;
 
-	// TODO: This uses functions that rely on the btree_init being already
-	// completed.
-	btree_result = btree_load_root(tree);
+	struct Page* page = NULL;
+	btree_result = btree_init_root_page(tree, &page);
 	if( btree_result != BTREE_OK )
-		return btree_result;
+		return BTREE_UNK_ERR;
 
-	btree_result = btree_init_from_root_node(tree, tree->root);
-	if( btree_result != BTREE_OK )
-		return btree_result;
+	tree->header = *(struct BTreeHeader*)page->page_buffer;
 
 	return BTREE_OK;
 }
@@ -361,7 +338,7 @@ create_cursor(struct BTree* tree)
 
 	cursor->tree = tree;
 	cursor->current_key = 0;
-	cursor->current_page_id = tree->root->page_number;
+	cursor->current_page_id = tree->root_page_id;
 	return cursor;
 }
 
@@ -395,13 +372,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 	btree_node_destroy(tree, node);
 	page_destroy(tree->pager, page);
-
-	// TODO: Hack; eventually use page cache
-	if( cursor->current_page_id == tree->root->page_number )
-	{
-		pager_read_page(tree->pager, tree->root->page);
-		btree_node_init_from_page(tree->root, tree->root->page);
-	}
 
 	return BTREE_OK;
 }

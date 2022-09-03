@@ -43,16 +43,24 @@ struct BTreeNode
 	struct Page* page; // Page backing this node.
 };
 
+enum btree_type
+{
+	bplus_tree,
+	btree
+};
+
 struct BTreeHeader
 {
 	int page_high_water;
+	enum btree_type type;
 };
 
 struct BTree
 {
-	struct BTreeHeader* header;
+	struct BTreeHeader header;
 	struct Pager* pager;
-	struct BTreeNode* root;
+
+	int root_page_id;
 };
 
 struct Cursor
@@ -63,6 +71,11 @@ struct Cursor
 	int current_key;
 };
 
+/**
+ * @brief Unlike CellKey; this does not contain the actual data. Only a
+ * reference to the data.
+ *
+ */
 struct CellData
 {
 	void* pointer;

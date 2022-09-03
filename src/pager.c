@@ -221,6 +221,17 @@ pager_write_page(struct Pager* pager, struct Page* page)
 		pager->max_page += 1;
 	}
 
+	// TODO: Hack - all writes also write to disk.
+	// Some reads are from cache... need to think this through.
+	struct Page* cached_page;
+	enum pager_e cache_result =
+		page_cache_acquire(pager->cache, page->page_id, &cached_page);
+	if( cache_result == PAGER_OK )
+	{
+		memcpy(cached_page->page_buffer, page->page_buffer, pager->page_size);
+		page_cache_release(pager->cache, cached_page);
+	}
+
 	offset = pager->page_size * (page->page_id - 1);
 
 	pager->ops->write(
@@ -229,8 +240,6 @@ pager_write_page(struct Pager* pager, struct Page* page)
 		offset,
 		pager->page_size,
 		&write_result);
-
-	pager->max_page = pager->ops->size(pager->file) / 0x1000;
 
 	return PAGER_OK;
 }

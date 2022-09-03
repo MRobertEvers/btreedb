@@ -103,7 +103,7 @@ page_cache_release(struct PageCache* cache, struct Page* page)
 	{
 		struct PageCacheKey* pck = &cache->pages[cache_index];
 
-		pck->ref -= 1;
+		pck->ref -= pck->ref != 0 ? 1 : 0;
 
 		return PAGER_OK;
 	}
