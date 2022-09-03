@@ -40,17 +40,6 @@ page_create(struct Pager* pager, int page_id, struct Page** r_page);
  */
 enum pager_e page_destroy(struct Pager* pager, struct Page* page);
 
-/**
- * @brief Commit new pages; Takes ownership of page
- *
- * Page MUST be written to disk prior to commit.
- *
- * @param pager
- * @param page
- * @return enum pager_e
- */
-enum pager_e page_commit(struct Pager* pager, struct Page* page);
-
 enum pager_e pager_open(struct Pager*, char*);
 enum pager_e pager_close(struct Pager*);
 

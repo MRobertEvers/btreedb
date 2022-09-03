@@ -59,7 +59,16 @@ page_destroy(struct Pager* pager, struct Page* page)
 	return PAGER_OK;
 }
 
-enum pager_e
+/**
+ * @brief Commit new pages; Takes ownership of page
+ *
+ * Page MUST be written to disk prior to commit.
+ *
+ * @param pager
+ * @param page
+ * @return enum pager_e
+ */
+static enum pager_e
 page_commit(struct Pager* pager, struct Page* page)
 {
 	assert(page->page_id != 0);
