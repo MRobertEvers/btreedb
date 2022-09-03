@@ -100,6 +100,16 @@ read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 	cell->pointer = &cell->size[1];
 }
 
+/**
+ * @brief B+ Tree split node algorithm
+ *
+ * Create a parent and right child node; keep a copy of the key in
+ * the parent, keep a key and value in child
+ *
+ * @param tree
+ * @param node
+ * @return enum btree_e
+ */
 enum btree_e
 split_node(struct BTree* tree, struct BTreeNode* node)
 {
