@@ -51,8 +51,6 @@ enum pager_e page_destroy(struct Pager* pager, struct Page* page);
  */
 enum pager_e page_commit(struct Pager* pager, struct Page* page);
 
-enum pager_e pager_load(struct Pager*, int, struct Page**);
-
 enum pager_e pager_open(struct Pager*, char*);
 enum pager_e pager_close(struct Pager*);
 

@@ -197,27 +197,26 @@ init_new_root_page(struct BTree* tree, struct Page* page)
 }
 
 static enum btree_e
-btree_init_root_page(struct BTree* tree, struct Page** r_page)
+btree_init_root_page(struct BTree* tree, struct Page* page)
 {
 	enum pager_e pager_status = PAGER_OK;
 
-	pager_status = pager_load(tree->pager, 1, r_page);
+	// TODO: Clean up this read page stuff
+	page->page_id = 1;
+	pager_status = pager_read_page(tree->pager, page);
 	if( pager_status == PAGER_ERR_NIF )
 	{
-		page_create(tree->pager, PAGE_CREATE_NEW_PAGE, r_page);
+		page->page_id = PAGE_CREATE_NEW_PAGE;
 
-		init_new_root_page(tree, *r_page);
+		init_new_root_page(tree, page);
 
-		pager_status = pager_write_page(tree->pager, *r_page);
+		pager_status = pager_write_page(tree->pager, page);
 		if( pager_status == PAGER_OK )
 		{
-			page_commit(tree->pager, *r_page);
 			return BTREE_OK;
 		}
 		else
 		{
-			page_destroy(tree->pager, *r_page);
-			*r_page = NULL;
 			return BTREE_UNK_ERR;
 		}
 	}
@@ -315,7 +314,8 @@ btree_init(struct BTree* tree, struct Pager* pager)
 	tree->pager = pager;
 
 	struct Page* page = NULL;
-	btree_result = btree_init_root_page(tree, &page);
+	page_create(tree->pager, 1, &page);
+	btree_result = btree_init_root_page(tree, page);
 	if( btree_result != BTREE_OK )
 		return BTREE_UNK_ERR;
 
@@ -384,9 +384,12 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 	struct BTreeNode node = {0};
 	struct CellData cell = {0};
 
+	page_create(cursor->tree->pager, cursor->current_page_id, &page);
 	do
 	{
-		pager_load(cursor->tree->pager, cursor->current_page_id, &page);
+		// TODO: Clean this up.
+		page->page_id = cursor->current_page_id;
+		pager_read_page(cursor->tree->pager, page);
 		btree_node_init_from_page(&node, page);
 
 		index =
@@ -409,6 +412,8 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 			}
 		}
 	} while( !node.header->is_leaf );
+
+	page_destroy(cursor->tree->pager, page);
 
 	return BTREE_OK;
 }

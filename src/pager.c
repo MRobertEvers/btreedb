@@ -73,31 +73,20 @@ page_commit(struct Pager* pager, struct Page* page)
 	return PAGER_OK;
 }
 
-enum pager_e
-pager_load(struct Pager* pager, int page_number, struct Page** r_page)
+static enum pager_e
+read_from_disk(struct Pager* pager, struct Page* page)
 {
-	enum pager_e result = PAGER_OK;
+	assert(pager->ops);
+	assert(page->page_id);
 
-	result = page_cache_acquire(pager->cache, page_number, r_page);
+	int offset = pager->page_size * (page->page_id - 1);
+	int pages_read;
+	enum pager_e pager_result;
 
-	if( result == PAGER_ERR_CACHE_MISS )
-	{
-		// Load the page
-		page_create(pager, page_number, r_page);
-		result = pager_read_page(pager, *r_page);
-		if( result == PAGER_READ_ERR )
-		{
-			page_destroy(pager, *r_page);
-			return PAGER_ERR_NIF;
-		}
-		else
-		{
-			page_commit(pager, *r_page);
-			return PAGER_OK;
-		}
-	}
+	pager_result = pager->ops->read(
+		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
 
-	return PAGER_OK;
+	return pager_result;
 }
 
 enum pager_e
@@ -192,19 +181,35 @@ pager_destroy(struct Pager* pager)
 enum pager_e
 pager_read_page(struct Pager* pager, struct Page* page)
 {
-	assert(pager->ops);
 	assert(page->page_id);
 
-	int offset = pager->page_size * (page->page_id - 1);
-	int pages_read;
-	enum pager_e pager_result;
+	struct Page* cached_page = NULL;
+	enum pager_e result =
+		page_cache_acquire(pager->cache, page->page_id, &cached_page);
+	if( result == PAGER_ERR_CACHE_MISS )
+	{
+		page_create(pager, page->page_id, &cached_page);
+		result = read_from_disk(pager, cached_page);
+		if( result == PAGER_READ_ERR )
+		{
+			page_destroy(pager, cached_page);
+			result = PAGER_ERR_NIF;
+		}
+		else
+		{
+			page_commit(pager, cached_page);
+			result = PAGER_OK;
+		}
+	}
 
-	// TODO: Wait for result.
-	page->loaded = 1;
+	if( result == PAGER_OK )
+	{
+		memcpy(page->page_buffer, cached_page->page_buffer, pager->page_size);
+		page->loaded = 1;
+		page_cache_release(pager->cache, cached_page);
+	}
 
-	pager_result = pager->ops->read(
-		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
-	return pager_result;
+	return result;
 }
 
 enum pager_e

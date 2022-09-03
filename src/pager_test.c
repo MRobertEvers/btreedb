@@ -15,6 +15,7 @@ pager_test_read_write_cstd()
 	int result = 0;
 	struct Pager* pager;
 	struct PageCache* cache = NULL;
+	remove("test_.db");
 	page_cache_create(&cache, 5);
 	pager_cstd_new(&pager, cache, "test_.db");
 
@@ -56,12 +57,17 @@ pager_test_page_loads_caching()
 	pager_cstd_new(&pager, cache, page_filename);
 
 	struct Page* page_one;
-	pager_load(pager, 1, &page_one);
+	page_create(pager, 1, &page_one);
+	pager_read_page(pager, page_one);
 
 	struct Page* page_two;
-	pager_load(pager, 1, &page_two);
+	page_create(pager, 1, &page_two);
+	pager_read_page(pager, page_two);
 
-	result = page_one->page_buffer == page_two->page_buffer;
+	result =
+		memcmp(
+			page_one->page_buffer, page_two->page_buffer, pager->page_size) ==
+		0;
 
 end:
 	remove(page_filename);
