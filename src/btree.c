@@ -35,6 +35,13 @@ insert_data_into_node(
 	void* data,
 	int data_size)
 {
+	// Size check
+	int size_needed = data_size + sizeof(struct BTreePageKey);
+	if( node->header->free_heap < size_needed )
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+	node->header->free_heap -= size_needed;
+
+	// The Raw insertion
 	memmove(
 		&node->keys[index + 1],
 		&node->keys[index],
@@ -269,6 +276,10 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 	node->header = (struct BTreePageHeader*)data;
 	// Trick to get a pointer to the address immediately after the header.
 	node->keys = (struct BTreePageKey*)&node->header[1];
+
+	// TODO: Don't hardcode page size
+	if( node->header->num_keys == 0 )
+		node->header->free_heap = 0x1000 - sizeof(struct BTreePageHeader);
 
 	return BTREE_OK;
 }

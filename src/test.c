@@ -17,6 +17,8 @@ main()
 	printf("insert page: %d\n", result);
 	result = btree_test_split_root_node();
 	printf("split root node: %d\n", result);
+	result = btree_test_free_heap_calcs();
+	printf("free heap calcs: %d\n", result);
 
 	return 0;
 }

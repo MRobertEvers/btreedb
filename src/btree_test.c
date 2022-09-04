@@ -132,3 +132,51 @@ end:
 
 	return 1;
 }
+
+int
+btree_test_free_heap_calcs()
+{
+	int result = 1;
+	struct Pager* pager;
+
+	struct PageCache* cache = NULL;
+	remove("test_free_heap.db");
+
+	page_cache_create(&cache, 5);
+	pager_cstd_new(&pager, cache, "test_free_heap.db");
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	btree_init(tree, pager);
+
+	char billy[] = "billy";
+	char ruth[] = "ruth";
+	btree_insert(tree, 12, billy, sizeof(billy));
+
+	// Get the root node
+	struct Page* raw_page;
+	page_create(pager, tree->root_page_id, &raw_page);
+	pager_read_page(pager, raw_page);
+
+	struct BTreeNode* raw_node;
+	btree_node_create_from_page(tree, &raw_node, raw_page);
+
+	int free_heap_billy = raw_node->header->free_heap;
+
+	btree_insert(tree, 1, ruth, sizeof(ruth));
+
+	pager_read_page(pager, raw_page);
+	btree_node_create_from_page(tree, &raw_node, raw_page);
+
+	if( free_heap_billy - raw_node->header->free_heap !=
+		sizeof(ruth) + sizeof(struct BTreePageKey) )
+		result = 0;
+
+end:
+	btree_node_destroy(tree, raw_node);
+	page_destroy(pager, raw_page);
+	btree_deinit(tree);
+	btree_dealloc(tree);
+	remove("test_free_heap.db");
+	return result;
+}

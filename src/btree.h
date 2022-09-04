@@ -9,6 +9,7 @@ enum btree_e
 {
 	BTREE_ERR_CHILD_OVERWRITE,
 	BTREE_OK,
+	BTREE_ERR_NODE_NOT_ENOUGH_SPACE,
 	BTREE_NEED_ROOT_INIT,
 	BTREE_UNK_ERR,
 	BTREE_NEED_ALLOC,
@@ -19,6 +20,7 @@ struct BTreePageHeader
 {
 	char is_leaf;
 	char persisted;
+	unsigned int free_heap;
 	unsigned int num_keys;
 	unsigned int right_child;
 
