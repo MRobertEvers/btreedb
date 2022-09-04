@@ -2,6 +2,7 @@
 
 #include "binary_search.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,7 +37,7 @@ insert_data_into_node(
 	int data_size)
 {
 	// Size check
-	int size_needed = data_size + sizeof(struct BTreePageKey);
+	int size_needed = calc_cell_size(data_size) + sizeof(struct BTreePageKey);
 	if( node->header->free_heap < size_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 	node->header->free_heap -= size_needed;
@@ -110,7 +111,7 @@ read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 /**
  * @brief B+ Tree split node algorithm
  *
- * Create a parent and right child node; keep a copy of the key in
+ * Create a left and right child node; keep a copy of the key in
  * the parent, keep a key and value in child
  *
  * @param tree
@@ -187,6 +188,68 @@ end:
 
 	btree_node_destroy(tree, parent);
 	page_destroy(tree->pager, parent_page);
+
+	return BTREE_OK;
+}
+
+struct SplitPage
+{
+	int right_page_id;
+	int right_page_low_key;
+};
+
+static enum btree_e
+split_node2(
+	struct BTree* tree, struct BTreeNode* node, struct SplitPage* split_page)
+{
+	struct BTreeNode* left = NULL;
+	struct BTreeNode* right = NULL;
+
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+
+	page_create(tree->pager, node->page_number, &left_page);
+	btree_node_create_from_page(tree, &left, left_page);
+
+	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
+	btree_node_create_from_page(tree, &right, right_page);
+
+	int first_half = ((node->header->num_keys + 1) / 2);
+	for( int i = 0; i < node->header->num_keys; i++ )
+	{
+		struct CellData cell = {0};
+		int key = node->keys[i].key;
+		read_cell(node, i, &cell);
+		if( i < first_half )
+		{
+			insert_data_into_node(left, i, key, cell.pointer, *cell.size);
+		}
+		else
+		{
+			insert_data_into_node(
+				right, (i - first_half), key, cell.pointer, *cell.size);
+		}
+	}
+
+	// We need to write the pages out to get the page ids.
+	right->header->is_leaf = 1;
+	left->header->is_leaf = 1;
+	pager_write_page(tree->pager, left_page);
+	pager_write_page(tree->pager, right_page);
+
+	memcpy(get_node_buffer(node), get_node_buffer(left), get_node_size(left));
+	// TODO: Get rid of page number
+	node->page_number = left_page->page_id;
+
+	split_page->right_page_id = right_page->page_id;
+	split_page->right_page_low_key = right->keys[0].key;
+
+end:
+	btree_node_destroy(tree, left);
+	page_destroy(tree->pager, left_page);
+
+	btree_node_destroy(tree, right);
+	page_destroy(tree->pager, right_page);
 
 	return BTREE_OK;
 }
@@ -355,6 +418,8 @@ create_cursor(struct BTree* tree)
 {
 	struct Cursor* cursor = (struct Cursor*)malloc(sizeof(struct Cursor));
 
+	memset(cursor, 0x00, sizeof(*cursor));
+
 	cursor->tree = tree;
 	cursor->current_key = 0;
 	cursor->current_page_id = tree->root_page_id;
@@ -365,6 +430,96 @@ void
 destroy_cursor(struct Cursor* cursor)
 {
 	free(cursor);
+}
+
+enum btree_e
+cursor_select_parent(struct Cursor* cursor)
+{
+	if( cursor->breadcrumbs_size == 0 )
+		return BTREE_ERR_CURSOR_NO_PARENT;
+
+	struct CursorBreadcrumb* crumb =
+		&cursor->breadcrumbs[cursor->breadcrumbs_size--];
+	cursor->current_page_id = crumb->page_id;
+	cursor->current_key = crumb->key;
+
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_insert2(struct BTree* tree, int key, void* data, int data_size)
+{
+	enum btree_e result = BTREE_OK;
+	int index = 0;
+	char found = 0;
+	struct Page* page = NULL;
+	struct BTreeNode* node = NULL;
+	struct Cursor* cursor = create_cursor(tree);
+
+	index = btree_traverse_to(cursor, key, &found);
+
+	page_create(tree->pager, cursor->current_page_id, &page);
+	while( 1 )
+	{
+		page_reselect(page, cursor->current_page_id);
+		pager_read_page(tree->pager, page);
+		// TODO: Don't need to alloc in loop.
+		btree_node_create_from_page(tree, &node, page);
+
+		result = insert_data_into_node(
+			node, cursor->current_key, key, data, data_size);
+		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		{
+			if( node->page->page_id != 1 )
+			{
+				struct SplitPage split_result;
+				split_node2(tree, node, &split_result);
+
+				if( key >= split_result.right_page_low_key )
+				{
+					page_reselect(page, split_result.right_page_id);
+					pager_read_page(tree->pager, page);
+					btree_node_init_from_page(node, page);
+				}
+
+				int new_insert_index = binary_search_keys(
+					node->keys, node->header->num_keys, key, &found);
+				insert_data_into_node(
+					node, new_insert_index, key, data, data_size);
+
+				// Args for next iteration
+				result = cursor_select_parent(cursor);
+				if( result == BTREE_ERR_CURSOR_NO_PARENT )
+					assert(0);
+
+				key = cursor->current_key;
+				data = (void*)split_result.right_page_id;
+				data_size = sizeof(split_result.right_page_id);
+
+				btree_node_destroy(tree, node);
+			}
+			else
+			{
+				// TODO:
+				// This split_node uses the input node as the parent.
+				// split_node_stable
+				split_node(tree, node);
+				btree_node_destroy(tree, node);
+				goto end;
+			}
+		}
+		else
+		{
+			pager_write_page(tree->pager, page);
+			btree_node_destroy(tree, node);
+			break;
+		}
+	}
+
+end:
+	destroy_cursor(cursor);
+	page_destroy(tree->pager, page);
+	return BTREE_OK;
 }
 
 enum btree_e
@@ -383,6 +538,27 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	page_create(tree->pager, cursor->current_page_id, &page);
 	pager_read_page(tree->pager, page);
 	btree_node_create_from_page(tree, &node, page);
+
+	// TODO: Insert w/ split if not enough space
+
+	// start:
+	//
+	// insert_data_into_node(insert_page, data)
+	//
+	// if not space
+	//
+	// 	insert_page = cursor->current_page
+	//  parent_page => parent
+	//  # INSERT_AND_PROPAGATE:
+	// 	(current{left}, right) => split_node(insert_page) // left and right are
+	// already on disk.
+	//  insert_data_into_node(left_or_right, data)
+	//  data = right->key
+	//  insert_page = insert_page->parent
+	//  goto start;
+	//
+	//
+	//  parent = cursor-> (parent of current page)
 
 	result =
 		insert_data_into_node(node, cursor->current_key, key, data, data_size);
@@ -406,6 +582,12 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 	page_create(cursor->tree->pager, cursor->current_page_id, &page);
 	do
 	{
+		struct CursorBreadcrumb* crumb =
+			&cursor->breadcrumbs[cursor->breadcrumbs_size];
+		crumb->key = cursor->current_key;
+		crumb->page_id = cursor->current_page_id;
+		cursor->breadcrumbs_size++;
+
 		page_reselect(page, cursor->current_page_id);
 		pager_read_page(cursor->tree->pager, page);
 		btree_node_init_from_page(&node, page);
@@ -413,11 +595,9 @@ btree_traverse_to(struct Cursor* cursor, int key, char* found)
 		index =
 			binary_search_keys(node.keys, node.header->num_keys, key, found);
 
-		if( node.header->is_leaf )
-		{
-			cursor->current_key = index;
-		}
-		else
+		cursor->current_key = index;
+
+		if( !node.header->is_leaf )
 		{
 			if( index == node.header->num_keys )
 			{

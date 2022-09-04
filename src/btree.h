@@ -10,6 +10,7 @@ enum btree_e
 	BTREE_ERR_CHILD_OVERWRITE,
 	BTREE_OK,
 	BTREE_ERR_NODE_NOT_ENOUGH_SPACE,
+	BTREE_ERR_CURSOR_NO_PARENT,
 	BTREE_NEED_ROOT_INIT,
 	BTREE_UNK_ERR,
 	BTREE_NEED_ALLOC,
@@ -65,12 +66,22 @@ struct BTree
 	int root_page_id;
 };
 
+// This is like "TID" in postgres
+struct CursorBreadcrumb
+{
+	int key;
+	int page_id;
+};
+
 struct Cursor
 {
 	struct BTree* tree;
 	int current_page_id;
 
 	int current_key;
+
+	struct CursorBreadcrumb breadcrumbs[8]; // TODO: Dynamic?
+	int breadcrumbs_size;
 };
 
 /**
@@ -91,6 +102,7 @@ void read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
 struct Cursor* create_cursor(struct BTree* tree);
 void destroy_cursor(struct Cursor* cursor);
+enum btree_e cursor_select_parent(struct Cursor* cursor);
 
 enum btree_e split_node(struct BTree* tree, struct BTreeNode* node);
 
@@ -103,6 +115,7 @@ enum btree_e btree_dealloc(struct BTree*);
 enum btree_e btree_init(struct BTree* tree, struct Pager* pager);
 enum btree_e btree_deinit(struct BTree* tree);
 
+enum btree_e btree_insert2(struct BTree*, int key, void* data, int data_size);
 enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
 enum btree_e btree_traverse_to(struct Cursor* cursor, int key, char* found);
 #endif
