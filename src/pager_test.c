@@ -60,9 +60,15 @@ pager_test_page_loads_caching()
 	page_create(pager, 1, &page_one);
 	pager_read_page(pager, page_one);
 
+	memcpy(page_one->page_buffer, buffer, sizeof(buffer));
+
 	struct Page* page_two;
 	page_create(pager, 1, &page_two);
 	pager_read_page(pager, page_two);
+
+	result = memcmp(page_one->page_buffer, buffer, sizeof(buffer)) == 0;
+	if( result != 0 )
+		goto end;
 
 	result =
 		memcmp(

@@ -211,12 +211,10 @@ btree_init_root_page(struct BTree* tree, struct Page* page)
 {
 	enum pager_e pager_status = PAGER_OK;
 
-	// TODO: Clean up this read page stuff
-	page->page_id = 1;
 	pager_status = pager_read_page(tree->pager, page);
 	if( pager_status == PAGER_ERR_NIF )
 	{
-		page->page_id = PAGE_CREATE_NEW_PAGE;
+		page_reselect(page, PAGE_CREATE_NEW_PAGE);
 
 		init_new_root_page(tree, page);
 
