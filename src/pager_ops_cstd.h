@@ -7,7 +7,7 @@
 
 extern struct PagerOps CStdOps;
 
-enum pager_e
-pager_cstd_new(struct Pager** r_pager, struct PageCache* cache, char* filename);
+enum pager_e pager_cstd_create(
+	struct Pager** r_pager, struct PageCache* cache, char* filename);
 
 #endif

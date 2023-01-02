@@ -1,6 +1,9 @@
 #include "btree_test.h"
 
 #include "btree.h"
+#include "btree_alg.h"
+#include "btree_node.h"
+#include "btree_utils.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
 
@@ -17,7 +20,7 @@ btree_test_insert2()
 	remove("btree_test_insert2.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_new(&pager, cache, "btree_test_insert2.db");
+	pager_cstd_create(&pager, cache, "btree_test_insert2.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -62,7 +65,7 @@ btree_test_insert_root_with_space()
 	remove("test_.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_new(&pager, cache, "test_.db");
+	pager_cstd_create(&pager, cache, "test_.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -112,7 +115,7 @@ btree_test_split_root_node()
 	struct PageCache* cache = NULL;
 	remove("split_root_node.db");
 	page_cache_create(&cache, 5);
-	pager_cstd_new(&pager, cache, "split_root_node.db");
+	pager_cstd_create(&pager, cache, "split_root_node.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -131,7 +134,7 @@ btree_test_split_root_node()
 
 	struct BTreeNode* raw_root_node;
 	btree_node_create_from_page(tree, &raw_root_node, raw_page);
-	split_node(tree, raw_root_node);
+	bta_bplus_split_node(tree, raw_root_node);
 
 	struct Cursor* cursor = create_cursor(tree);
 
@@ -156,7 +159,7 @@ btree_test_split_root_node()
 	}
 
 	struct CellData cell;
-	read_cell(node, cursor->current_key, &cell);
+	btu_read_cell(node, cursor->current_key, &cell);
 
 	if( *cell.size != sizeof(charlie) )
 	{
@@ -189,7 +192,7 @@ btree_test_free_heap_calcs()
 	remove("test_free_heap.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_new(&pager, cache, "test_free_heap.db");
+	pager_cstd_create(&pager, cache, "test_free_heap.db");
 
 	struct BTree* tree;
 	btree_alloc(&tree);

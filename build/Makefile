@@ -196,6 +196,60 @@ src/btree.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree.c.s
 .PHONY : src/btree.c.s
 
+src/btree_alg.o: src/btree_alg.c.o
+.PHONY : src/btree_alg.o
+
+# target to build an object file
+src/btree_alg.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_alg.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg.c.o
+.PHONY : src/btree_alg.c.o
+
+src/btree_alg.i: src/btree_alg.c.i
+.PHONY : src/btree_alg.i
+
+# target to preprocess a source file
+src/btree_alg.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_alg.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg.c.i
+.PHONY : src/btree_alg.c.i
+
+src/btree_alg.s: src/btree_alg.c.s
+.PHONY : src/btree_alg.s
+
+# target to generate assembly for a file
+src/btree_alg.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_alg.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg.c.s
+.PHONY : src/btree_alg.c.s
+
+src/btree_node.o: src/btree_node.c.o
+.PHONY : src/btree_node.o
+
+# target to build an object file
+src/btree_node.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node.c.o
+.PHONY : src/btree_node.c.o
+
+src/btree_node.i: src/btree_node.c.i
+.PHONY : src/btree_node.i
+
+# target to preprocess a source file
+src/btree_node.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node.c.i
+.PHONY : src/btree_node.c.i
+
+src/btree_node.s: src/btree_node.c.s
+.PHONY : src/btree_node.s
+
+# target to generate assembly for a file
+src/btree_node.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node.c.s
+.PHONY : src/btree_node.c.s
+
 src/btree_test.o: src/btree_test.c.o
 .PHONY : src/btree_test.o
 
@@ -219,6 +273,33 @@ src/btree_test.s: src/btree_test.c.s
 src/btree_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_test.c.s
 .PHONY : src/btree_test.c.s
+
+src/btree_utils.o: src/btree_utils.c.o
+.PHONY : src/btree_utils.o
+
+# target to build an object file
+src/btree_utils.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_utils.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils.c.o
+.PHONY : src/btree_utils.c.o
+
+src/btree_utils.i: src/btree_utils.c.i
+.PHONY : src/btree_utils.i
+
+# target to preprocess a source file
+src/btree_utils.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_utils.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils.c.i
+.PHONY : src/btree_utils.c.i
+
+src/btree_utils.s: src/btree_utils.c.s
+.PHONY : src/btree_utils.s
+
+# target to generate assembly for a file
+src/btree_utils.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_utils.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils.c.s
+.PHONY : src/btree_utils.c.s
 
 src/main.o: src/main.c.o
 .PHONY : src/main.o
@@ -389,9 +470,18 @@ help:
 	@echo "... src/btree.o"
 	@echo "... src/btree.i"
 	@echo "... src/btree.s"
+	@echo "... src/btree_alg.o"
+	@echo "... src/btree_alg.i"
+	@echo "... src/btree_alg.s"
+	@echo "... src/btree_node.o"
+	@echo "... src/btree_node.i"
+	@echo "... src/btree_node.s"
 	@echo "... src/btree_test.o"
 	@echo "... src/btree_test.i"
 	@echo "... src/btree_test.s"
+	@echo "... src/btree_utils.o"
+	@echo "... src/btree_utils.i"
+	@echo "... src/btree_utils.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

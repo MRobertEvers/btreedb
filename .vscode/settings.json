@@ -3,6 +3,11 @@
     "editor.defaultFormatter": "xaver.clang-format",
     "files.associations": {
         "pager_ops.h": "c",
-        "page_cache.h": "c"
+        "page_cache.h": "c",
+        "pager.h": "c",
+        "btree_defs.h": "c",
+        "btree_node.h": "c",
+        "btree_alg.h": "c",
+        "binary_search.h": "c"
     },
 }
