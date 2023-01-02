@@ -4,9 +4,8 @@
 #include "btree_defs.h"
 #include "page.h"
 
-enum btree_e
-btree_node_create_from_page(struct BTree*, struct BTreeNode**, struct Page*);
-enum btree_e btree_node_destroy(struct BTree*, struct BTreeNode*);
+enum btree_e btree_node_create_from_page(struct BTreeNode**, struct Page*);
+enum btree_e btree_node_destroy(struct BTreeNode*);
 
 enum btree_e
 btree_node_init_from_page(struct BTreeNode* node, struct Page* page);

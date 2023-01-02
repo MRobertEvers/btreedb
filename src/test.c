@@ -13,7 +13,7 @@ main()
 	result = pager_test_page_loads_caching();
 	printf("pager shared pages from cache: %d\n", result);
 
-	result = btree_test_insert2();
+	result = btree_test_insert();
 	printf("insert page: %d\n", result);
 	result = btree_test_insert_root_with_space();
 	printf("insert page: %d\n", result);

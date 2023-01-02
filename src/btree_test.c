@@ -2,6 +2,7 @@
 
 #include "btree.h"
 #include "btree_alg.h"
+#include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_utils.h"
 #include "page_cache.h"
@@ -11,7 +12,7 @@
 #include <string.h>
 
 int
-btree_test_insert2()
+btree_test_insert()
 {
 	int result = 1;
 	struct Pager* pager;
@@ -27,17 +28,17 @@ btree_test_insert2()
 	btree_init(tree, pager);
 
 	char billy[4096 - 200] = "billy";
-	btree_insert2(tree, 12, billy, sizeof(billy));
+	btree_insert(tree, 12, billy, sizeof(billy));
 
 	char ruth[500] = "ruth";
-	btree_insert2(tree, 1, ruth, sizeof(ruth));
+	btree_insert(tree, 1, ruth, sizeof(ruth));
 	// Get the root node
 	struct Page* raw_page;
 	page_create(pager, tree->root_page_id, &raw_page);
 	pager_read_page(pager, raw_page);
 
 	struct BTreeNode* raw_node;
-	btree_node_create_from_page(tree, &raw_node, raw_page);
+	btree_node_create_from_page(&raw_node, raw_page);
 
 	// There should be one key witha right child
 	if( raw_node->header->num_keys != 1 || raw_node->header->right_child == 0 )
@@ -47,7 +48,7 @@ btree_test_insert2()
 	}
 
 end:
-	btree_node_destroy(tree, raw_node);
+	btree_node_destroy(raw_node);
 	page_destroy(pager, raw_page);
 	btree_deinit(tree);
 	btree_dealloc(tree);
@@ -82,7 +83,7 @@ btree_test_insert_root_with_space()
 	pager_read_page(pager, raw_page);
 
 	struct BTreeNode* raw_node;
-	btree_node_create_from_page(tree, &raw_node, raw_page);
+	btree_node_create_from_page(&raw_node, raw_page);
 
 	if( raw_node->header->num_keys != 2 )
 	{
@@ -97,7 +98,7 @@ btree_test_insert_root_with_space()
 	}
 
 end:
-	btree_node_destroy(tree, raw_node);
+	btree_node_destroy(raw_node);
 	page_destroy(pager, raw_page);
 	btree_deinit(tree);
 	btree_dealloc(tree);
@@ -133,13 +134,13 @@ btree_test_split_root_node()
 	pager_read_page(pager, raw_page);
 
 	struct BTreeNode* raw_root_node;
-	btree_node_create_from_page(tree, &raw_root_node, raw_page);
+	btree_node_create_from_page(&raw_root_node, raw_page);
 	bta_bplus_split_node(tree, raw_root_node);
 
-	struct Cursor* cursor = create_cursor(tree);
+	struct Cursor* cursor = cursor_create(tree);
 
 	char found = 0;
-	btree_traverse_to(cursor, 2, &found);
+	cursor_traverse_to(cursor, 2, &found);
 
 	if( !found )
 	{
@@ -150,7 +151,7 @@ btree_test_split_root_node()
 	struct Page* page;
 	page_create(tree->pager, cursor->current_page_id, &page);
 	pager_read_page(tree->pager, page);
-	btree_node_create_from_page(tree, &node, page);
+	btree_node_create_from_page(&node, page);
 
 	if( node->header->num_keys != 2 )
 	{
@@ -174,9 +175,9 @@ btree_test_split_root_node()
 	}
 
 end:
-	btree_node_destroy(tree, raw_root_node);
+	btree_node_destroy(raw_root_node);
 	page_destroy(pager, raw_page);
-	btree_node_destroy(tree, node);
+	btree_node_destroy(node);
 	remove("split_root_node.db");
 
 	return 1;
@@ -208,21 +209,21 @@ btree_test_free_heap_calcs()
 	pager_read_page(pager, raw_page);
 
 	struct BTreeNode* raw_node;
-	btree_node_create_from_page(tree, &raw_node, raw_page);
+	btree_node_create_from_page(&raw_node, raw_page);
 
 	int free_heap_billy = raw_node->header->free_heap;
 
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 
 	pager_read_page(pager, raw_page);
-	btree_node_create_from_page(tree, &raw_node, raw_page);
+	btree_node_create_from_page(&raw_node, raw_page);
 
 	if( free_heap_billy - raw_node->header->free_heap !=
 		sizeof(ruth) + sizeof(struct BTreePageKey) + sizeof(int) )
 		result = 0;
 
 end:
-	btree_node_destroy(tree, raw_node);
+	btree_node_destroy(raw_node);
 	page_destroy(pager, raw_page);
 	btree_deinit(tree);
 	btree_dealloc(tree);

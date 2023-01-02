@@ -22,13 +22,13 @@ bta_bplus_split_node(struct BTree* tree, struct BTreeNode* node)
 	struct Page* right_page = NULL;
 
 	page_create(tree->pager, node->page_number, &parent_page);
-	btree_node_create_from_page(tree, &parent, parent_page);
+	btree_node_create_from_page(&parent, parent_page);
 
 	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &left_page);
-	btree_node_create_from_page(tree, &left, left_page);
+	btree_node_create_from_page(&left, left_page);
 
 	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
-	btree_node_create_from_page(tree, &right, right_page);
+	btree_node_create_from_page(&right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
 	for( int i = 0; i < node->header->num_keys; i++ )
@@ -72,13 +72,13 @@ bta_bplus_split_node(struct BTree* tree, struct BTreeNode* node)
 	pager_write_page(tree->pager, node->page);
 
 end:
-	btree_node_destroy(tree, left);
+	btree_node_destroy(left);
 	page_destroy(tree->pager, left_page);
 
-	btree_node_destroy(tree, right);
+	btree_node_destroy(right);
 	page_destroy(tree->pager, right_page);
 
-	btree_node_destroy(tree, parent);
+	btree_node_destroy(parent);
 	page_destroy(tree->pager, parent_page);
 
 	return BTREE_OK;
@@ -98,10 +98,10 @@ bta_split_node(
 	struct Page* right_page = NULL;
 
 	page_create(tree->pager, node->page_number, &left_page);
-	btree_node_create_from_page(tree, &left, left_page);
+	btree_node_create_from_page(&left, left_page);
 
 	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
-	btree_node_create_from_page(tree, &right, right_page);
+	btree_node_create_from_page(&right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
 	for( int i = 0; i < node->header->num_keys; i++ )
@@ -136,10 +136,10 @@ bta_split_node(
 	split_page->right_page_low_key = right->keys[0].key;
 
 end:
-	btree_node_destroy(tree, left);
+	btree_node_destroy(left);
 	page_destroy(tree->pager, left_page);
 
-	btree_node_destroy(tree, right);
+	btree_node_destroy(right);
 	page_destroy(tree->pager, right_page);
 
 	return BTREE_OK;

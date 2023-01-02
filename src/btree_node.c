@@ -6,7 +6,7 @@
 #include <string.h>
 
 static enum btree_e
-btree_node_alloc(struct BTree* tree, struct BTreeNode** r_node)
+btree_node_alloc(struct BTreeNode** r_node)
 {
 	*r_node = (struct BTreeNode*)malloc(sizeof(struct BTreeNode));
 	return BTREE_OK;
@@ -51,10 +51,9 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
  * See header for details.
  */
 enum btree_e
-btree_node_create_from_page(
-	struct BTree* tree, struct BTreeNode** r_node, struct Page* page)
+btree_node_create_from_page(struct BTreeNode** r_node, struct Page* page)
 {
-	btree_node_alloc(tree, r_node);
+	btree_node_alloc(r_node);
 	btree_node_init_from_page(*r_node, page);
 
 	return BTREE_OK;
@@ -64,7 +63,7 @@ btree_node_create_from_page(
  * See header for details.
  */
 enum btree_e
-btree_node_destroy(struct BTree* tree, struct BTreeNode* node)
+btree_node_destroy(struct BTreeNode* node)
 {
 	btree_node_deinit(node);
 	btree_node_dealloc(node);
