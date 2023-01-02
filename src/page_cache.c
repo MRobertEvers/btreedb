@@ -51,6 +51,7 @@ page_cache_init(struct PageCache* cache, int capacity)
 	memset(cache->pages, 0x00, sizeof(struct PageCacheKey) * capacity);
 	return PAGER_OK;
 }
+
 static enum pager_e
 page_cache_deinit(struct PageCache* cache)
 {
