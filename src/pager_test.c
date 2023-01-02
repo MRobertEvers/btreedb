@@ -20,9 +20,11 @@ pager_test_read_write_cstd()
 	pager_cstd_create(&pager, cache, "test_.db");
 
 	struct Page* page;
-	page_create(pager, 1, &page);
+	page_create(pager, &page);
 
-	pager_read_page(pager, page);
+	struct PageSelector selector;
+	pager_reselect(&selector, 1);
+	pager_read_page(pager, &selector, page);
 
 	memcpy(page->page_buffer, buffer, sizeof(buffer));
 	// printf("%s\n", page->page_buffer);
@@ -31,7 +33,7 @@ pager_test_read_write_cstd()
 
 	memset(page->page_buffer, 0x00, pager->page_size);
 
-	pager_read_page(pager, page);
+	pager_read_page(pager, &selector, page);
 
 	// printf("%s\n", page->page_buffer);
 	result = memcmp(page->page_buffer, buffer, sizeof(buffer)) == 0;
@@ -57,14 +59,18 @@ pager_test_page_loads_caching()
 	pager_cstd_create(&pager, cache, page_filename);
 
 	struct Page* page_one;
-	page_create(pager, 1, &page_one);
-	pager_read_page(pager, page_one);
+	page_create(pager, &page_one);
+
+	struct PageSelector selector;
+	pager_reselect(&selector, 1);
+	pager_read_page(pager, &selector, page_one);
 
 	memcpy(page_one->page_buffer, buffer, sizeof(buffer));
 
 	struct Page* page_two;
-	page_create(pager, 1, &page_two);
-	pager_read_page(pager, page_two);
+	page_create(pager, &page_two);
+
+	pager_read_page(pager, &selector, page_two);
 
 	result = memcmp(page_one->page_buffer, buffer, sizeof(buffer)) == 0;
 	if( result != 0 )

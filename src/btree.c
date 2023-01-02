@@ -10,14 +10,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Initializes the first page of a file as the root page.
+ *
+ * page->page_id must be 1.
+ *
+ * @param tree
+ * @param page
+ * @return enum btree_e
+ */
 static enum btree_e
 init_new_root_page(struct BTree* tree, struct Page* page)
 {
+	assert(page->page_id == 1);
+
 	struct BTreeNode temp_node = {0};
 
-	// TODO: Hack need function to get page id before writing...
-	// That way it wont be "PAGE_NEW" here.
-	page->page_id = 1;
 	btree_node_init_from_page(&temp_node, page);
 
 	struct BTreeHeader* temp_btree_header =
@@ -27,8 +35,6 @@ init_new_root_page(struct BTree* tree, struct Page* page)
 
 	temp_btree_header->page_high_water = 2;
 
-	page->page_id = PAGE_CREATE_NEW_PAGE;
-
 	return BTREE_OK;
 }
 
@@ -36,12 +42,12 @@ static enum btree_e
 btree_init_root_page(struct BTree* tree, struct Page* page)
 {
 	enum pager_e pager_status = PAGER_OK;
+	struct PageSelector selector;
+	pager_reselect(&selector, 1);
 
-	pager_status = pager_read_page(tree->pager, page);
+	pager_status = pager_read_page(tree->pager, &selector, page);
 	if( pager_status == PAGER_ERR_NIF )
 	{
-		page_reselect(page, PAGE_CREATE_NEW_PAGE);
-
 		init_new_root_page(tree, page);
 
 		pager_status = pager_write_page(tree->pager, page);
@@ -94,7 +100,7 @@ btree_init(struct BTree* tree, struct Pager* pager)
 	tree->pager = pager;
 
 	struct Page* page = NULL;
-	page_create(tree->pager, 1, &page);
+	page_create(tree->pager, &page);
 	btree_result = btree_init_root_page(tree, page);
 	if( btree_result != BTREE_OK )
 		return BTREE_ERR_UNK;
@@ -117,6 +123,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	int index = 0;
 	char found = 0;
 	struct Page* page = NULL;
+	struct PageSelector selector = {0};
 	struct BTreeNode* node = NULL;
 	struct Cursor* cursor = cursor_create(tree);
 
@@ -124,12 +131,13 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	if( result != BTREE_OK )
 		return result;
 
-	page_create(tree->pager, cursor->current_page_id, &page);
+	page_create(tree->pager, &page);
 
 	while( 1 )
 	{
-		page_reselect(page, cursor->current_page_id);
-		pager_read_page(tree->pager, page);
+		pager_reselect(&selector, cursor->current_page_id);
+		pager_read_page(tree->pager, &selector, page);
+
 		// TODO: Don't need to alloc in loop.
 		btree_node_create_from_page(&node, page);
 
@@ -144,8 +152,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 				if( key >= split_result.right_page_low_key )
 				{
-					page_reselect(page, split_result.right_page_id);
-					pager_read_page(tree->pager, page);
+					pager_reselect(&selector, split_result.right_page_id);
+					pager_read_page(tree->pager, &selector, page);
 					btree_node_init_from_page(node, page);
 				}
 
@@ -166,9 +174,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			}
 			else
 			{
-				// TODO:
-				// This split_node uses the input node as the parent.
-				// split_node_stable
 				bta_bplus_split_node(tree, node);
 				btree_node_destroy(node);
 				goto end;

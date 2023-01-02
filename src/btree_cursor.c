@@ -48,11 +48,11 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	enum btree_e result = BTREE_OK;
 	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
+	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
 	struct CellData cell = {0};
 
-	page_result =
-		page_create(cursor->tree->pager, cursor->current_page_id, &page);
+	page_result = page_create(cursor->tree->pager, &page);
 	if( page_result != PAGER_OK )
 		return BTREE_ERR_UNK;
 
@@ -64,14 +64,14 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 		crumb->page_id = cursor->current_page_id;
 		cursor->breadcrumbs_size++;
 
-		page_result = page_reselect(page, cursor->current_page_id);
+		page_result = pager_reselect(&selector, cursor->current_page_id);
 		if( page_result != PAGER_OK )
 		{
 			result = BTREE_ERR_UNK;
 			goto end;
 		}
 
-		page_result = pager_read_page(cursor->tree->pager, page);
+		page_result = pager_read_page(cursor->tree->pager, &selector, page);
 		if( page_result != PAGER_OK )
 		{
 			result = BTREE_ERR_UNK;

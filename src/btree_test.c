@@ -34,8 +34,11 @@ btree_test_insert()
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 	// Get the root node
 	struct Page* raw_page;
-	page_create(pager, tree->root_page_id, &raw_page);
-	pager_read_page(pager, raw_page);
+	page_create(pager, &raw_page);
+
+	struct PageSelector selector;
+	pager_reselect(&selector, tree->root_page_id);
+	pager_read_page(pager, &selector, raw_page);
 
 	struct BTreeNode* raw_node;
 	btree_node_create_from_page(&raw_node, raw_page);
@@ -79,8 +82,11 @@ btree_test_insert_root_with_space()
 
 	// Get the root node
 	struct Page* raw_page;
-	page_create(pager, tree->root_page_id, &raw_page);
-	pager_read_page(pager, raw_page);
+	page_create(pager, &raw_page);
+
+	struct PageSelector selector;
+	pager_reselect(&selector, tree->root_page_id);
+	pager_read_page(pager, &selector, raw_page);
 
 	struct BTreeNode* raw_node;
 	btree_node_create_from_page(&raw_node, raw_page);
@@ -130,8 +136,11 @@ btree_test_split_root_node()
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 
 	struct Page* raw_page;
-	page_create(pager, tree->root_page_id, &raw_page);
-	pager_read_page(pager, raw_page);
+	page_create(pager, &raw_page);
+
+	struct PageSelector selector;
+	pager_reselect(&selector, tree->root_page_id);
+	pager_read_page(pager, &selector, raw_page);
 
 	struct BTreeNode* raw_root_node;
 	btree_node_create_from_page(&raw_root_node, raw_page);
@@ -149,8 +158,10 @@ btree_test_split_root_node()
 	}
 
 	struct Page* page;
-	page_create(tree->pager, cursor->current_page_id, &page);
-	pager_read_page(tree->pager, page);
+	page_create(tree->pager, &page);
+
+	pager_reselect(&selector, cursor->current_page_id);
+	pager_read_page(tree->pager, &selector, page);
 	btree_node_create_from_page(&node, page);
 
 	if( node->header->num_keys != 2 )
@@ -205,8 +216,11 @@ btree_test_free_heap_calcs()
 
 	// Get the root node
 	struct Page* raw_page;
-	page_create(pager, tree->root_page_id, &raw_page);
-	pager_read_page(pager, raw_page);
+	page_create(pager, &raw_page);
+
+	struct PageSelector selector;
+	pager_reselect(&selector, tree->root_page_id);
+	pager_read_page(pager, &selector, raw_page);
 
 	struct BTreeNode* raw_node;
 	btree_node_create_from_page(&raw_node, raw_page);
@@ -215,7 +229,7 @@ btree_test_free_heap_calcs()
 
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 
-	pager_read_page(pager, raw_page);
+	pager_read_page(pager, &selector, raw_page);
 	btree_node_create_from_page(&raw_node, raw_page);
 
 	if( free_heap_billy - raw_node->header->free_heap !=

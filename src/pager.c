@@ -25,7 +25,6 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 {
 	memset(page, 0x00, sizeof(*page));
 	page->page_id = page_id;
-	page->loaded = 0;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
 
@@ -42,19 +41,18 @@ pager_page_deinit(struct Page* page)
 }
 
 enum pager_e
-page_create(struct Pager* pager, int page_number, struct Page** r_page)
+page_create(struct Pager* pager, struct Page** r_page)
 {
 	pager_page_alloc(pager, r_page);
-	pager_page_init(pager, *r_page, page_number);
+	pager_page_init(pager, *r_page, PAGE_CREATE_NEW_PAGE);
 
 	return PAGER_OK;
 }
 
 enum pager_e
-page_reselect(struct Page* page, int page_id)
+pager_reselect(struct PageSelector* selector, int page_id)
 {
-	page->loaded = 0;
-	page->page_id = page_id;
+	selector->page_id = page_id;
 	return PAGER_OK;
 }
 
@@ -91,17 +89,20 @@ page_commit(struct Pager* pager, struct Page* page)
 }
 
 static enum pager_e
-read_from_disk(struct Pager* pager, struct Page* page)
+read_from_disk(
+	struct Pager* pager, struct PageSelector* selector, struct Page* page)
 {
-	assert(pager->ops);
-	assert(page->page_id);
+	assert(pager->ops != NULL);
+	assert(selector->page_id != PAGE_CREATE_NEW_PAGE);
 
-	int offset = pager->page_size * (page->page_id - 1);
+	int offset = pager->page_size * (selector->page_id - 1);
 	int pages_read;
 	enum pager_e pager_result;
 
 	pager_result = pager->ops->read(
 		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
+
+	page->page_id = selector->page_id;
 
 	return pager_result;
 }
@@ -196,17 +197,19 @@ pager_destroy(struct Pager* pager)
 }
 
 enum pager_e
-pager_read_page(struct Pager* pager, struct Page* page)
+pager_read_page(
+	struct Pager* pager, struct PageSelector* selector, struct Page* page)
 {
-	assert(page->page_id);
+	assert(selector->page_id != PAGE_CREATE_NEW_PAGE);
 
+	int page_id = selector->page_id;
 	struct Page* cached_page = NULL;
 	enum pager_e result =
-		page_cache_acquire(pager->cache, page->page_id, &cached_page);
+		page_cache_acquire(pager->cache, page_id, &cached_page);
 	if( result == PAGER_ERR_CACHE_MISS )
 	{
-		page_create(pager, page->page_id, &cached_page);
-		result = read_from_disk(pager, cached_page);
+		page_create(pager, &cached_page);
+		result = read_from_disk(pager, selector, cached_page);
 		if( result == PAGER_READ_ERR )
 		{
 			page_destroy(pager, cached_page);
@@ -222,9 +225,12 @@ pager_read_page(struct Pager* pager, struct Page* page)
 	if( result == PAGER_OK )
 	{
 		memcpy(page->page_buffer, cached_page->page_buffer, pager->page_size);
-		page->loaded = 1;
+
 		page_cache_release(pager->cache, cached_page);
 	}
+
+	page->page_id = page_id;
+	page->status = result;
 
 	return result;
 }

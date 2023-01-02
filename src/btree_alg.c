@@ -21,13 +21,13 @@ bta_bplus_split_node(struct BTree* tree, struct BTreeNode* node)
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
-	page_create(tree->pager, node->page_number, &parent_page);
-	btree_node_create_from_page(&parent, parent_page);
+	page_create(tree->pager, &parent_page);
+	btree_node_create_as_page_number(&parent, node->page_number, parent_page);
 
-	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &left_page);
+	page_create(tree->pager, &left_page);
 	btree_node_create_from_page(&left, left_page);
 
-	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
+	page_create(tree->pager, &right_page);
 	btree_node_create_from_page(&right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
@@ -97,10 +97,10 @@ bta_split_node(
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
-	page_create(tree->pager, node->page_number, &left_page);
-	btree_node_create_from_page(&left, left_page);
+	page_create(tree->pager, &left_page);
+	btree_node_create_as_page_number(&left, node->page_number, left_page);
 
-	page_create(tree->pager, PAGE_CREATE_NEW_PAGE, &right_page);
+	page_create(tree->pager, &right_page);
 	btree_node_create_from_page(&right, right_page);
 
 	int first_half = ((node->header->num_keys + 1) / 2);
