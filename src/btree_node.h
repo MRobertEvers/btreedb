@@ -52,7 +52,7 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
  */
 enum btree_e btree_node_insert(
 	struct BTreeNode* node,
-	int index,
+	struct KeyListIndex* index,
 	unsigned int key,
 	void* data,
 	int data_size);
@@ -69,7 +69,8 @@ enum btree_e btree_node_insert(
  * @param data_size
  * @return enum btree_e
  */
-enum btree_e btree_node_delete(struct BTreeNode* node, int index);
+enum btree_e
+btree_node_delete(struct BTreeNode* node, struct KeyListIndex* index);
 
 /**
  * @brief Returns the number of children for non-leaf nodes and the number of

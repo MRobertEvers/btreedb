@@ -8,6 +8,9 @@
         "btree_defs.h": "c",
         "btree_node.h": "c",
         "btree_alg.h": "c",
-        "binary_search.h": "c"
+        "binary_search.h": "c",
+        "btree.h": "c",
+        "btree_alg_test.h": "c",
+        "btree_cursor.h": "c"
     },
 }

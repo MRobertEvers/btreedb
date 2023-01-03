@@ -146,7 +146,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 		btree_node_init_from_page(&node, page);
 
 		result = btree_node_insert(
-			&node, cursor->current_key_index, key, data, data_size);
+			&node, &cursor->current_key_index, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			// We want to keep the root node as the first page.
@@ -155,13 +155,13 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			// This node becomes the new parent of those nodes.
 			if( node.page->page_id == 1 )
 			{
-				bta_split_node_as_parent(tree, &node, NULL);
+				bta_split_node_as_parent(&node, tree->pager, NULL);
 				goto end;
 			}
 			else
 			{
 				struct SplitPage split_result;
-				bta_split_node(tree, &node, &split_result);
+				bta_split_node(&node, tree->pager, &split_result);
 
 				// TODO: Key compare function.
 				if( key >= split_result.right_page_low_key )
@@ -173,8 +173,12 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 				int new_insert_index = btu_binary_search_keys(
 					node.keys, node.header->num_keys, key, &found);
-				btree_node_insert(
-					&node, new_insert_index, key, data, data_size);
+
+				struct KeyListIndex index = {0};
+				btu_init_keylistindex_from_index(
+					&index, &node, new_insert_index);
+
+				btree_node_insert(&node, &index, key, data, data_size);
 				pager_write_page(tree->pager, node.page);
 
 				// Args for next iteration
@@ -183,8 +187,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				if( result == BTREE_ERR_CURSOR_NO_PARENT )
 					assert(0);
 
-				key = cursor->current_key_index;
-				data = (void*)split_result.right_page_id;
+				key = cursor->current_key_index.index;
+				data = (void*)&split_result.right_page_id;
 				data_size = sizeof(split_result.right_page_id);
 			}
 		}
@@ -231,7 +235,7 @@ btree_delete(struct BTree* tree, int key)
 
 		btree_node_init_from_page(&node, page);
 
-		result = btree_node_delete(&node, cursor->current_key_index);
+		result = btree_node_delete(&node, &cursor->current_key_index);
 		pager_write_page(tree->pager, node.page);
 
 		if( btree_node_arity(&node) == 0 )

@@ -70,10 +70,25 @@ struct BTree
 	int root_page_id;
 };
 
+enum key_list_index_mode_e
+{
+	KLIM_END = 0,
+	KLIM_RIGHT_CHILD,
+	KLIM_INDEX,
+};
+
+struct KeyListIndex
+{
+	enum key_list_index_mode_e mode;
+
+	// If mode=KLIM_INDEX, then this should be populated
+	unsigned int index;
+};
+
 // This is like "TID" in postgres
 struct CursorBreadcrumb
 {
-	int key_index;
+	struct KeyListIndex key_index;
 	int page_id;
 };
 
@@ -83,7 +98,7 @@ struct Cursor
 	int current_page_id;
 
 	// Index of the key in the current page.
-	int current_key_index;
+	struct KeyListIndex current_key_index;
 
 	struct CursorBreadcrumb breadcrumbs[8]; // TODO: Dynamic?
 	int breadcrumbs_size;

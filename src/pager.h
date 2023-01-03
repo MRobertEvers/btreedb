@@ -50,7 +50,7 @@ enum pager_e pager_reselect(struct PageSelector* selector, int page_id);
  */
 enum pager_e page_destroy(struct Pager* pager, struct Page* page);
 
-enum pager_e pager_open(struct Pager*, char*);
+enum pager_e pager_open(struct Pager*, char const*);
 enum pager_e pager_close(struct Pager*);
 
 enum pager_e pager_create(

@@ -25,6 +25,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 {
 	memset(page, 0x00, sizeof(*page));
 	page->page_id = page_id;
+	page->status = PAGER_ERR_PAGE_PERSISTENCE_UNKNOWN;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
 
@@ -148,7 +149,7 @@ min(int left, int right)
 	return left < right ? left : right;
 }
 enum pager_e
-pager_open(struct Pager* pager, char* pager_str)
+pager_open(struct Pager* pager, char const* pager_str)
 {
 	memcpy(
 		pager->pager_name_str,
@@ -245,8 +246,6 @@ pager_write_page(struct Pager* pager, struct Page* page)
 	if( page->page_id == PAGE_CREATE_NEW_PAGE )
 	{
 		page->page_id = pager->max_page + 1;
-
-		pager->max_page += 1;
 	}
 
 	// TODO: Hack - all writes also write to disk.
@@ -268,6 +267,12 @@ pager_write_page(struct Pager* pager, struct Page* page)
 		offset,
 		pager->page_size,
 		&write_result);
+
+	pager->max_page =
+		page->page_id > pager->max_page ? page->page_id : pager->max_page;
+
+	// TODO: Error check.
+	page->status = PAGER_OK;
 
 	return PAGER_OK;
 }

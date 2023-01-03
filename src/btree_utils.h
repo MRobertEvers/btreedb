@@ -30,4 +30,7 @@ int btu_calc_cell_size(int size);
 int btu_binary_search_keys(
 	struct BTreePageKey* arr, unsigned char num_keys, int key, char* found);
 
+int btu_init_keylistindex_from_index(
+	struct KeyListIndex* keylistindex, struct BTreeNode const* node, int index);
+
 #endif

@@ -15,7 +15,6 @@ cursor_create(struct BTree* tree)
 	memset(cursor, 0x00, sizeof(*cursor));
 
 	cursor->tree = tree;
-	cursor->current_key_index = 0;
 	cursor->current_page_id = tree->root_page_id;
 	return cursor;
 }
@@ -85,16 +84,14 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 		child_key_index = btu_binary_search_keys(
 			node.keys, node.header->num_keys, key, found);
 
-		cursor->current_key_index = child_key_index;
+		btu_init_keylistindex_from_index(
+			&cursor->current_key_index, &node, child_key_index);
 
 		if( !node.header->is_leaf )
 		{
 			if( child_key_index == node.header->num_keys )
 			{
-				if( node.header->right_child != 0 )
-					cursor->current_page_id = node.header->right_child;
-				else
-					break;
+				cursor->current_page_id = node.header->right_child;
 			}
 			else
 			{

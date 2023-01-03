@@ -101,33 +101,53 @@ btree_node_destroy(struct BTreeNode* node)
 enum btree_e
 btree_node_insert(
 	struct BTreeNode* node,
-	int index,
+	struct KeyListIndex* index,
 	unsigned int key,
 	void* data,
 	int data_size)
 {
-	// if( index == node->header->num_keys && !node->header->is_leaf )
-	// {
-	// 	assert(!node->header->is_leaf);
-	// 	assert(data_size == sizeof(node->header->right_child));
+	unsigned int index_number = 0;
 
-	// 	unsigned int previous_right_child = node->header->right_child;
-	// 	node->header->right_child = (int)data;
+	if( index->mode == KLIM_RIGHT_CHILD )
+	{
+		assert(!node->header->is_leaf);
+		assert(data_size == sizeof(node->header->right_child));
 
-	// 	// If we wanted to put data into the right child
-	// 	// and there previously wasn't a right child,
-	// 	// then we are done.
-	// 	// Otherwise, the we have
-	// 	if( previous_right_child == 0 )
-	// 	{
-	// 		return BTREE_OK;
-	// 	}
-	// 	else
-	// 	{
-	// 		index = node->header->num_keys;
-	// 		data = (void*)previous_right_child;
-	// 	}
-	// }
+		unsigned int previous_right_child = node->header->right_child;
+
+		// If we wanted to put data into the right child
+		// and there previously wasn't a right child,
+		// then we are done.
+		if( previous_right_child == 0 )
+		{
+			// This might seem like it is an invariant failure,
+			// but if we're populating a new node, then
+			// this is correct.
+			node->header->right_child = *(int*)data;
+			return BTREE_OK;
+		}
+
+		// Push the right_child as a key to the key list.
+		struct KeyListIndex insert_index = {0};
+		insert_index.index = node->header->num_keys;
+		insert_index.mode = KLIM_END;
+
+		enum btree_e next_right_child_result = btree_node_insert(
+			node,
+			&insert_index,
+			previous_right_child,
+			(void*)&previous_right_child,
+			sizeof(previous_right_child));
+
+		// Success, change the right_child
+		if( next_right_child_result == BTREE_OK )
+			node->header->right_child = *(int*)data;
+
+		return next_right_child_result;
+	}
+
+	index_number =
+		index->mode == KLIM_END ? node->header->num_keys : index->index;
 
 	// Size check
 	int size_needed =
@@ -137,16 +157,18 @@ btree_node_insert(
 
 	// The Raw insertion
 	memmove(
-		&node->keys[index + 1],
-		&node->keys[index],
-		(node->header->num_keys - index) * sizeof(node->keys[index]));
+		&node->keys[index_number + 1],
+		&node->keys[index_number],
+		(node->header->num_keys - index_number) *
+			sizeof(node->keys[index_number]));
 
-	node->keys[index].key = key;
-	node->keys[index].cell_offset =
+	node->keys[index_number].key = key;
+	node->keys[index_number].cell_offset =
 		node->header->cell_high_water_offset + btu_calc_cell_size(data_size);
 	node->header->num_keys += 1;
 
-	char* cell = btu_calc_highwater_offset(node, node->keys[index].cell_offset);
+	char* cell =
+		btu_calc_highwater_offset(node, node->keys[index_number].cell_offset);
 	memcpy(cell, &data_size, sizeof(data_size));
 
 	cell = cell + sizeof(data_size);
@@ -159,15 +181,14 @@ btree_node_insert(
 }
 
 enum btree_e
-btree_node_delete(struct BTreeNode* node, int index)
+btree_node_delete(struct BTreeNode* node, struct KeyListIndex* index)
 {
 	struct CellData cell = {0};
+	unsigned int index_number = 0;
 
-	if( index < 0 || index > node->header->num_keys )
-	{
-		return BTREE_ERR_KEY_NOT_FOUND;
-	}
-	else if( index == node->header->num_keys )
+	assert(index->mode != KLIM_END);
+
+	if( index->mode == KLIM_RIGHT_CHILD )
 	{
 		// Must not be the case for leaf nodes.
 		if( node->header->is_leaf )
@@ -175,17 +196,20 @@ btree_node_delete(struct BTreeNode* node, int index)
 
 		// It is up to the btree alg to correctly
 		// remove this node.
+		// TODO: Throw here as we've failed to maintain some invariant?
 		if( node->header->num_keys == 0 )
 		{
-			node->header->right_child = 0;
-			return BTREE_OK;
+			return BTREE_ERR_UNK;
 		}
 
 		// The rightmost non-right-child key becomes the right-child.
 		struct BTreePageKey rightmost_key =
 			node->keys[node->header->num_keys - 1];
+		struct KeyListIndex delete_index = {0};
+		delete_index.index = node->header->num_keys - 1;
+		delete_index.mode = KLIM_INDEX;
 		enum btree_e next_right_child_result =
-			btree_node_delete(node, node->header->num_keys - 1);
+			btree_node_delete(node, &delete_index);
 		if( next_right_child_result != BTREE_OK )
 			return BTREE_ERR_UNK;
 
@@ -194,14 +218,17 @@ btree_node_delete(struct BTreeNode* node, int index)
 		return BTREE_OK;
 	}
 
-	btu_read_cell(node, index, &cell);
+	index_number = index->index;
+
+	btu_read_cell(node, index_number, &cell);
 	int deleted_cell_size = *cell.size;
 
 	// Slide keys over.
 	memmove(
-		&node->keys[index],
-		&node->keys[index + 1],
-		(node->header->num_keys - index) * sizeof(node->keys[index]));
+		&node->keys[index_number],
+		&node->keys[index_number + 1],
+		(node->header->num_keys - index_number) *
+			sizeof(node->keys[index_number]));
 	memset(&cell, 0x00, sizeof(cell));
 	node->header->num_keys -= 1;
 

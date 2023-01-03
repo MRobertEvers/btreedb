@@ -223,6 +223,30 @@ src/btree_alg.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg.c.s
 .PHONY : src/btree_alg.c.s
 
+src/btree_alg_test.o: src/btree_alg_test.c.o
+.PHONY : src/btree_alg_test.o
+
+# target to build an object file
+src/btree_alg_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg_test.c.o
+.PHONY : src/btree_alg_test.c.o
+
+src/btree_alg_test.i: src/btree_alg_test.c.i
+.PHONY : src/btree_alg_test.i
+
+# target to preprocess a source file
+src/btree_alg_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg_test.c.i
+.PHONY : src/btree_alg_test.c.i
+
+src/btree_alg_test.s: src/btree_alg_test.c.s
+.PHONY : src/btree_alg_test.s
+
+# target to generate assembly for a file
+src/btree_alg_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg_test.c.s
+.PHONY : src/btree_alg_test.c.s
+
 src/btree_cursor.o: src/btree_cursor.c.o
 .PHONY : src/btree_cursor.o
 
@@ -500,6 +524,9 @@ help:
 	@echo "... src/btree_alg.o"
 	@echo "... src/btree_alg.i"
 	@echo "... src/btree_alg.s"
+	@echo "... src/btree_alg_test.o"
+	@echo "... src/btree_alg_test.i"
+	@echo "... src/btree_alg_test.s"
 	@echo "... src/btree_cursor.o"
 	@echo "... src/btree_cursor.i"
 	@echo "... src/btree_cursor.s"

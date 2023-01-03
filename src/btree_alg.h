@@ -24,8 +24,8 @@ struct SplitPageAsParent
  * @return enum btree_e
  */
 enum btree_e bta_split_node_as_parent(
-	struct BTree* tree,
 	struct BTreeNode* node,
+	struct Pager* pager,
 	struct SplitPageAsParent* split_page);
 
 struct SplitPage
@@ -49,6 +49,6 @@ struct SplitPage
  * @return enum btree_e
  */
 enum btree_e bta_split_node(
-	struct BTree* tree, struct BTreeNode* node, struct SplitPage* split_page);
+	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page);
 
 #endif

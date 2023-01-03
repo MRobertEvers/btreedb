@@ -79,3 +79,26 @@ btu_binary_search_keys(
 
 	return left;
 }
+
+int
+btu_init_keylistindex_from_index(
+	struct KeyListIndex* keylistindex, struct BTreeNode const* node, int index)
+{
+	if( index < node->header->num_keys )
+	{
+		keylistindex->mode = KLIM_INDEX;
+		keylistindex->index = index;
+	}
+	else if( !node->header->is_leaf )
+	{
+		keylistindex->mode = KLIM_RIGHT_CHILD;
+		keylistindex->index = 0;
+	}
+	else
+	{
+		keylistindex->mode = KLIM_END;
+		keylistindex->index = 0;
+	}
+
+	return 0;
+}

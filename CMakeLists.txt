@@ -22,6 +22,7 @@ add_executable(test
     src/test.c
     src/pager_test.c
     src/btree_test.c
+    src/btree_alg_test.c
     src/pager.c
     src/btree.c
     src/binary_search.c
