@@ -26,6 +26,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	memset(page, 0x00, sizeof(*page));
 	page->page_id = page_id;
 	page->status = PAGER_ERR_PAGE_PERSISTENCE_UNKNOWN;
+	page->page_size = pager->page_size;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
 
@@ -114,6 +115,7 @@ pager_alloc(struct Pager** r_pager)
 	*r_pager = (struct Pager*)malloc(sizeof(struct Pager));
 	return PAGER_OK;
 }
+
 enum pager_e
 pager_dealloc(struct Pager* pager)
 {
@@ -158,7 +160,7 @@ pager_open(struct Pager* pager, char const* pager_str)
 
 	enum pager_e opened = pager->ops->open(&pager->file, pager->pager_name_str);
 	int size = pager->ops->size(pager->file);
-	pager->max_page = size / 0x1000;
+	pager->max_page = size / pager->page_size;
 
 	return PAGER_OK;
 }

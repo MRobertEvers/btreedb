@@ -8,6 +8,9 @@
 extern struct PagerOps CStdOps;
 
 enum pager_e pager_cstd_create(
-	struct Pager** r_pager, struct PageCache* cache, char const* filename);
+	struct Pager** r_pager,
+	struct PageCache* cache,
+	char const* filename,
+	unsigned int page_size);
 
 #endif

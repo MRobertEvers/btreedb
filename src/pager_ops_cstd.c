@@ -83,12 +83,15 @@ struct PagerOps CStdOps = {
 
 enum pager_e
 pager_cstd_create(
-	struct Pager** r_pager, struct PageCache* cache, char const* filename)
+	struct Pager** r_pager,
+	struct PageCache* cache,
+	char const* filename,
+	unsigned int page_size)
 {
 	enum pager_e pager_result;
 
 	// 4Kb
-	pager_result = pager_create(r_pager, &CStdOps, cache, 0x1000);
+	pager_result = pager_create(r_pager, &CStdOps, cache, page_size);
 	if( pager_result != PAGER_OK )
 		return pager_result;
 

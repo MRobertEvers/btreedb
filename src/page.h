@@ -11,6 +11,7 @@ struct PageSelector
 struct Page
 {
 	int page_id;
+	unsigned int page_size;
 	enum pager_e status;
 
 	void* page_buffer;

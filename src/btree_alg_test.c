@@ -24,7 +24,7 @@ btree_alg_test_split_nonleaf(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, db_name);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
@@ -120,7 +120,7 @@ btree_alg_test_split_leaf(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, db_name);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
@@ -214,7 +214,7 @@ btree_alg_test_split_as_parent_nonleaf(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, db_name);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
@@ -322,7 +322,7 @@ btree_alg_test_split_as_parent_leaf(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, db_name);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;

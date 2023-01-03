@@ -19,7 +19,8 @@ int
 btu_get_node_size(struct BTreeNode* node)
 {
 	// 4kb
-	return 0x1000 - (node->page_number == 1 ? BTREE_HEADER_SIZE : 0);
+	return node->page->page_size -
+		   (node->page_number == 1 ? BTREE_HEADER_SIZE : 0);
 }
 
 char*

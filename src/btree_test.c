@@ -21,7 +21,7 @@ btree_test_insert()
 	remove("btree_test_insert2.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "btree_test_insert2.db");
+	pager_cstd_create(&pager, cache, "btree_test_insert2.db", 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -69,7 +69,7 @@ btree_test_insert_root_with_space()
 	remove("test_.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "test_.db");
+	pager_cstd_create(&pager, cache, "test_.db", 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -122,7 +122,7 @@ btree_test_split_root_node()
 	struct PageCache* cache = NULL;
 	remove("split_root_node.db");
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "split_root_node.db");
+	pager_cstd_create(&pager, cache, "split_root_node.db", 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -204,7 +204,7 @@ btree_test_delete(void)
 	struct PageCache* cache = NULL;
 	remove("delete_key.db");
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "delete_key.db");
+	pager_cstd_create(&pager, cache, "delete_key.db", 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
@@ -273,7 +273,7 @@ btree_test_free_heap_calcs()
 	remove("test_free_heap.db");
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "test_free_heap.db");
+	pager_cstd_create(&pager, cache, "test_free_heap.db", 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);

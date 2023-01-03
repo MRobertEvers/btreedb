@@ -43,7 +43,8 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 
 	// TODO: Don't hardcode page size
 	if( node->header->num_keys == 0 )
-		node->header->free_heap = 0x1000 - sizeof(struct BTreePageHeader);
+		node->header->free_heap =
+			node->page->page_size - sizeof(struct BTreePageHeader);
 
 	return BTREE_OK;
 }
