@@ -122,9 +122,10 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	enum btree_e result = BTREE_OK;
 	int index = 0;
 	char found = 0;
+	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
-	struct BTreeNode* node = NULL;
+	struct BTreeNode node = {0};
 	struct Cursor* cursor = cursor_create(tree);
 
 	result = cursor_traverse_to(cursor, key, &found);
@@ -136,32 +137,48 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	while( 1 )
 	{
 		pager_reselect(&selector, cursor->current_page_id);
-		pager_read_page(tree->pager, &selector, page);
+		page_result = pager_read_page(tree->pager, &selector, page);
+		if( page_result != PAGER_OK )
+		{
+			result = BTREE_ERR_UNK;
+			goto end;
+		}
 
-		// TODO: Don't need to alloc in loop.
-		btree_node_create_from_page(&node, page);
+		btree_node_init_from_page(&node, page);
 
 		result =
-			btree_node_insert(node, cursor->current_key, key, data, data_size);
+			btree_node_insert(&node, cursor->current_key, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
-			if( node->page->page_id != 1 )
+			// We want to keep the root node as the first page.
+			// So if the first page is to be split, then split
+			// the data in this page between two children nodes.
+			// This node becomes the new parent of those nodes.
+			if( node.page->page_id == 1 )
+			{
+				bta_split_node_as_parent(tree, &node, NULL);
+				goto end;
+			}
+			else
 			{
 				struct SplitPage split_result;
-				bta_split_node(tree, node, &split_result);
+				bta_split_node(tree, &node, &split_result);
 
+				// TODO: Key compare function.
 				if( key >= split_result.right_page_low_key )
 				{
 					pager_reselect(&selector, split_result.right_page_id);
 					pager_read_page(tree->pager, &selector, page);
-					btree_node_init_from_page(node, page);
+					btree_node_init_from_page(&node, page);
 				}
 
 				int new_insert_index = btu_binary_search_keys(
-					node->keys, node->header->num_keys, key, &found);
-				btree_node_insert(node, new_insert_index, key, data, data_size);
+					node.keys, node.header->num_keys, key, &found);
+				btree_node_insert(
+					&node, new_insert_index, key, data, data_size);
 
 				// Args for next iteration
+				// Insert the new child's page number into the parent.
 				result = cursor_select_parent(cursor);
 				if( result == BTREE_ERR_CURSOR_NO_PARENT )
 					assert(0);
@@ -169,20 +186,12 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				key = cursor->current_key;
 				data = (void*)split_result.right_page_id;
 				data_size = sizeof(split_result.right_page_id);
-
-				btree_node_destroy(node);
-			}
-			else
-			{
-				bta_bplus_split_node(tree, node);
-				btree_node_destroy(node);
-				goto end;
 			}
 		}
 		else
 		{
+			// Write the page out and we're done.
 			pager_write_page(tree->pager, page);
-			btree_node_destroy(node);
 			break;
 		}
 	}

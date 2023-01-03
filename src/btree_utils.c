@@ -48,6 +48,7 @@ btu_binary_search_keys(
 	{
 		mid = (right - left) / 2 + left;
 
+		// TODO: Key compare function.
 		if( arr[mid].key == key )
 		{
 			if( found )

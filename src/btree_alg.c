@@ -11,7 +11,10 @@
  * See header for details.
  */
 enum btree_e
-bta_bplus_split_node(struct BTree* tree, struct BTreeNode* node)
+bta_split_node_as_parent(
+	struct BTree* tree,
+	struct BTreeNode* node,
+	struct SplitPageAsParent* split_page)
 {
 	struct BTreeNode* parent = NULL;
 	struct BTreeNode* left = NULL;
@@ -71,6 +74,13 @@ bta_bplus_split_node(struct BTree* tree, struct BTreeNode* node)
 
 	pager_write_page(tree->pager, node->page);
 
+	if( split_page != NULL )
+	{
+		split_page->left_child_page_id = left_page->page_id;
+		split_page->right_child_page_id = right_page->page_id;
+		split_page->right_child_low_key = right->keys[0].key;
+	}
+
 end:
 	btree_node_destroy(left);
 	page_destroy(tree->pager, left_page);
@@ -120,10 +130,11 @@ bta_split_node(
 		}
 	}
 
-	// We need to write the pages out to get the page ids.
-	right->header->is_leaf = 1;
-	left->header->is_leaf = 1;
+	right->header->is_leaf = node->header->is_leaf;
+	left->header->is_leaf = node->header->is_leaf;
+	// Write out the input page.
 	pager_write_page(tree->pager, left_page);
+	// We need to write the pages out to get the page ids.
 	pager_write_page(tree->pager, right_page);
 
 	memcpy(
@@ -132,8 +143,11 @@ bta_split_node(
 		btu_get_node_size(left));
 	node->page_number = left_page->page_id;
 
-	split_page->right_page_id = right_page->page_id;
-	split_page->right_page_low_key = right->keys[0].key;
+	if( split_page != NULL )
+	{
+		split_page->right_page_id = right_page->page_id;
+		split_page->right_page_low_key = right->keys[0].key;
+	}
 
 end:
 	btree_node_destroy(left);

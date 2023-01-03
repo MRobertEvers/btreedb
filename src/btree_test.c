@@ -144,7 +144,7 @@ btree_test_split_root_node()
 
 	struct BTreeNode* raw_root_node;
 	btree_node_create_from_page(&raw_root_node, raw_page);
-	bta_bplus_split_node(tree, raw_root_node);
+	bta_split_node_as_parent(tree, raw_root_node, NULL);
 
 	struct Cursor* cursor = cursor_create(tree);
 
