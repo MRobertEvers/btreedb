@@ -14,8 +14,10 @@ main()
 	result = pager_test_page_loads_caching();
 	printf("pager shared pages from cache: %d\n", result);
 
-	result = btree_alg_test_split();
-	printf("alg split non-leaf: %d\n", result);
+	// result = btree_alg_test_split();
+	// printf("alg split non-leaf: %d\n", result);
+	result = btree_alg_test_split_as_parent();
+	printf("alg split as parent leaf: %d\n", result);
 
 	// result = btree_test_insert();
 	// printf("insert page: %d\n", result);

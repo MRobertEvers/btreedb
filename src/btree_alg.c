@@ -64,20 +64,23 @@ bta_split_node_as_parent(
 	}
 
 	// We need to write the pages out to get the page ids.
-	right->header->is_leaf = 1;
-	pager_write_page(pager, right_page);
-
 	left->header->is_leaf = 1;
 	pager_write_page(pager, left_page);
 
+	right->header->is_leaf = 1;
+	pager_write_page(pager, right_page);
+
+	parent->header->is_leaf = 0;
+	parent->header->right_child = right_page->page_id;
+	insert_end.mode = KLIM_END;
+	// Add the middle point between the left and right pages as a key to the
+	// parent.
 	btree_node_insert(
 		parent,
 		&insert_end,
 		left->keys[left->header->num_keys - 1].key,
 		&left_page->page_id,
 		sizeof(unsigned int));
-
-	parent->header->is_leaf = 0;
 
 	memcpy(
 		btu_get_node_buffer(node),

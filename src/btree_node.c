@@ -108,6 +108,8 @@ btree_node_insert(
 {
 	unsigned int index_number = 0;
 
+	// If inserting right child, then data is expected to be the page id.
+	// The right child has no key.
 	if( index->mode == KLIM_RIGHT_CHILD )
 	{
 		assert(!node->header->is_leaf);

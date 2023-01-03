@@ -19,6 +19,8 @@ struct SplitPageAsParent
  *
  * Input node, left and right children are written to disk.
  *
+ * WARNING! The parent page must be on disk already. Unlike the other algo.
+ *
  * @param tree
  * @param node
  * @return enum btree_e
