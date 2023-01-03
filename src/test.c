@@ -16,7 +16,9 @@ main()
 	result = btree_test_insert();
 	printf("insert page: %d\n", result);
 	result = btree_test_insert_root_with_space();
-	printf("insert page: %d\n", result);
+	printf("insert page root with space: %d\n", result);
+	result = btree_test_delete();
+	printf("delete key: %d\n", result);
 	result = btree_test_split_root_node();
 	printf("split root node: %d\n", result);
 	result = btree_test_free_heap_calcs();

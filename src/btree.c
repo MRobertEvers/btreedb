@@ -127,12 +127,11 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
 	struct Cursor* cursor = cursor_create(tree);
+	page_create(tree->pager, &page);
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
 		return result;
-
-	page_create(tree->pager, &page);
 
 	while( 1 )
 	{
@@ -146,8 +145,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 		btree_node_init_from_page(&node, page);
 
-		result =
-			btree_node_insert(&node, cursor->current_key, key, data, data_size);
+		result = btree_node_insert(
+			&node, cursor->current_key_index, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			// We want to keep the root node as the first page.
@@ -176,6 +175,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 					node.keys, node.header->num_keys, key, &found);
 				btree_node_insert(
 					&node, new_insert_index, key, data, data_size);
+				pager_write_page(tree->pager, node.page);
 
 				// Args for next iteration
 				// Insert the new child's page number into the parent.
@@ -183,7 +183,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				if( result == BTREE_ERR_CURSOR_NO_PARENT )
 					assert(0);
 
-				key = cursor->current_key;
+				key = cursor->current_key_index;
 				data = (void*)split_result.right_page_id;
 				data_size = sizeof(split_result.right_page_id);
 			}
@@ -191,7 +191,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 		else
 		{
 			// Write the page out and we're done.
-			pager_write_page(tree->pager, page);
+			pager_write_page(tree->pager, node.page);
 			break;
 		}
 	}
@@ -200,4 +200,56 @@ end:
 	cursor_destroy(cursor);
 	page_destroy(tree->pager, page);
 	return BTREE_OK;
+}
+
+enum btree_e
+btree_delete(struct BTree* tree, int key)
+{
+	enum btree_e result = BTREE_OK;
+	int index = 0;
+	char found = 0;
+	enum pager_e page_result = PAGER_OK;
+	struct Page* page = NULL;
+	struct PageSelector selector = {0};
+	struct BTreeNode node = {0};
+	struct Cursor* cursor = cursor_create(tree);
+	page_create(tree->pager, &page);
+
+	result = cursor_traverse_to(cursor, key, &found);
+	if( result != BTREE_OK )
+		return result;
+
+	while( 1 )
+	{
+		pager_reselect(&selector, cursor->current_page_id);
+		page_result = pager_read_page(tree->pager, &selector, page);
+		if( page_result != PAGER_OK )
+		{
+			result = BTREE_ERR_UNK;
+			goto end;
+		}
+
+		btree_node_init_from_page(&node, page);
+
+		result = btree_node_delete(&node, cursor->current_key_index);
+		pager_write_page(tree->pager, node.page);
+
+		if( btree_node_arity(&node) == 0 )
+		{
+			// Args for next iteration
+			// Delete the empty page from the parent..
+			result = cursor_select_parent(cursor);
+			if( result == BTREE_ERR_CURSOR_NO_PARENT )
+				goto end;
+
+			// TODO: Add empty page to free list if it's not the highwater page.
+		}
+		else
+		{
+			break;
+		}
+	}
+
+end:
+	return result;
 }

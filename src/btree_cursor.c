@@ -15,7 +15,7 @@ cursor_create(struct BTree* tree)
 	memset(cursor, 0x00, sizeof(*cursor));
 
 	cursor->tree = tree;
-	cursor->current_key = 0;
+	cursor->current_key_index = 0;
 	cursor->current_page_id = tree->root_page_id;
 	return cursor;
 }
@@ -35,7 +35,7 @@ cursor_select_parent(struct Cursor* cursor)
 	struct CursorBreadcrumb* crumb =
 		&cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
 	cursor->current_page_id = crumb->page_id;
-	cursor->current_key = crumb->key;
+	cursor->current_key_index = crumb->key_index;
 	cursor->breadcrumbs_size--;
 
 	return BTREE_OK;
@@ -60,7 +60,7 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	{
 		struct CursorBreadcrumb* crumb =
 			&cursor->breadcrumbs[cursor->breadcrumbs_size];
-		crumb->key = cursor->current_key;
+		crumb->key_index = cursor->current_key_index;
 		crumb->page_id = cursor->current_page_id;
 		cursor->breadcrumbs_size++;
 
@@ -85,13 +85,16 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 		child_key_index = btu_binary_search_keys(
 			node.keys, node.header->num_keys, key, found);
 
-		cursor->current_key = child_key_index;
+		cursor->current_key_index = child_key_index;
 
 		if( !node.header->is_leaf )
 		{
 			if( child_key_index == node.header->num_keys )
 			{
-				cursor->current_page_id = node.header->right_child;
+				if( node.header->right_child != 0 )
+					cursor->current_page_id = node.header->right_child;
+				else
+					break;
 			}
 			else
 			{

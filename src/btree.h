@@ -10,5 +10,6 @@ enum btree_e btree_init(struct BTree* tree, struct Pager* pager);
 enum btree_e btree_deinit(struct BTree* tree);
 
 enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
+enum btree_e btree_delete(struct BTree*, int key);
 
 #endif

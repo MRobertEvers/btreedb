@@ -2,6 +2,7 @@
 
 #include "btree_utils.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,12 +106,34 @@ btree_node_insert(
 	void* data,
 	int data_size)
 {
+	// if( index == node->header->num_keys && !node->header->is_leaf )
+	// {
+	// 	assert(!node->header->is_leaf);
+	// 	assert(data_size == sizeof(node->header->right_child));
+
+	// 	unsigned int previous_right_child = node->header->right_child;
+	// 	node->header->right_child = (int)data;
+
+	// 	// If we wanted to put data into the right child
+	// 	// and there previously wasn't a right child,
+	// 	// then we are done.
+	// 	// Otherwise, the we have
+	// 	if( previous_right_child == 0 )
+	// 	{
+	// 		return BTREE_OK;
+	// 	}
+	// 	else
+	// 	{
+	// 		index = node->header->num_keys;
+	// 		data = (void*)previous_right_child;
+	// 	}
+	// }
+
 	// Size check
 	int size_needed =
 		btu_calc_cell_size(data_size) + sizeof(struct BTreePageKey);
 	if( node->header->free_heap < size_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-	node->header->free_heap -= size_needed;
 
 	// The Raw insertion
 	memmove(
@@ -123,13 +146,87 @@ btree_node_insert(
 		node->header->cell_high_water_offset + btu_calc_cell_size(data_size);
 	node->header->num_keys += 1;
 
-	char* cell = btu_get_node_buffer(node) + btu_get_node_size(node) -
-				 node->keys[index].cell_offset;
+	char* cell = btu_calc_highwater_offset(node, node->keys[index].cell_offset);
 	memcpy(cell, &data_size, sizeof(data_size));
 
 	cell = cell + sizeof(data_size);
 	memcpy(cell, data, data_size);
 	node->header->cell_high_water_offset += btu_calc_cell_size(data_size);
 
+	node->header->free_heap -= size_needed;
+
 	return BTREE_OK;
+}
+
+enum btree_e
+btree_node_delete(struct BTreeNode* node, int index)
+{
+	struct CellData cell = {0};
+
+	if( index < 0 || index > node->header->num_keys )
+	{
+		return BTREE_ERR_KEY_NOT_FOUND;
+	}
+	else if( index == node->header->num_keys )
+	{
+		// Must not be the case for leaf nodes.
+		if( node->header->is_leaf )
+			return BTREE_ERR_KEY_NOT_FOUND;
+
+		// It is up to the btree alg to correctly
+		// remove this node.
+		if( node->header->num_keys == 0 )
+		{
+			node->header->right_child = 0;
+			return BTREE_OK;
+		}
+
+		// The rightmost non-right-child key becomes the right-child.
+		struct BTreePageKey rightmost_key =
+			node->keys[node->header->num_keys - 1];
+		enum btree_e next_right_child_result =
+			btree_node_delete(node, node->header->num_keys - 1);
+		if( next_right_child_result != BTREE_OK )
+			return BTREE_ERR_UNK;
+
+		node->header->right_child = rightmost_key.key;
+
+		return BTREE_OK;
+	}
+
+	btu_read_cell(node, index, &cell);
+	int deleted_cell_size = *cell.size;
+
+	// Slide keys over.
+	memmove(
+		&node->keys[index],
+		&node->keys[index + 1],
+		(node->header->num_keys - index) * sizeof(node->keys[index]));
+	memset(&cell, 0x00, sizeof(cell));
+	node->header->num_keys -= 1;
+
+	// Garbage collection in the heap.
+	int old_highwater = node->header->cell_high_water_offset;
+	char* src = btu_calc_highwater_offset(node, old_highwater);
+	char* dest =
+		btu_calc_highwater_offset(node, old_highwater - deleted_cell_size);
+	memmove((void*)dest, (void*)src, deleted_cell_size);
+
+	node->header->cell_high_water_offset -= deleted_cell_size;
+
+	return BTREE_OK;
+}
+
+int
+btree_node_arity(struct BTreeNode* node)
+{
+	if( node->header->is_leaf )
+	{
+		return node->header->num_keys;
+	}
+	else
+	{
+		return node->header->num_keys +
+			   (node->header->right_child != 0 ? 1 : 0);
+	}
 }

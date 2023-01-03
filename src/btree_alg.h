@@ -17,6 +17,8 @@ struct SplitPageAsParent
  * left and right child each, then place the key for the left child
  * in the input node and set the rightmost child field.
  *
+ * Input node, left and right children are written to disk.
+ *
  * @param tree
  * @param node
  * @return enum btree_e
@@ -37,6 +39,8 @@ struct SplitPage
  *
  * Create a right child node. Move the upper half the data to the right child,
  * then keep the lower half in the left child.
+ *
+ * Input node and right child are both written to disk.
  *
  * @param tree
  * @param node

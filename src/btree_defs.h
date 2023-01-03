@@ -12,6 +12,7 @@ enum btree_e
 	BTREE_ERR_CHILD_OVERWRITE,
 	BTREE_OK,
 	BTREE_ERR_NODE_NOT_ENOUGH_SPACE,
+	BTREE_ERR_KEY_NOT_FOUND,
 	BTREE_ERR_CURSOR_NO_PARENT,
 	BTREE_ERR_CORRUPT_CELL,
 	BTREE_NEED_ROOT_INIT,
@@ -72,7 +73,7 @@ struct BTree
 // This is like "TID" in postgres
 struct CursorBreadcrumb
 {
-	int key;
+	int key_index;
 	int page_id;
 };
 
@@ -81,7 +82,8 @@ struct Cursor
 	struct BTree* tree;
 	int current_page_id;
 
-	int current_key;
+	// Index of the key in the current page.
+	int current_key_index;
 
 	struct CursorBreadcrumb breadcrumbs[8]; // TODO: Dynamic?
 	int breadcrumbs_size;

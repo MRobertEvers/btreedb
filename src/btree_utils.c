@@ -29,6 +29,18 @@ btu_get_node_buffer(struct BTreeNode* node)
 		   (node->page_number == 1 ? BTREE_HEADER_SIZE : 0);
 }
 
+/**
+ * See header for details.
+ */
+char*
+btu_calc_highwater_offset(struct BTreeNode* node, int highwater)
+{
+	return btu_get_node_buffer(node) + btu_get_node_size(node) - highwater;
+}
+
+/**
+ * See header for details.
+ */
 int
 btu_calc_cell_size(int size)
 {
