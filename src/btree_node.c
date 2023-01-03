@@ -116,6 +116,7 @@ btree_node_insert(
 		assert(data_size == sizeof(node->header->right_child));
 
 		unsigned int previous_right_child = node->header->right_child;
+		node->header->right_child = *(int*)data;
 
 		// If we wanted to put data into the right child
 		// and there previously wasn't a right child,
@@ -125,27 +126,32 @@ btree_node_insert(
 			// This might seem like it is an invariant failure,
 			// but if we're populating a new node, then
 			// this is correct.
-			node->header->right_child = *(int*)data;
+			return BTREE_OK;
+		}
+		else
+		{
+			// Probably shouldn't overwrite children..
+			// TODO: What should happen
 			return BTREE_OK;
 		}
 
-		// Push the right_child as a key to the key list.
-		struct KeyListIndex insert_index = {0};
-		insert_index.index = node->header->num_keys;
-		insert_index.mode = KLIM_END;
+		// // Push the right_child as a key to the key list.
+		// struct KeyListIndex insert_index = {0};
+		// insert_index.index = node->header->num_keys;
+		// insert_index.mode = KLIM_END;
 
-		enum btree_e next_right_child_result = btree_node_insert(
-			node,
-			&insert_index,
-			previous_right_child,
-			(void*)&previous_right_child,
-			sizeof(previous_right_child));
+		// enum btree_e next_right_child_result = btree_node_insert(
+		// 	node,
+		// 	&insert_index,
+		// 	previous_right_child,
+		// 	(void*)&previous_right_child,
+		// 	sizeof(previous_right_child));
 
-		// Success, change the right_child
-		if( next_right_child_result == BTREE_OK )
-			node->header->right_child = *(int*)data;
+		// // Success, change the right_child
+		// if( next_right_child_result == BTREE_OK )
+		// 	node->header->right_child = *(int*)data;
 
-		return next_right_child_result;
+		// return next_right_child_result;
 	}
 
 	index_number =

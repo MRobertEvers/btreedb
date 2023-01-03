@@ -6,8 +6,8 @@
 struct SplitPageAsParent
 {
 	int left_child_page_id;
+	int left_child_high_key;
 	int right_child_page_id;
-	int right_child_low_key;
 };
 
 /**
@@ -17,6 +17,7 @@ struct SplitPageAsParent
  * left and right child each, then place the key for the left child
  * in the input node and set the rightmost child field.
  *
+ * Input node becomes parent.
  * Input node, left and right children are written to disk.
  *
  * WARNING! The parent page must be on disk already. Unlike the other algo.
@@ -32,8 +33,8 @@ enum btree_e bta_split_node_as_parent(
 
 struct SplitPage
 {
-	int right_page_id;
-	int right_page_low_key;
+	int left_page_id;
+	int left_page_high_key;
 };
 
 /**
@@ -41,8 +42,8 @@ struct SplitPage
  *
  * Create a right child node. Move the upper half the data to the right child,
  * then keep the lower half in the left child.
- *
- * Input node and right child are both written to disk.
+ * Input node becomes right child.
+ * Input node and left child are both written to disk.
  *
  * @param tree
  * @param node

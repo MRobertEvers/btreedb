@@ -164,9 +164,9 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				bta_split_node(&node, tree->pager, &split_result);
 
 				// TODO: Key compare function.
-				if( key >= split_result.right_page_low_key )
+				if( key <= split_result.left_page_high_key )
 				{
-					pager_reselect(&selector, split_result.right_page_id);
+					pager_reselect(&selector, split_result.left_page_id);
 					pager_read_page(tree->pager, &selector, page);
 					btree_node_init_from_page(&node, page);
 				}
@@ -183,13 +183,20 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 				// Args for next iteration
 				// Insert the new child's page number into the parent.
+				// The parent pointer is already the key of the highest
+				// key in the right page, so that can stay the same.
+				// Insert the highest key of the left page.
+				//    K5              K<5   K5
+				//     |   ---->      |     |
+				//    K5              K<5   K5
+				//
 				result = cursor_select_parent(cursor);
 				if( result == BTREE_ERR_CURSOR_NO_PARENT )
 					assert(0);
 
-				key = cursor->current_key_index.index;
-				data = (void*)&split_result.right_page_id;
-				data_size = sizeof(split_result.right_page_id);
+				key = split_result.left_page_high_key;
+				data = (void*)&key;
+				data_size = sizeof(key);
 			}
 		}
 		else
