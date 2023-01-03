@@ -33,7 +33,8 @@ enum btree_e
 btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 {
 	int offset = page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
-	void* data = ((char*)page->page_buffer) + offset;
+	char* byte_buffer = (char*)page->page_buffer;
+	void* data = byte_buffer + offset;
 
 	node->page = page;
 	node->page_number = page->page_id;
@@ -41,10 +42,9 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 	// Trick to get a pointer to the address immediately after the header.
 	node->keys = (struct BTreePageKey*)&node->header[1];
 
-	// TODO: Don't hardcode page size
 	if( node->header->num_keys == 0 )
 		node->header->free_heap =
-			node->page->page_size - sizeof(struct BTreePageHeader);
+			node->page->page_size - sizeof(struct BTreePageHeader) - offset;
 
 	return BTREE_OK;
 }

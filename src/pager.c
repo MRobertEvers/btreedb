@@ -29,6 +29,9 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	page->page_size = pager->page_size;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
+	// char* temp = ((char*)page->page_buffer);
+	// for( int i = 0; i < pager->page_size - 1; i++ )
+	// 	temp[i] = 'a' + (i % (('z' - 'a') + 1));
 
 	return PAGER_OK;
 }
@@ -181,13 +184,18 @@ pager_create(
 	enum pager_e pager_result;
 	pager_result = pager_alloc(r_pager);
 	if( pager_result != PAGER_OK )
-		return pager_result;
+		goto err;
 
 	pager_result = pager_init(*r_pager, ops, cache, page_size);
 	if( pager_result != PAGER_OK )
-		return pager_result;
+		goto err;
 
-	return PAGER_OK;
+	return pager_result;
+err:
+	pager_dealloc(*r_pager);
+	*r_pager = NULL;
+
+	return pager_result;
 }
 
 enum pager_e

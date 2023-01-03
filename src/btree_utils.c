@@ -36,7 +36,10 @@ btu_get_node_buffer(struct BTreeNode* node)
 char*
 btu_calc_highwater_offset(struct BTreeNode* node, int highwater)
 {
-	return btu_get_node_buffer(node) + btu_get_node_size(node) - highwater;
+	char* base = btu_get_node_buffer(node);
+	base += btu_get_node_size(node);
+	base -= highwater;
+	return base;
 }
 
 /**

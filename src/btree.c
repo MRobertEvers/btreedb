@@ -69,6 +69,7 @@ btree_init_root_page(struct BTree* tree, struct Page* page)
 		return BTREE_OK;
 	}
 }
+
 enum btree_e
 btree_alloc(struct BTree** r_tree)
 {
@@ -95,6 +96,10 @@ enum btree_e
 btree_init(struct BTree* tree, struct Pager* pager)
 {
 	enum btree_e btree_result = BTREE_OK;
+
+	// Arbitrary 4*16 is approximately 4 keys.
+	if( pager->page_size < ((BTREE_HEADER_SIZE) + (4 * 16)) )
+		return BTREE_ERR_INVALID_PAGE_SIZE_TOO_SMALL;
 
 	tree->root_page_id = 1;
 	tree->pager = pager;
