@@ -47,6 +47,9 @@ btu_calc_cell_size(int size)
 	return size + sizeof(int);
 }
 
+/**
+ * See header for details.
+ */
 int
 btu_binary_search_keys(
 	struct BTreePageKey* arr, unsigned char num_keys, int key, char* found)
@@ -54,20 +57,22 @@ btu_binary_search_keys(
 	int left = 0;
 	int right = num_keys - 1;
 	int mid = 0;
+	unsigned int mid_key = 0;
 	*found = 0;
 
 	while( left <= right )
 	{
 		mid = (right - left) / 2 + left;
+		mid_key = arr[mid].key;
 
 		// TODO: Key compare function.
-		if( arr[mid].key == key )
+		if( mid_key == key )
 		{
 			if( found )
 				*found = 1;
 			return mid;
 		}
-		else if( arr[mid].key < key )
+		else if( mid_key < key )
 		{
 			left = mid + 1;
 		}

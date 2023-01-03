@@ -1,6 +1,7 @@
 
 #include "btree_alg_test.h"
 #include "btree_test.h"
+#include "btree_utils_test.h"
 #include "pager_test.h"
 
 #include <stdio.h>
@@ -33,6 +34,8 @@ main()
 	printf("split root node: %d\n", result);
 	result = btree_test_free_heap_calcs();
 	printf("free heap calcs: %d\n", result);
+	result = btree_utils_test_bin_search_keys();
+	printf("bin search keys: %d\n", result);
 
 	return 0;
 }

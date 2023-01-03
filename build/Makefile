@@ -352,6 +352,30 @@ src/btree_utils.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils.c.s
 .PHONY : src/btree_utils.c.s
 
+src/btree_utils_test.o: src/btree_utils_test.c.o
+.PHONY : src/btree_utils_test.o
+
+# target to build an object file
+src/btree_utils_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils_test.c.o
+.PHONY : src/btree_utils_test.c.o
+
+src/btree_utils_test.i: src/btree_utils_test.c.i
+.PHONY : src/btree_utils_test.i
+
+# target to preprocess a source file
+src/btree_utils_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils_test.c.i
+.PHONY : src/btree_utils_test.c.i
+
+src/btree_utils_test.s: src/btree_utils_test.c.s
+.PHONY : src/btree_utils_test.s
+
+# target to generate assembly for a file
+src/btree_utils_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils_test.c.s
+.PHONY : src/btree_utils_test.c.s
+
 src/main.o: src/main.c.o
 .PHONY : src/main.o
 
@@ -539,6 +563,9 @@ help:
 	@echo "... src/btree_utils.o"
 	@echo "... src/btree_utils.i"
 	@echo "... src/btree_utils.s"
+	@echo "... src/btree_utils_test.o"
+	@echo "... src/btree_utils_test.i"
+	@echo "... src/btree_utils_test.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

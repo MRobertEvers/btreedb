@@ -27,6 +27,27 @@ char* btu_calc_highwater_offset(struct BTreeNode* node, int highwater);
  */
 int btu_calc_cell_size(int size);
 
+/**
+ * @brief Returns the index of the value in the key array
+ *
+ * If the value is not in the array, it will return the index of the position
+ * in the array where it would go in sorted order.
+ *
+ * The returned index is the index in the array at which the value of key is
+ * less than or equal to the values in the array at indexes greater than or
+ * equal to the returned index.
+ *
+ * Ex.
+ *
+ * [1, 2, 5]
+ * search(3) => index 2 i.e. The index of 5.
+ *
+ * @param arr
+ * @param num_keys
+ * @param key
+ * @param found 1 if the value was found. 0 otherwise.
+ * @return int
+ */
 int btu_binary_search_keys(
 	struct BTreePageKey* arr, unsigned char num_keys, int key, char* found);
 
