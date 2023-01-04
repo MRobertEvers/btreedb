@@ -87,6 +87,18 @@ struct KeyListIndex
 	unsigned int index;
 };
 
+/**
+ * @brief Used as an insertion point by the insertion functions.
+ *
+ */
+struct LeftInsertionIndex
+{
+	enum key_list_index_mode_e mode;
+
+	// If mode=KLIM_INDEX, then this should be populated
+	unsigned int index;
+};
+
 // This is like "TID" in postgres
 struct CursorBreadcrumb
 {

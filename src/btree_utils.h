@@ -4,6 +4,7 @@
 #include "btree_defs.h"
 
 void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
+int btu_get_node_storage_size(struct BTreeNode* node);
 int btu_get_node_size(struct BTreeNode* node);
 char* btu_get_node_buffer(struct BTreeNode* node);
 
@@ -51,7 +52,27 @@ int btu_calc_cell_size(int size);
 int btu_binary_search_keys(
 	struct BTreePageKey* arr, unsigned char num_keys, int key, char* found);
 
+/**
+ * @brief Converts an index key to the approprate ListIndex for breadcrumbs.
+ *
+ * @param keylistindex
+ * @param node
+ * @param index
+ * @return int
+ */
 int btu_init_keylistindex_from_index(
 	struct KeyListIndex* keylistindex, struct BTreeNode const* node, int index);
+
+/**
+ * @brief
+ *
+ * @param keylistindex
+ * @param node
+ * @param index
+ * @return int
+ */
+int btu_get_left_insertion_from_keylistindex(
+	struct LeftInsertionIndex* insertion_index,
+	struct KeyListIndex* keylistindex);
 
 #endif
