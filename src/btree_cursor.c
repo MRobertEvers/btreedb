@@ -113,6 +113,7 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 		{
 			printf(";%d", node.header->right_child);
 		}
+		printf(" <--- %d (%d)", child_key_index, node.keys[child_key_index]);
 		printf("\n");
 
 		btu_init_keylistindex_from_index(

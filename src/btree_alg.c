@@ -4,6 +4,7 @@
 #include "btree_utils.h"
 #include "pager.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,6 +17,7 @@ bta_split_node_as_parent(
 	struct Pager* pager,
 	struct SplitPageAsParent* split_page)
 {
+	printf("Splitting page %d\n", node->page_number);
 	struct BTreeNode* parent = NULL;
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
@@ -55,11 +57,13 @@ bta_split_node_as_parent(
 			if( i == first_half - 1 )
 				left_child_high_key = key;
 			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
+			printf("L %d, ", key);
 		}
 		else
 		{
 			btree_node_insert(
 				right, &insert_end, key, cell.pointer, *cell.size);
+			printf("R %d, ", key);
 		}
 	}
 
@@ -73,14 +77,19 @@ bta_split_node_as_parent(
 			node->header->right_child,
 			(void*)&node->header->right_child,
 			sizeof(node->header->right_child));
+		printf("R %d, ", node->header->right_child);
 	}
+
+	printf("\n");
 
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = 1;
 	pager_write_page(pager, left_page);
+	printf("L is page %d\n", left_page->page_id);
 
 	right->header->is_leaf = 1;
 	pager_write_page(pager, right_page);
+	printf("R is page %d\n", right_page->page_id);
 
 	// When splitting a leaf-node,
 	// the right_child pointer becomes the right_page id
@@ -135,6 +144,7 @@ enum btree_e
 bta_split_node(
 	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page)
 {
+	printf("Splitting page %d\n", node->page_number);
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
 
@@ -172,11 +182,13 @@ bta_split_node(
 			if( i == first_half - 1 )
 				left_child_high_key = key;
 			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
+			printf("L %d, ", key);
 		}
 		else
 		{
 			btree_node_insert(
 				right, &insert_end, key, cell.pointer, *cell.size);
+			printf("R %d, ", key);
 		}
 	}
 
@@ -189,14 +201,19 @@ bta_split_node(
 			node->header->right_child,
 			(void*)&node->header->right_child,
 			sizeof(node->header->right_child));
+		printf("R %d, ", node->header->right_child);
 	}
+
+	printf("\n");
 
 	right->header->is_leaf = node->header->is_leaf;
 	left->header->is_leaf = node->header->is_leaf;
 	// We need to write the pages out to get the page ids.
 	pager_write_page(pager, right_page);
+	printf("R is page %d\n", right_page->page_id);
 	// Write out the input page.
 	pager_write_page(pager, left_page);
+	printf("L is page %d\n", left_page->page_id);
 
 	memcpy(
 		btu_get_node_buffer(node),

@@ -328,7 +328,7 @@ btree_test_deep_tree(void)
 
 	remove(db_name);
 
-	page_cache_create(&cache, 5);
+	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 200);
 
 	struct BTree* tree;
@@ -349,10 +349,6 @@ btree_test_deep_tree(void)
 
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 	btree_insert(tree, 2, charlie, sizeof(charlie));
-	btree_insert(tree, 12, billy, sizeof(billy));
-	btree_insert(tree, 13, buxley, sizeof(buxley));
-	btree_insert(tree, 14, herman, sizeof(herman));
-	btree_insert(tree, 11, flaur, sizeof(flaur));
 
 	/**
 	 * @brief Ensure all keys can be reached.
@@ -360,7 +356,7 @@ btree_test_deep_tree(void)
 	struct Cursor* cursor = cursor_create(tree);
 
 	char found = 0;
-	cursor_traverse_to(cursor, 2, &found);
+	cursor_traverse_to(cursor, 1, &found);
 
 	if( !found )
 	{
@@ -369,6 +365,9 @@ btree_test_deep_tree(void)
 	}
 
 	cursor_destroy(cursor);
+
+	btree_insert(tree, 12, billy, sizeof(billy));
+
 	cursor = cursor_create(tree);
 
 	cursor_traverse_to(cursor, 1, &found);
@@ -380,9 +379,13 @@ btree_test_deep_tree(void)
 	}
 
 	cursor_destroy(cursor);
+
+	btree_insert(tree, 13, buxley, sizeof(buxley));
+	btree_insert(tree, 14, herman, sizeof(herman));
+
 	cursor = cursor_create(tree);
 
-	cursor_traverse_to(cursor, 12, &found);
+	cursor_traverse_to(cursor, 1, &found);
 
 	if( !found )
 	{
@@ -391,9 +394,11 @@ btree_test_deep_tree(void)
 	}
 
 	cursor_destroy(cursor);
+
+	btree_insert(tree, 11, flaur, sizeof(flaur));
 	cursor = cursor_create(tree);
 
-	cursor_traverse_to(cursor, 13, &found);
+	cursor_traverse_to(cursor, 1, &found);
 
 	if( !found )
 	{

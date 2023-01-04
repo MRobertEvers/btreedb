@@ -16,8 +16,9 @@ add_executable(db
     src/btree_utils.c
     src/btree_alg.c
     src/btree_cursor.c
+    src/btree_node_debug.c
 )
-    
+
 add_executable(test
     src/test.c
     src/pager_test.c
@@ -33,4 +34,5 @@ add_executable(test
     src/btree_utils.c
     src/btree_alg.c
     src/btree_cursor.c
+    src/btree_node_debug.c
 )

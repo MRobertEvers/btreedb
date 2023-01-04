@@ -3,6 +3,7 @@
 #include "btree_utils.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -108,6 +109,12 @@ btree_node_insert(
 	int data_size)
 {
 	unsigned int index_number = 0;
+
+	printf(
+		"Inserting %d on page %d at %d\n",
+		key,
+		node->page_number,
+		index->index);
 
 	// If inserting right child, then data is expected to be the page id.
 	// The right child has no key.
