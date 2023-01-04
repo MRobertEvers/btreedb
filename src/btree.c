@@ -189,7 +189,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				struct KeyListIndex index = {0};
 				btu_init_keylistindex_from_index(
 					&index, &node, new_insert_index);
-
+				index.mode = KLIM_END;
 				btree_node_insert(&node, &index, key, data, data_size);
 				pager_write_page(tree->pager, page);
 

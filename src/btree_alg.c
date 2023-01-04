@@ -76,10 +76,10 @@ bta_split_node_as_parent(
 	}
 
 	// We need to write the pages out to get the page ids.
-	left->header->is_leaf = 1;
+	left->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, left_page);
 
-	right->header->is_leaf = 1;
+	right->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, right_page);
 
 	// When splitting a leaf-node,
