@@ -9,10 +9,11 @@
  *
  * @param cache
  * @param page_id
+ * @param found
  * @return int
  */
 static int
-find_in_cache(struct PageCache* cache, int page_id)
+find_in_cache(struct PageCache* cache, int page_id, char* found)
 {
 	int left = 0;
 	int right = cache->size - 1;
@@ -24,6 +25,8 @@ find_in_cache(struct PageCache* cache, int page_id)
 
 		if( cache->pages[mid].page_id == page_id )
 		{
+			if( found )
+				*found = 1;
 			return mid;
 		}
 		else if( cache->pages[mid].page_id < page_id )
@@ -78,9 +81,10 @@ enum pager_e
 page_cache_acquire(
 	struct PageCache* cache, int page_number, struct Page** r_page)
 {
-	int cache_index = find_in_cache(cache, page_number);
+	char page_found = 0;
+	int cache_index = find_in_cache(cache, page_number, &page_found);
 
-	if( cache_index < cache->size )
+	if( page_found )
 	{
 		struct PageCacheKey* pck = &cache->pages[cache_index];
 
@@ -98,9 +102,10 @@ page_cache_acquire(
 enum pager_e
 page_cache_release(struct PageCache* cache, struct Page* page)
 {
-	int cache_index = find_in_cache(cache, page->page_id);
+	char page_found = 0;
+	int cache_index = find_in_cache(cache, page->page_id, &page_found);
 
-	if( cache_index < cache->size )
+	if( page_found )
 	{
 		struct PageCacheKey* pck = &cache->pages[cache_index];
 
@@ -150,7 +155,8 @@ page_cache_insert(
 	if( cache->size == cache->capactiy )
 		cache_evict(cache, r_evicted_page);
 
-	int cache_index = find_in_cache(cache, page->page_id);
+	char page_found = 0;
+	int cache_index = find_in_cache(cache, page->page_id, &page_found);
 	assert(cache->pages[cache_index].page_id != page->page_id);
 
 	memmove(
