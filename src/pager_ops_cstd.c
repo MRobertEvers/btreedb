@@ -6,8 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// This is because of some crazy os caching I can't seem to control...
+// Posix only.
+// #include <unistd.h>
+// #include <fcntl.h>
+
 static enum pager_e
-open(void** file, char const* filename)
+co_open(void** file, char const* filename)
 {
 	FILE* fp = fopen(filename, "rb+");
 	if( !fp )
@@ -25,14 +30,14 @@ open(void** file, char const* filename)
 }
 
 static int
-size(void* file)
+co_size(void* file)
 {
 	fseek(file, 0L, SEEK_END);
 	return ftell(file);
 }
 
 static enum pager_e
-close(void* file)
+co_close(void* file)
 {
 	if( fclose(file) == 0 )
 		return PAGER_OK;
@@ -41,7 +46,7 @@ close(void* file)
 }
 
 static enum pager_e
-read(void* file, void* buffer, int offset, int read_size, int* bytes_read)
+co_read(void* file, void* buffer, int offset, int read_size, int* bytes_read)
 {
 	int result;
 
@@ -57,7 +62,8 @@ read(void* file, void* buffer, int offset, int read_size, int* bytes_read)
 }
 
 static enum pager_e
-write(void* file, void* buffer, int offset, int write_size, int* bytes_written)
+co_write(
+	void* file, void* buffer, int offset, int write_size, int* bytes_written)
 {
 	int seek_result;
 	unsigned int write_result;
@@ -70,15 +76,30 @@ write(void* file, void* buffer, int offset, int write_size, int* bytes_written)
 	if( write_result != 1 )
 		return PAGER_WRITE_ERR;
 
+	// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html
+	// From fsync docs.
+	// 	For applications that require tighter guarantees about the integrity of
+	//  their data, Mac OS X provides the F_FULLFSYNC fcntl.  The F_FULLFSYNC
+	//  fcntl asks the drive to flush all buffered data to permanent storage.
+	//  Applications, such as databases, that require a strict ordering of
+	//  writes should use F_FULLFSYNC to ensure that their data is written in
+	//  the order they expect.  Please see fcntl(2) for more detail.
+	// fsync(file);
+
+	// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html#//apple_ref/doc/man/2/fcntl
+	// int ffullsync_result = 0;
+	// ffullsync_result = fcntl(fileno(file), F_FULLFSYNC);
+	// printf("fcntl %i", ffullsync_result);
+
 	return PAGER_OK;
 }
 
 struct PagerOps CStdOps = {
-	.open = &open,	 //
-	.close = &close, //
-	.read = &read,	 //
-	.write = &write, //
-	.size = &size	 //
+	.open = &co_open,	//
+	.close = &co_close, //
+	.read = &co_read,	//
+	.write = &co_write, //
+	.size = &co_size	//
 };
 
 enum pager_e
