@@ -101,12 +101,12 @@ btu_init_keylistindex_from_index(
 	else if( !node->header->is_leaf )
 	{
 		keylistindex->mode = KLIM_RIGHT_CHILD;
-		keylistindex->index = 0;
+		keylistindex->index = node->header->num_keys;
 	}
 	else
 	{
 		keylistindex->mode = KLIM_END;
-		keylistindex->index = 0;
+		keylistindex->index = node->header->num_keys;
 	}
 
 	return 0;

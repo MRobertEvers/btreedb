@@ -4,6 +4,7 @@
 #include "btree_utils.h"
 #include "pager.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,11 +29,35 @@ cursor_destroy(struct Cursor* cursor)
 enum btree_e
 cursor_select_parent(struct Cursor* cursor)
 {
+	struct CursorBreadcrumb crumb = {0};
+
+	return cursor_pop(cursor, &crumb);
+}
+
+enum btree_e
+cursor_push(struct Cursor* cursor)
+{
+	if( cursor->breadcrumbs_size ==
+		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[0]) )
+		return BTREE_ERR_CURSOR_DEPTH_EXCEEDED;
+
+	struct CursorBreadcrumb* crumb =
+		&cursor->breadcrumbs[cursor->breadcrumbs_size];
+	crumb->key_index = cursor->current_key_index;
+	crumb->page_id = cursor->current_page_id;
+	cursor->breadcrumbs_size++;
+
+	return BTREE_OK;
+}
+
+enum btree_e
+cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
+{
 	if( cursor->breadcrumbs_size == 0 )
 		return BTREE_ERR_CURSOR_NO_PARENT;
 
-	struct CursorBreadcrumb* crumb =
-		&cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
+	*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
+
 	cursor->current_page_id = crumb->page_id;
 	cursor->current_key_index = crumb->key_index;
 	cursor->breadcrumbs_size--;
@@ -50,6 +75,7 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
 	struct CellData cell = {0};
+	struct CursorBreadcrumb* crumb = NULL;
 
 	page_result = page_create(cursor->tree->pager, &page);
 	if( page_result != PAGER_OK )
@@ -57,12 +83,6 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 
 	do
 	{
-		struct CursorBreadcrumb* crumb =
-			&cursor->breadcrumbs[cursor->breadcrumbs_size];
-		crumb->key_index = cursor->current_key_index;
-		crumb->page_id = cursor->current_page_id;
-		cursor->breadcrumbs_size++;
-
 		page_result = pager_reselect(&selector, cursor->current_page_id);
 		if( page_result != PAGER_OK )
 		{
@@ -84,8 +104,23 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 		child_key_index = btu_binary_search_keys(
 			node.keys, node.header->num_keys, key, found);
 
+		printf("Page %d (leaf? %d): ", node.page_number, node.header->is_leaf);
+		for( int i = 0; i < node.header->num_keys; i++ )
+		{
+			printf("%d, ", node.keys[i]);
+		}
+		if( !node.header->is_leaf )
+		{
+			printf(";%d", node.header->right_child);
+		}
+		printf("\n");
+
 		btu_init_keylistindex_from_index(
 			&cursor->current_key_index, &node, child_key_index);
+
+		result = cursor_push(cursor);
+		if( result != BTREE_OK )
+			goto end;
 
 		if( !node.header->is_leaf )
 		{

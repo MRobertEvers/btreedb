@@ -322,8 +322,8 @@ btree_test_deep_tree(void)
 	struct BTreeNode* node = NULL;
 	struct PageSelector selector;
 	struct CellData cell;
-	struct Page* page;
-	struct Pager* pager;
+	struct Page* page = NULL;
+	struct Pager* pager = NULL;
 	struct PageCache* cache = NULL;
 
 	remove(db_name);
@@ -343,10 +343,20 @@ btree_test_deep_tree(void)
 	char billy[40] = "billy";
 	char ruth[40] = "ruth";
 	char charlie[40] = "charlie";
-	btree_insert(tree, 12, billy, sizeof(billy));
-	btree_insert(tree, 2, charlie, sizeof(charlie));
-	btree_insert(tree, 1, ruth, sizeof(ruth));
+	char buxley[40] = "buxley";
+	char herman[40] = "herman";
+	char flaur[100] = "flaur";
 
+	btree_insert(tree, 1, ruth, sizeof(ruth));
+	btree_insert(tree, 2, charlie, sizeof(charlie));
+	btree_insert(tree, 12, billy, sizeof(billy));
+	btree_insert(tree, 13, buxley, sizeof(buxley));
+	btree_insert(tree, 14, herman, sizeof(herman));
+	btree_insert(tree, 11, flaur, sizeof(flaur));
+
+	/**
+	 * @brief Ensure all keys can be reached.
+	 */
 	struct Cursor* cursor = cursor_create(tree);
 
 	char found = 0;
@@ -370,6 +380,54 @@ btree_test_deep_tree(void)
 	}
 
 	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
+
+	cursor_traverse_to(cursor, 12, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
+
+	cursor_traverse_to(cursor, 13, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
+
+	cursor_traverse_to(cursor, 14, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
+
+	cursor_traverse_to(cursor, 11, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	cursor_destroy(cursor);
+
+	/**
+	 * @brief Test reading the cell returns the correct data.
+	 */
 	cursor = cursor_create(tree);
 
 	cursor_traverse_to(cursor, 12, &found);
@@ -406,9 +464,11 @@ btree_test_deep_tree(void)
 	}
 
 end:
-	page_destroy(pager, page);
-	btree_node_destroy(node);
+	if( page )
+		page_destroy(pager, page);
+	if( node )
+		btree_node_destroy(node);
 	remove(db_name);
 
-	return 1;
+	return result;
 }

@@ -133,6 +133,7 @@ btree_node_insert(
 		{
 			// Probably shouldn't overwrite children..
 			// TODO: What should happen
+			assert(0);
 			return BTREE_OK;
 		}
 

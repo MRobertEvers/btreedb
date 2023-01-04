@@ -131,16 +131,21 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
+	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
 	page_create(tree->pager, &page);
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
-		return result;
+		goto end;
 
 	while( 1 )
 	{
-		pager_reselect(&selector, cursor->current_page_id);
+		result = cursor_pop(cursor, &crumb);
+		if( result != BTREE_OK )
+			goto end;
+
+		pager_reselect(&selector, crumb.page_id);
 		page_result = pager_read_page(tree->pager, &selector, page);
 		if( page_result != PAGER_OK )
 		{
@@ -150,8 +155,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 		btree_node_init_from_page(&node, page);
 
-		result = btree_node_insert(
-			&node, &cursor->current_key_index, key, data, data_size);
+		result =
+			btree_node_insert(&node, &crumb.key_index, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			// We want to keep the root node as the first page.
@@ -211,6 +216,24 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				btree_node_insert(&node, &index, key, data, data_size);
 				pager_write_page(tree->pager, node.page);
 
+				// Move the cursor one to the left so we can insert there.
+				result = cursor_pop(cursor, &crumb);
+				if( result != BTREE_OK )
+					goto end;
+
+				// TODO: Better way to do this?
+				// Basically we have to insert the left child to the left of the
+				// node that was split.
+				//
+				// It is expected that the index of a key with KLIM_RIGHT_CHILD
+				// is the num keys on that page.
+				// cursor->current_key_index.index;
+
+				cursor->current_key_index.mode = KLIM_INDEX;
+				result = cursor_push(cursor);
+				if( result != BTREE_OK )
+					goto end;
+
 				// Args for next iteration
 				// Insert the new child's page number into the parent.
 				// The parent pointer is already the key of the highest
@@ -220,13 +243,9 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				//     |   ---->      |     |
 				//    K5              K<5   K5
 				//
-				result = cursor_select_parent(cursor);
-				if( result == BTREE_ERR_CURSOR_NO_PARENT )
-					assert(0);
-
 				key = split_result.left_page_high_key;
-				data = (void*)&key;
-				data_size = sizeof(key);
+				data = (void*)&split_result.left_page_id;
+				data_size = sizeof(split_result.left_page_id);
 			}
 		}
 		else
