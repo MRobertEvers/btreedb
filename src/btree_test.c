@@ -319,11 +319,15 @@ btree_test_deep_tree(void)
 {
 	char const* db_name = "btree_test_deep_tree.db";
 	int result = 1;
-	struct BTreeNode* node = 0;
-
+	struct BTreeNode* node = NULL;
+	struct PageSelector selector;
+	struct CellData cell;
+	struct Page* page;
 	struct Pager* pager;
 	struct PageCache* cache = NULL;
+
 	remove(db_name);
+
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, db_name, 200);
 
@@ -343,17 +347,6 @@ btree_test_deep_tree(void)
 	btree_insert(tree, 2, charlie, sizeof(charlie));
 	btree_insert(tree, 1, ruth, sizeof(ruth));
 
-	struct Page* raw_page;
-	page_create(pager, &raw_page);
-
-	struct PageSelector selector;
-	pager_reselect(&selector, tree->root_page_id);
-	pager_read_page(pager, &selector, raw_page);
-
-	struct BTreeNode* raw_root_node;
-	btree_node_create_from_page(&raw_root_node, raw_page);
-	bta_split_node_as_parent(raw_root_node, tree->pager, NULL);
-
 	struct Cursor* cursor = cursor_create(tree);
 
 	char found = 0;
@@ -365,39 +358,57 @@ btree_test_deep_tree(void)
 		goto end;
 	}
 
-	struct Page* page;
-	page_create(tree->pager, &page);
+	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
 
+	cursor_traverse_to(cursor, 1, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	cursor_destroy(cursor);
+	cursor = cursor_create(tree);
+
+	cursor_traverse_to(cursor, 12, &found);
+
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(tree->pager, &page);
 	pager_reselect(&selector, cursor->current_page_id);
 	pager_read_page(tree->pager, &selector, page);
 	btree_node_create_from_page(&node, page);
 
-	if( node->header->num_keys != 2 )
+	if( node->header->num_keys != 3 )
 	{
 		result = 0;
 		goto end;
 	}
 
-	struct CellData cell;
 	btu_read_cell(node, cursor->current_key_index.index, &cell);
 
-	if( *cell.size != sizeof(charlie) )
+	if( *cell.size != sizeof(billy) )
 	{
 		result = 0;
 		goto end;
 	}
 
-	if( memcmp(cell.pointer, charlie, sizeof(charlie)) != 0 )
+	if( memcmp(cell.pointer, billy, sizeof(billy)) != 0 )
 	{
 		result = 0;
 		goto end;
 	}
 
 end:
-	btree_node_destroy(raw_root_node);
-	page_destroy(pager, raw_page);
+	page_destroy(pager, page);
 	btree_node_destroy(node);
-	remove("split_root_node.db");
+	remove(db_name);
 
 	return 1;
 }

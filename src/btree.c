@@ -160,7 +160,32 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			// This node becomes the new parent of those nodes.
 			if( node.page->page_id == 1 )
 			{
-				bta_split_node_as_parent(&node, tree->pager, NULL);
+				struct SplitPageAsParent split_result;
+				bta_split_node_as_parent(&node, tree->pager, &split_result);
+
+				// TODO: Key compare function.
+				if( key <= split_result.left_child_high_key )
+				{
+					pager_reselect(&selector, split_result.left_child_page_id);
+				}
+				else
+				{
+					pager_reselect(&selector, split_result.right_child_page_id);
+				}
+
+				pager_read_page(tree->pager, &selector, page);
+				btree_node_init_from_page(&node, page);
+
+				int new_insert_index = btu_binary_search_keys(
+					node.keys, node.header->num_keys, key, &found);
+
+				struct KeyListIndex index = {0};
+				btu_init_keylistindex_from_index(
+					&index, &node, new_insert_index);
+
+				btree_node_insert(&node, &index, key, data, data_size);
+				pager_write_page(tree->pager, node.page);
+
 				goto end;
 			}
 			else

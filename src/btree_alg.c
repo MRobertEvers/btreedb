@@ -51,7 +51,8 @@ bta_split_node_as_parent(
 			insert_end.mode = (i == first_half - 1 && !node->header->is_leaf)
 								  ? KLIM_RIGHT_CHILD
 								  : KLIM_END;
-			if( insert_end.mode == KLIM_RIGHT_CHILD )
+			// We must track this regardless of whether leaf or not.
+			if( i == first_half - 1 )
 				left_child_high_key = key;
 			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
 		}
@@ -168,7 +169,7 @@ bta_split_node(
 			insert_end.mode = (i == first_half - 1 && !node->header->is_leaf)
 								  ? KLIM_RIGHT_CHILD
 								  : KLIM_END;
-			if( insert_end.mode == KLIM_RIGHT_CHILD )
+			if( i == first_half - 1 )
 				left_child_high_key = key;
 			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
 		}
