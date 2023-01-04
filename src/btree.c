@@ -170,32 +170,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				struct SplitPageAsParent split_result;
 				bta_split_node_as_parent(&node, tree->pager, &split_result);
 
-				struct BTreeNode parent = {0};
-				struct BTreeNode left = {0};
-				struct BTreeNode right = {0};
-				struct Page* parent_page = NULL;
-				struct Page* left_page = NULL;
-				struct Page* right_page = NULL;
-
-				page_create(tree->pager, &parent_page);
-				pager_reselect(&selector, node.page_number);
-				pager_read_page(tree->pager, &selector, parent_page);
-				btree_node_init_from_page(&parent, parent_page);
-
-				page_create(tree->pager, &left_page);
-				pager_reselect(&selector, split_result.left_child_page_id);
-				pager_read_page(tree->pager, &selector, left_page);
-				btree_node_init_from_page(&left, left_page);
-
-				page_create(tree->pager, &right_page);
-				pager_reselect(&selector, split_result.right_child_page_id);
-				pager_read_page(tree->pager, &selector, right_page);
-				btree_node_init_from_page(&right, right_page);
-
-				dbg_print_node(&parent);
-				dbg_print_node(&left);
-				dbg_print_node(&right);
-
 				// TODO: Key compare function.
 				if( key <= split_result.left_child_high_key )
 				{
@@ -217,26 +191,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 					&index, &node, new_insert_index);
 
 				btree_node_insert(&node, &index, key, data, data_size);
-				pager_write_page(tree->pager, node.page);
-
-				// page_create(tree->pager, &parent_page);
-				// pager_reselect(&selector, 1);
-				// pager_read_page(tree->pager, &selector, parent_page);
-				// btree_node_init_from_page(&parent, parent_page);
-
-				// page_create(tree->pager, &left_page);
-				// pager_reselect(&selector, split_result.left_child_page_id);
-				// pager_read_page(tree->pager, &selector, left_page);
-				// btree_node_init_from_page(&left, left_page);
-
-				// page_create(tree->pager, &right_page);
-				// pager_reselect(&selector, split_result.right_child_page_id);
-				// pager_read_page(tree->pager, &selector, right_page);
-				// btree_node_init_from_page(&right, right_page);
-
-				// dbg_print_node(&parent);
-				// dbg_print_node(&left);
-				// dbg_print_node(&right);
+				pager_write_page(tree->pager, page);
 
 				goto end;
 			}

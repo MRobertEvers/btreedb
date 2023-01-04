@@ -4,7 +4,6 @@
 #include "btree_utils.h"
 #include "pager.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -103,18 +102,6 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 
 		child_key_index = btu_binary_search_keys(
 			node.keys, node.header->num_keys, key, found);
-
-		printf("Page %d (leaf? %d): ", node.page_number, node.header->is_leaf);
-		for( int i = 0; i < node.header->num_keys; i++ )
-		{
-			printf("%d, ", node.keys[i]);
-		}
-		if( !node.header->is_leaf )
-		{
-			printf(";%d", node.header->right_child);
-		}
-		printf(" <--- %d (%d)", child_key_index, node.keys[child_key_index]);
-		printf("\n");
 
 		btu_init_keylistindex_from_index(
 			&cursor->current_key_index, &node, child_key_index);
