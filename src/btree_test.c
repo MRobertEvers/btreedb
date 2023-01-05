@@ -6,6 +6,7 @@
 #include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
+#include "btree_node_reader.h"
 #include "btree_utils.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
@@ -319,24 +320,24 @@ end:
 static void
 dbg_deep_tree_pages(struct Pager* pager)
 {
-	struct Page* page = NULL;
-	struct BTreeNode* node = NULL;
-	struct PageSelector selector;
-	page_create(pager, &page);
+	// struct Page* page = NULL;
+	// struct BTreeNode* node = NULL;
+	// struct PageSelector selector;
+	// page_create(pager, &page);
 
-	for( int i = 0; i < 20; i++ )
-	{
-		pager_reselect(&selector, i + 1);
-		enum pager_e result = pager_read_page(pager, &selector, page);
-		if( result == PAGER_ERR_NIF )
-			break;
-		btree_node_create_from_page(&node, page);
+	// for( int i = 0; i < 50; i++ )
+	// {
+	// 	pager_reselect(&selector, i + 1);
+	// 	enum pager_e result = pager_read_page(pager, &selector, page);
+	// 	if( result == PAGER_ERR_NIF )
+	// 		break;
+	// 	btree_node_create_from_page(&node, page);
 
-		dbg_print_node(node);
-	}
+	// 	dbg_print_node(node);
+	// }
 
-	if( page )
-		page_destroy(pager, page);
+	// if( page )
+	// 	page_destroy(pager, page);
 }
 
 int
@@ -351,6 +352,7 @@ btree_test_deep_tree(void)
 	struct Pager* pager = NULL;
 	struct PageCache* cache = NULL;
 
+	printf("\n\nHello!\n\n");
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
@@ -365,14 +367,16 @@ btree_test_deep_tree(void)
 		goto end;
 	}
 
-	char billy[40] = "billy";		 // 12
+	char billy[] = "billy_"
+				   "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVW"
+				   "XYZ";			 // 12
 	char ruth[40] = "ruth";			 // 1
+	char yuta[100] = "999yutaaa";	 // 7
 	char charlie[40] = "charlie";	 // 2
 	char buxley[40] = "buxley";		 // 13
 	char herman[40] = "herman";		 // 14
 	char flaur[100] = "flaur";		 // 11
 	char flemming[100] = "flemming"; // 30
-	char yuta[100] = "yuta";		 // 7
 	char xiao[100] = "xiao";		 // 15
 	char gilly[100] = "gilly";		 // 21
 
@@ -447,9 +451,7 @@ btree_test_deep_tree(void)
 
 	// Insert 15
 	btree_insert(tree, 15, xiao, sizeof(xiao));
-	printf("\nAfter 15\n");
 
-	dbg_deep_tree_pages(tree->pager);
 	cursor = cursor_create(tree);
 	cursor_traverse_to(cursor, 1, &found);
 	if( !found )
@@ -458,6 +460,149 @@ btree_test_deep_tree(void)
 
 	// Insert 21
 	btree_insert(tree, 21, gilly, sizeof(gilly));
+	printf("\nAfter 21\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	// Insert 22
+	btree_insert(tree, 22, gilly, sizeof(gilly));
+	printf("\nAfter 22\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	// Insert 22
+	btree_insert(tree, 23, gilly, sizeof(gilly));
+	printf("\nAfter 23\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	// Insert 8
+	btree_insert(tree, 8, gilly, sizeof(gilly));
+	printf("\nAfter 8\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 3, gilly, sizeof(gilly));
+	printf("\nAfter 8\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 4, gilly, sizeof(gilly));
+	printf("\nAfter 8\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 5, gilly, sizeof(gilly));
+	printf("\nAfter 8\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 36, gilly, sizeof(gilly));
+	printf("\nAfter 36\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 37, gilly, sizeof(gilly));
+	printf("\nAfter 37\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+	btree_insert(tree, 38, gilly, sizeof(gilly));
+	printf("\nAfter 38\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+	btree_insert(tree, 39, gilly, sizeof(gilly));
+	printf("\nAfter 39\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 40, gilly, sizeof(gilly));
+	printf("\nAfter 40\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 41, gilly, sizeof(gilly));
+	printf("\nAfter 40\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 42, gilly, sizeof(gilly));
+	printf("\nAfter 40\n");
+	dbg_deep_tree_pages(tree->pager);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+		goto fail;
+	cursor_destroy(cursor);
+
+	btree_insert(tree, 43, gilly, sizeof(gilly));
+	printf("\nAfter 40\n");
+	dbg_deep_tree_pages(tree->pager);
 
 	cursor = cursor_create(tree);
 	cursor_traverse_to(cursor, 1, &found);
@@ -529,14 +674,6 @@ btree_test_deep_tree(void)
 	cursor_destroy(cursor);
 
 	dbg_deep_tree_pages(tree->pager);
-	/**
-	 * @brief
-	 * Page 1 (leaf? 0): 1 (p.2), 2 (p.5), 12 (p.4), ;3
-	 * Page 2 (leaf? 1): 1 (p.1752462706),
-	 * Page 3 (leaf? 1): 13 (p.1819833698), 14 (p.1836213608),
-	 * Page 4 (leaf? 1): 11 (p.1969319014), 12 (p.1819044194),
-	 * Page 5 (leaf? 1): 2 (p.1918986339),
-	 */
 
 	/**
 	 * @brief Test reading the cell returns the correct data.
@@ -551,25 +688,11 @@ btree_test_deep_tree(void)
 	pager_read_page(tree->pager, &selector, page);
 	btree_node_create_from_page(&node, page);
 
-	if( node->header->num_keys != 2 )
-	{
-		result = 0;
-		goto end;
-	}
+	char buf[201] = {0};
+	btree_node_read(node, pager, 12, buf, 200);
 
-	btu_read_cell(node, cursor->current_key_index.index, &cell);
-
-	if( btree_cell_get_size(&cell) != sizeof(billy) )
-	{
+	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;
-		goto end;
-	}
-
-	if( memcmp(cell.pointer, billy, sizeof(billy)) != 0 )
-	{
-		result = 0;
-		goto end;
-	}
 
 end:
 	if( page )

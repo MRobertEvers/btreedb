@@ -2,6 +2,7 @@
 
 #include "btree_cell.h"
 #include "btree_node.h"
+#include "btree_node_debug.h"
 #include "btree_utils.h"
 #include "pager.h"
 
@@ -25,6 +26,9 @@ bta_split_node_as_parent(
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
+	dbg_print_node(node);
+	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
+
 	page_create(pager, &parent_page);
 	btree_node_create_as_page_number(&parent, node->page_number, parent_page);
 
@@ -46,6 +50,9 @@ bta_split_node_as_parent(
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
+		char* data = cell.pointer;
+		char* lll = data + 8;
+		unsigned int cell_size = btree_cell_get_size(&cell);
 		if( i < first_half )
 		{
 			// The last element in the first half should be the right child.
@@ -55,21 +62,12 @@ bta_split_node_as_parent(
 			// We must track this regardless of whether leaf or not.
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-			btree_node_insert(
-				left,
-				&insert_end,
-				key,
-				cell.pointer,
-				btree_cell_get_size(&cell));
+
+			btree_node_insert(left, &insert_end, key, data, cell_size);
 		}
 		else
 		{
-			btree_node_insert(
-				right,
-				&insert_end,
-				key,
-				cell.pointer,
-				btree_cell_get_size(&cell));
+			btree_node_insert(right, &insert_end, key, data, cell_size);
 		}
 	}
 
@@ -88,9 +86,13 @@ bta_split_node_as_parent(
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, left_page);
+	dbg_print_node(left);
+	dbg_print_buffer(left_page->page_buffer, left_page->page_size);
 
 	right->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, right_page);
+	dbg_print_node(right);
+	dbg_print_buffer(right_page->page_buffer, right_page->page_size);
 
 	// When splitting a leaf-node,
 	// the right_child pointer becomes the right_page id
@@ -151,6 +153,12 @@ bta_split_node(
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
+	if( node->page_number == 7 )
+	{
+		dbg_print_node(node);
+		dbg_print_buffer(node->page->page_buffer, node->page->page_size);
+	}
+
 	// We want right page to remain stable since pointers
 	// in parent nodes are already pointing to the high-key of the input
 	// node which becomes the high key of the right child.
@@ -173,6 +181,7 @@ bta_split_node(
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
+		unsigned int cell_size = btree_cell_get_size(&cell);
 		if( i < first_half )
 		{
 			// The last element in the first half should be the right child.
@@ -181,21 +190,11 @@ bta_split_node(
 								  : KLIM_END;
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-			btree_node_insert(
-				left,
-				&insert_end,
-				key,
-				cell.pointer,
-				btree_cell_get_size(&cell));
+			btree_node_insert(left, &insert_end, key, cell.pointer, cell_size);
 		}
 		else
 		{
-			btree_node_insert(
-				right,
-				&insert_end,
-				key,
-				cell.pointer,
-				btree_cell_get_size(&cell));
+			btree_node_insert(right, &insert_end, key, cell.pointer, cell_size);
 		}
 	}
 

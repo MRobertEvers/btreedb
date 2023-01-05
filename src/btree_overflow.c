@@ -35,13 +35,13 @@ btree_overflow_read(
 	pager_reselect(&select, page_id);
 	pager_read_page(pager, &select, page);
 
-	dbg_print_buffer(page->page_buffer, page->page_size);
+	// dbg_print_buffer(page->page_buffer, page->page_size);
 
 	char* payload_buffer = (char*)page->page_buffer;
-	memcpy(&bytes_on_page, payload_buffer, sizeof(bytes_on_page));
+	memcpy(&next_page_id, payload_buffer, sizeof(next_page_id));
 
 	payload_buffer += sizeof(bytes_on_page);
-	memcpy(&next_page_id, payload_buffer, sizeof(next_page_id));
+	memcpy(&bytes_on_page, payload_buffer, sizeof(bytes_on_page));
 	assert(bytes_on_page < pager->page_size);
 
 	if( bytes_on_page > buffer_size )
@@ -86,7 +86,7 @@ btree_overflow_write(
 
 	memcpy(payload_buffer, data, data_size);
 
-	dbg_print_buffer(page->page_buffer, page->page_size);
+	// dbg_print_buffer(page->page_buffer, page->page_size);
 
 	pager_write_page(pager, page);
 	result->page_id = page->page_id;

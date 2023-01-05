@@ -5,6 +5,8 @@
 #include "btree_overflow.h"
 #include "btree_utils.h"
 
+#include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 int
@@ -17,6 +19,7 @@ overflow_payload_reader(
 	unsigned int* total_size)
 {
 	// TODO: Check buffer size.
+	assert(data_size >= sizeof(unsigned int) * 2);
 
 	// NOTE! Read reverse from the writer.
 	char* payload_buffer = (char*)data;
@@ -41,7 +44,12 @@ btree_node_read(
 	void* buffer,
 	unsigned int buffer_size)
 {
-	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
+	if( node->page_number == 11 )
+	{
+		printf("Reading Page %d at %d\n", node->page_number, key);
+		dbg_print_node(node);
+		dbg_print_buffer(node->page->page_buffer, node->page->page_size);
+	}
 	char found;
 	int key_index =
 		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);

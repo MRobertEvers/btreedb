@@ -20,9 +20,9 @@ dbg_print_node(struct BTreeNode* node)
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
-		unsigned int page_id = 0;
-		memcpy(&page_id, cell.pointer, sizeof(page_id));
-		printf("%d (p.%u), ", node->keys[i].key, page_id);
+		// unsigned int page_id = 0;
+		// memcpy(&page_id, cell.pointer, sizeof(page_id));
+		printf("%d (p.%u), ", node->keys[i].key, 0);
 	}
 	if( !node->header->is_leaf )
 	{

@@ -1,6 +1,7 @@
 #include "btree_node.h"
 
 #include "btree_cell.h"
+#include "btree_node_debug.h"
 #include "btree_utils.h"
 
 #include <assert.h>
@@ -110,6 +111,11 @@ btree_node_insert(
 {
 	unsigned int index_number = 0;
 
+	if( node->page_number == 11 )
+	{
+		dbg_print_node(node);
+	}
+
 	// If inserting right child, then data is expected to be the page id.
 	// The right child has no key.
 	if( index->mode == KLIM_RIGHT_CHILD )
@@ -215,15 +221,21 @@ btree_node_insert_ex(
 	void* writer_data,
 	enum btree_cell_flag_e flags)
 {
+	if( node->page_number == 11 )
+	{
+		dbg_print_node(node);
+	}
 	unsigned int index_number = 0;
 	struct BTreeNodeWriterState writer_state = {0};
 
-	char* cell_right_edge = btu_calc_highwater_offset(node, 0);
+	char* cell_right_edge =
+		btu_calc_highwater_offset(node, node->header->cell_high_water_offset);
 	writer_state.buffer_right_edge = cell_right_edge;
 
 	unsigned int written_size = writer(
 		writer_data, write_partial, &writer_state, node->header->free_heap);
 
+	assert(written_size > 0);
 	unsigned int cell_size_buffer = written_size;
 	btree_cell_set_flag(&cell_size_buffer, flags);
 	write_partial(&writer_state, &cell_size_buffer, sizeof(unsigned int));
@@ -246,6 +258,11 @@ btree_node_insert_ex(
 
 	node->header->free_heap -=
 		btu_calc_cell_size(written_size) + sizeof(struct BTreePageKey);
+
+	if( node->page_number == 11 )
+	{
+		dbg_print_node(node);
+	}
 
 	return BTREE_OK;
 }

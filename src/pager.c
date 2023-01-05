@@ -89,10 +89,7 @@ page_commit(struct Pager* pager, struct Page* page)
 	page_cache_insert(pager->cache, page, &evicted_page);
 
 	if( evicted_page != NULL )
-	{
-		printf("Evicting (%d)\n", evicted_page->page_id);
 		page_destroy(pager, evicted_page);
-	}
 
 	return PAGER_OK;
 }
