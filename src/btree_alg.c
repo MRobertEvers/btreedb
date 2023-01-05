@@ -47,7 +47,6 @@ bta_split_node_as_parent(
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
 		char* data = cell.pointer;
-		char* lll = data + 8;
 		unsigned int cell_size = btree_cell_get_size(&cell);
 		if( i < first_half )
 		{
