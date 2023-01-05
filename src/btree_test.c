@@ -340,6 +340,13 @@ dbg_deep_tree_pages(struct Pager* pager)
 	// 	page_destroy(pager, page);
 }
 
+struct TestRecord
+{
+	unsigned int key;
+	void* data;
+	unsigned int size;
+};
+
 int
 btree_test_deep_tree(void)
 {
@@ -369,311 +376,85 @@ btree_test_deep_tree(void)
 
 	char billy[] = "billy_"
 				   "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVW"
-				   "XYZ";			 // 12
-	char ruth[40] = "ruth";			 // 1
-	char yuta[100] = "999yutaaa";	 // 7
-	char charlie[40] = "charlie";	 // 2
-	char buxley[40] = "buxley";		 // 13
-	char herman[40] = "herman";		 // 14
-	char flaur[100] = "flaur";		 // 11
-	char flemming[100] = "flemming"; // 30
-	char xiao[100] = "xiao";		 // 15
-	char gilly[100] = "gilly";		 // 21
+				   "XYZ";
+	char ruth[40] = "ruth";
+	char yuta[100] = "999yutaaa";
+	char charlie[40] = "charlie";
+	char buxley[40] = "buxley";
+	char herman[40] = "herman";
+	char flaur[100] = "flaur";
+	char flemming[100] = "flemming";
+	char xiao[100] = "xiao";
+	char gilly[100] = "gilly";
+	char brock[100] = "brock";
+	char sloan[100] = "sloan";
+	char ryan[100] = "ryan";
+	char jacob[100] = "jacob";
+	char megan[100] = "megan";
+	char donata[100] = "donata";
+	char honda[100] = "honda";
+	char xondley[100] = "xondley";
+	char perkins[100] = "perkins";
+	char rick[100] = "rick";
+	char woally[100] = "woally";
+	char hoosin[100] = "hoosin";
+	char sybian[100] = "sybian";
+	char trillian[100] = "trillian";
+	char coxes[100] = "coxes";
 
-	btree_insert(tree, 1, ruth, sizeof(ruth));
-	btree_insert(tree, 2, charlie, sizeof(charlie));
+	struct TestRecord records[] = {
+		{.key = 1, .data = billy, .size = sizeof(billy)},		 // 1
+		{.key = 2, .data = ruth, .size = sizeof(ruth)},			 // 2
+		{.key = 3, .data = yuta, .size = sizeof(yuta)},			 // 3
+		{.key = 8, .data = charlie, .size = sizeof(charlie)},	 // 4
+		{.key = 5, .data = buxley, .size = sizeof(buxley)},		 // 5
+		{.key = 9, .data = herman, .size = sizeof(herman)},		 // 6
+		{.key = 25, .data = flaur, .size = sizeof(flaur)},		 // 7
+		{.key = 23, .data = flemming, .size = sizeof(flemming)}, // 8
+		{.key = 4, .data = xiao, .size = sizeof(xiao)},			 // 9
+		{.key = 13, .data = gilly, .size = sizeof(billy)},		 // 10
+		{.key = 40, .data = brock, .size = sizeof(brock)},		 // 11
+		{.key = 41, .data = sloan, .size = sizeof(sloan)},		 // 12
+		{.key = 42, .data = ryan, .size = sizeof(ryan)},		 // 13
+		{.key = 35, .data = jacob, .size = sizeof(jacob)},		 // 14
+		{.key = 32, .data = megan, .size = sizeof(megan)},		 // 15
+		{.key = 67, .data = donata, .size = sizeof(donata)},	 // 16
+		{.key = 22, .data = honda, .size = sizeof(honda)},		 // 17
+		{.key = 21, .data = xondley, .size = sizeof(xondley)},	 // 18
+		{.key = 19, .data = perkins, .size = sizeof(perkins)},	 // 19
+		{.key = 10, .data = rick, .size = sizeof(rick)},		 // 20
+		{.key = 11, .data = woally, .size = sizeof(woally)},	 // 21
+		{.key = 12, .data = hoosin, .size = sizeof(hoosin)},	 // 22
+		{.key = 13, .data = sybian, .size = sizeof(sybian)},	 // 23
+		{.key = 16, .data = trillian, .size = sizeof(trillian)}, // 24
+		{.key = 55, .data = coxes, .size = sizeof(coxes)},		 // 25
+	};
 
 	/**
 	 * Ensure that we can still reach certain keys
 	 * after inserting others.
 	 */
-	struct Cursor* cursor = cursor_create(tree);
-
+	struct Cursor* cursor = NULL;
 	char found = 0;
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
+	for( int i = 0; i < sizeof(records) / sizeof(records[0]); i++ )
+	{
+		struct TestRecord* test = &records[i];
+		btree_insert(tree, test->key, test->data, test->size);
 
-	// Insert 12
-	btree_insert(tree, 12, billy, sizeof(billy));
+		// Always check that 1 is still reachable.
+		cursor = cursor_create(tree);
+		cursor_traverse_to(cursor, 1, &found);
+		if( !found )
+			goto fail;
+		cursor_destroy(cursor);
 
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 13/14
-	btree_insert(tree, 13, buxley, sizeof(buxley));
-	btree_insert(tree, 14, herman, sizeof(herman));
-	printf("\nAfter 13/14\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 11
-	btree_insert(tree, 11, flaur, sizeof(flaur));
-	printf("\nAfter 11\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 30
-	btree_insert(tree, 30, flemming, sizeof(flemming));
-	printf("\nAfter 30\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 7
-	btree_insert(tree, 7, yuta, sizeof(yuta));
-	printf("\nAfter 7\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 15
-	btree_insert(tree, 15, xiao, sizeof(xiao));
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 21
-	btree_insert(tree, 21, gilly, sizeof(gilly));
-	printf("\nAfter 21\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 22
-	btree_insert(tree, 22, gilly, sizeof(gilly));
-	printf("\nAfter 22\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 22
-	btree_insert(tree, 23, gilly, sizeof(gilly));
-	printf("\nAfter 23\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	// Insert 8
-	btree_insert(tree, 8, gilly, sizeof(gilly));
-	printf("\nAfter 8\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 3, gilly, sizeof(gilly));
-	printf("\nAfter 8\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 4, gilly, sizeof(gilly));
-	printf("\nAfter 8\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 5, gilly, sizeof(gilly));
-	printf("\nAfter 8\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 36, gilly, sizeof(gilly));
-	printf("\nAfter 36\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 37, gilly, sizeof(gilly));
-	printf("\nAfter 37\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-	btree_insert(tree, 38, gilly, sizeof(gilly));
-	printf("\nAfter 38\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-	btree_insert(tree, 39, gilly, sizeof(gilly));
-	printf("\nAfter 39\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 40, gilly, sizeof(gilly));
-	printf("\nAfter 40\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 41, gilly, sizeof(gilly));
-	printf("\nAfter 40\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 42, gilly, sizeof(gilly));
-	printf("\nAfter 40\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	btree_insert(tree, 43, gilly, sizeof(gilly));
-	printf("\nAfter 40\n");
-	dbg_deep_tree_pages(tree->pager);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	/**
-	 * @brief Ensure we can reach all keys.
-	 */
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 12, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 1, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 2, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 13, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 14, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 11, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 30, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 7, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 15, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	cursor = cursor_create(tree);
-	cursor_traverse_to(cursor, 21, &found);
-	if( !found )
-		goto fail;
-	cursor_destroy(cursor);
-
-	dbg_deep_tree_pages(tree->pager);
+		// Always check that 1 is still reachable.
+		cursor = cursor_create(tree);
+		cursor_traverse_to(cursor, test->key, &found);
+		if( !found )
+			goto fail;
+		cursor_destroy(cursor);
+	}
 
 	/**
 	 * @brief Test reading the cell returns the correct data.
@@ -691,7 +472,7 @@ btree_test_deep_tree(void)
 	char buf[201] = {0};
 	btree_node_read(node, pager, 12, buf, 200);
 
-	if( memcmp(buf, billy, sizeof(billy)) != 0 )
+	if( memcmp(buf, hoosin, sizeof(hoosin)) != 0 )
 		result = 0;
 
 end:
