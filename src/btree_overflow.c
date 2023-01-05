@@ -77,12 +77,12 @@ btree_overflow_write(
 
 	page_create(pager, &page);
 
-	memcpy(page->page_buffer, &follow_page_id, sizeof(follow_page_id));
 	char* payload_buffer = (char*)page->page_buffer;
+	memcpy(payload_buffer, &follow_page_id, sizeof(follow_page_id));
 	payload_buffer += sizeof(follow_page_id);
 
-	memcpy(page->page_buffer, &data_size, sizeof(data_size));
-	payload_buffer += sizeof(follow_page_id);
+	memcpy(payload_buffer, &data_size, sizeof(data_size));
+	payload_buffer += sizeof(data_size);
 
 	memcpy(payload_buffer, data, data_size);
 

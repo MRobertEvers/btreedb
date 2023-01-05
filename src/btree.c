@@ -5,6 +5,7 @@
 #include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
+#include "btree_node_writer.h"
 #include "btree_utils.h"
 
 #include <assert.h>
@@ -99,8 +100,11 @@ btree_init(struct BTree* tree, struct Pager* pager)
 {
 	enum btree_e btree_result = BTREE_OK;
 
-	// Arbitrary 4*16 is approximately 4 keys.
-	if( pager->page_size < ((BTREE_HEADER_SIZE) + (4 * 16)) )
+	// Arbitrary 4*12 is approximately 4 entries that overflow.
+	// 1 int for cell size, 2 more for overflow page meta.
+	if( pager->page_size <
+		((BTREE_HEADER_SIZE) + (4 * 12) + (4 * sizeof(struct BTreePageKey)) +
+		 +sizeof(struct BTreePageHeader)) )
 		return BTREE_ERR_INVALID_PAGE_SIZE_TOO_SMALL;
 
 	tree->root_page_id = 1;
@@ -157,8 +161,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 		btree_node_init_from_page(&node, page);
 
-		result =
-			btree_node_insert(&node, &crumb.key_index, key, data, data_size);
+		result = btree_node_write(&node, tree->pager, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			// We want to keep the root node as the first page.
@@ -183,15 +186,10 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				pager_read_page(tree->pager, &selector, page);
 				btree_node_init_from_page(&node, page);
 
-				int new_insert_index = btu_binary_search_keys(
-					node.keys, node.header->num_keys, key, &found);
-
-				struct ChildListIndex index = {0};
-				btu_init_keylistindex_from_index(
-					&index, &node, new_insert_index);
-				index.mode = KLIM_END;
-				btree_node_insert(&node, &index, key, data, data_size);
-				pager_write_page(tree->pager, page);
+				result =
+					btree_node_write(&node, tree->pager, key, data, data_size);
+				if( result != BTREE_OK )
+					goto end;
 
 				goto end;
 			}
@@ -208,15 +206,10 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 					btree_node_init_from_page(&node, page);
 				}
 
-				int new_insert_index = btu_binary_search_keys(
-					node.keys, node.header->num_keys, key, &found);
-
-				struct ChildListIndex index = {0};
-				btu_init_keylistindex_from_index(
-					&index, &node, new_insert_index);
-
-				btree_node_insert(&node, &index, key, data, data_size);
-				pager_write_page(tree->pager, node.page);
+				result =
+					btree_node_write(&node, tree->pager, key, data, data_size);
+				if( result != BTREE_OK )
+					goto end;
 
 				// Move the cursor one to the left so we can insert there.
 				result = cursor_pop(cursor, &crumb);
@@ -252,8 +245,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 		}
 		else
 		{
-			// Write the page out and we're done.
-			pager_write_page(tree->pager, node.page);
 			break;
 		}
 	}

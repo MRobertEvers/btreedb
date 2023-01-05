@@ -120,17 +120,14 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 			else
 			{
 				btu_read_cell(&node, child_key_index, &cell);
-				if( btree_cell_get_size(&cell) >
-					sizeof(cursor->current_page_id) )
+				unsigned int cell_size = btree_cell_get_size(&cell);
+				if( cell_size != sizeof(cursor->current_page_id) )
 				{
 					result = BTREE_ERR_CORRUPT_CELL;
 					goto end;
 				}
 
-				memcpy(
-					&cursor->current_page_id,
-					cell.pointer,
-					btree_cell_get_size(&cell));
+				memcpy(&cursor->current_page_id, cell.pointer, cell_size);
 			}
 		}
 	} while( !node.header->is_leaf );

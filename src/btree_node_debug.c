@@ -3,6 +3,7 @@
 #include "btree_utils.h"
 
 #include <stdio.h>
+#include <string.h>
 
 void
 dbg_print_node(struct BTreeNode* node)
@@ -19,7 +20,9 @@ dbg_print_node(struct BTreeNode* node)
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
-		printf("%d (p.%d), ", node->keys[i], *(int*)cell.pointer);
+		unsigned int page_id = 0;
+		memcpy(&page_id, cell.pointer, sizeof(page_id));
+		printf("%d (p.%u), ", node->keys[i].key, page_id);
 	}
 	if( !node->header->is_leaf )
 	{

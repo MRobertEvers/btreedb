@@ -37,8 +37,8 @@ main()
 	// printf("free heap calcs: %d\n", result);
 	// result = btree_utils_test_bin_search_keys();
 	// printf("bin search keys: %d\n", result);
-	// result = btree_test_deep_tree();
-	// printf("deep tree test: %d\n", result);
+	result = btree_test_deep_tree();
+	printf("deep tree test: %d\n", result);
 	result = btree_overflow_test_overflow_rw();
 	printf("overflow test: %d\n", result);
 

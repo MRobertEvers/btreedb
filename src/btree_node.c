@@ -244,7 +244,8 @@ btree_node_insert_ex(
 
 	node->header->cell_high_water_offset += btu_calc_cell_size(written_size);
 
-	node->header->free_heap -= written_size;
+	node->header->free_heap -=
+		btu_calc_cell_size(written_size) + sizeof(struct BTreePageKey);
 
 	return BTREE_OK;
 }

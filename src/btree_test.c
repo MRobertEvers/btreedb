@@ -322,10 +322,10 @@ dbg_deep_tree_pages(struct Pager* pager)
 	struct Page* page = NULL;
 	struct BTreeNode* node = NULL;
 	struct PageSelector selector;
+	page_create(pager, &page);
 
-	for( int i = 0; i < 10; i++ )
+	for( int i = 0; i < 20; i++ )
 	{
-		page_create(pager, &page);
 		pager_reselect(&selector, i + 1);
 		enum pager_e result = pager_read_page(pager, &selector, page);
 		if( result == PAGER_ERR_NIF )
@@ -354,12 +354,12 @@ btree_test_deep_tree(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	pager_cstd_create(&pager, cache, db_name, 200);
+	pager_cstd_create(&pager, cache, db_name, 220);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
 	enum btree_e btresult = btree_init(tree, pager);
-	if( result != BTREE_OK )
+	if( btresult != BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -448,8 +448,8 @@ btree_test_deep_tree(void)
 	// Insert 15
 	btree_insert(tree, 15, xiao, sizeof(xiao));
 	printf("\nAfter 15\n");
-	dbg_deep_tree_pages(tree->pager);
 
+	dbg_deep_tree_pages(tree->pager);
 	cursor = cursor_create(tree);
 	cursor_traverse_to(cursor, 1, &found);
 	if( !found )

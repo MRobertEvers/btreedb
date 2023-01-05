@@ -54,11 +54,14 @@ btree_node_write(
 {
 	unsigned int insertion_index_number;
 	char found;
+	enum btree_e result = BTREE_OK;
 
 	// 1. Determine if the payload can fit on the page with restrictions.
 	// We want the page to be able to fit at least 4 keys.
 	unsigned int min_cells_per_page = 4;
 
+	// This is max size including key!
+	// I.e. key+payload_size must fit within this.
 	unsigned int max_data_size =
 		btu_get_node_storage_size(node) / min_cells_per_page;
 
@@ -82,17 +85,35 @@ btree_node_write(
 		// btu_get_left_insertion_from_keylistindex(&insertion_index,
 		// &child_index);
 
-		return btree_node_insert(node, &child_index, key, data, data_size);
+		result = btree_node_insert(node, &child_index, key, data, data_size);
+		if( result == BTREE_OK )
+			pager_write_page(pager, node->page);
+
+		return result;
 	}
 	else
 	{
 		// Overflow
 
+		unsigned int min_size_needed_on_first_page =
+			// TODO: Sizeof overfload cell
+			btu_calc_cell_size(sizeof(unsigned int) * 2) +
+			sizeof(struct BTreePageKey);
+
+		unsigned max_data_size_available =
+			node->header->free_heap > max_data_size ? max_data_size
+													: node->header->free_heap;
+
+		if( max_data_size_available < min_size_needed_on_first_page )
+			return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+
 		// TODO: Algorithm to maximize page usage.
 		// -2*int because we store the next page id and the size of the data on
 		// the page. another int for cell size
 		unsigned int payload_bytes_to_write_on_first_page =
-			max_data_size - 3 * sizeof(unsigned int);
+			max_data_size_available - 3 * sizeof(unsigned int) -
+			sizeof(struct BTreePageKey);
+
 		unsigned int payload_bytes_writable_to_overflow_page =
 			btree_overflow_max_write_size(pager);
 
