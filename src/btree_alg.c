@@ -2,7 +2,6 @@
 
 #include "btree_cell.h"
 #include "btree_node.h"
-#include "btree_node_debug.h"
 #include "btree_utils.h"
 #include "pager.h"
 
@@ -25,9 +24,6 @@ bta_split_node_as_parent(
 	struct Page* parent_page = NULL;
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
-
-	dbg_print_node(node);
-	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 
 	page_create(pager, &parent_page);
 	btree_node_create_as_page_number(&parent, node->page_number, parent_page);
@@ -86,13 +82,9 @@ bta_split_node_as_parent(
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, left_page);
-	dbg_print_node(left);
-	dbg_print_buffer(left_page->page_buffer, left_page->page_size);
 
 	right->header->is_leaf = node->header->is_leaf;
 	pager_write_page(pager, right_page);
-	dbg_print_node(right);
-	dbg_print_buffer(right_page->page_buffer, right_page->page_size);
 
 	// When splitting a leaf-node,
 	// the right_child pointer becomes the right_page id
@@ -152,12 +144,6 @@ bta_split_node(
 
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
-
-	if( node->page_number == 7 )
-	{
-		dbg_print_node(node);
-		dbg_print_buffer(node->page->page_buffer, node->page->page_size);
-	}
 
 	// We want right page to remain stable since pointers
 	// in parent nodes are already pointing to the high-key of the input

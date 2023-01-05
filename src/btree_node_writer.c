@@ -1,11 +1,9 @@
 #include "btree_node_writer.h"
 
 #include "btree_node.h"
-#include "btree_node_debug.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 
 struct BTreeOverflowPayload
@@ -192,12 +190,6 @@ btree_node_write(
 			CELL_FLAG_OVERFLOW);
 
 		pager_write_page(pager, node->page);
-
-		if( node->page_number == 11 )
-		{
-			printf("Wrote Page %d at %d\n", node->page_number, key);
-			dbg_print_buffer(node->page->page_buffer, node->page->page_size);
-		}
 
 		return BTREE_OK;
 	}

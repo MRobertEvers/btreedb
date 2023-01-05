@@ -4,7 +4,6 @@
 #include "btree_alg.h"
 #include "btree_cursor.h"
 #include "btree_node.h"
-#include "btree_node_debug.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 
