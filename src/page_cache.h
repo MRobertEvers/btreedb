@@ -16,7 +16,7 @@ struct PageCache
 {
 	struct PageCacheKey* pages;
 	int size;
-	int capactiy;
+	int capacity;
 };
 
 // Page Cache does not load pages
