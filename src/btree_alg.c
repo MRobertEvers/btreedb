@@ -1,5 +1,6 @@
 #include "btree_alg.h"
 
+#include "btree_cell.h"
 #include "btree_node.h"
 #include "btree_utils.h"
 #include "pager.h"
@@ -33,7 +34,7 @@ bta_split_node_as_parent(
 	page_create(pager, &right_page);
 	btree_node_create_from_page(&right, right_page);
 
-	struct KeyListIndex insert_end = {.mode = KLIM_END};
+	struct ChildListIndex insert_end = {.mode = KLIM_END};
 	int first_half = ((node->header->num_keys + 1) / 2);
 	// We need to keep track of this. If this is a nonleaf node,
 	// then the left child high key will be lost.
@@ -54,12 +55,21 @@ bta_split_node_as_parent(
 			// We must track this regardless of whether leaf or not.
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
+			btree_node_insert(
+				left,
+				&insert_end,
+				key,
+				cell.pointer,
+				btree_cell_get_size(&cell));
 		}
 		else
 		{
 			btree_node_insert(
-				right, &insert_end, key, cell.pointer, *cell.size);
+				right,
+				&insert_end,
+				key,
+				cell.pointer,
+				btree_cell_get_size(&cell));
 		}
 	}
 
@@ -150,7 +160,7 @@ bta_split_node(
 	page_create(pager, &left_page);
 	btree_node_create_from_page(&left, left_page);
 
-	struct KeyListIndex insert_end = {.mode = KLIM_END};
+	struct ChildListIndex insert_end = {.mode = KLIM_END};
 	int first_half = ((node->header->num_keys + 1) / 2);
 
 	// We need to keep track of this. If this is a nonleaf node,
@@ -171,12 +181,21 @@ bta_split_node(
 								  : KLIM_END;
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-			btree_node_insert(left, &insert_end, key, cell.pointer, *cell.size);
+			btree_node_insert(
+				left,
+				&insert_end,
+				key,
+				cell.pointer,
+				btree_cell_get_size(&cell));
 		}
 		else
 		{
 			btree_node_insert(
-				right, &insert_end, key, cell.pointer, *cell.size);
+				right,
+				&insert_end,
+				key,
+				cell.pointer,
+				btree_cell_get_size(&cell));
 		}
 	}
 

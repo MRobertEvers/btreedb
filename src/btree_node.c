@@ -1,5 +1,6 @@
 #include "btree_node.h"
 
+#include "btree_cell.h"
 #include "btree_utils.h"
 
 #include <assert.h>
@@ -102,7 +103,7 @@ btree_node_destroy(struct BTreeNode* node)
 enum btree_e
 btree_node_insert(
 	struct BTreeNode* node,
-	struct KeyListIndex* index,
+	struct ChildListIndex* index,
 	unsigned int key,
 	void* data,
 	int data_size)
@@ -138,7 +139,7 @@ btree_node_insert(
 		}
 
 		// // Push the right_child as a key to the key list.
-		// struct KeyListIndex insert_index = {0};
+		// struct ChildListIndex insert_index = {0};
 		// insert_index.index = node->header->num_keys;
 		// insert_index.mode = KLIM_END;
 
@@ -190,8 +191,66 @@ btree_node_insert(
 	return BTREE_OK;
 }
 
+int
+write_partial(
+	struct BTreeNodeWriterState* state, void* data, unsigned int data_size)
+{
+	// TODO: Bounds check.
+	char* left_edge = (char*)state->buffer_right_edge;
+	left_edge -= data_size;
+
+	memcpy(left_edge, data, data_size);
+
+	state->buffer_right_edge = left_edge;
+
+	return data_size;
+}
+
 enum btree_e
-btree_node_delete(struct BTreeNode* node, struct KeyListIndex* index)
+btree_node_insert_ex(
+	struct BTreeNode* node,
+	struct ChildListIndex* index,
+	unsigned int key,
+	btree_node_writer_t writer,
+	void* writer_data,
+	enum btree_cell_flag_e flags)
+{
+	unsigned int index_number = 0;
+	struct BTreeNodeWriterState writer_state = {0};
+
+	char* cell_right_edge = btu_calc_highwater_offset(node, 0);
+	writer_state.buffer_right_edge = cell_right_edge;
+
+	unsigned int written_size = writer(
+		writer_data, write_partial, &writer_state, node->header->free_heap);
+
+	unsigned int cell_size_buffer = written_size;
+	btree_cell_set_flag(&cell_size_buffer, flags);
+	write_partial(&writer_state, &cell_size_buffer, sizeof(unsigned int));
+
+	// Insert the key.
+	index_number =
+		index->mode == KLIM_END ? node->header->num_keys : index->index;
+	memmove(
+		&node->keys[index_number + 1],
+		&node->keys[index_number],
+		(node->header->num_keys - index_number) *
+			sizeof(node->keys[index_number]));
+
+	node->keys[index_number].key = key;
+	node->keys[index_number].cell_offset =
+		node->header->cell_high_water_offset + btu_calc_cell_size(written_size);
+	node->header->num_keys += 1;
+
+	node->header->cell_high_water_offset += btu_calc_cell_size(written_size);
+
+	node->header->free_heap -= written_size;
+
+	return BTREE_OK;
+}
+
+enum btree_e
+btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 {
 	struct CellData cell = {0};
 	unsigned int index_number = 0;
@@ -215,7 +274,7 @@ btree_node_delete(struct BTreeNode* node, struct KeyListIndex* index)
 		// The rightmost non-right-child key becomes the right-child.
 		struct BTreePageKey rightmost_key =
 			node->keys[node->header->num_keys - 1];
-		struct KeyListIndex delete_index = {0};
+		struct ChildListIndex delete_index = {0};
 		delete_index.index = node->header->num_keys - 1;
 		delete_index.mode = KLIM_INDEX;
 		enum btree_e next_right_child_result =
@@ -231,7 +290,7 @@ btree_node_delete(struct BTreeNode* node, struct KeyListIndex* index)
 	index_number = index->index;
 
 	btu_read_cell(node, index_number, &cell);
-	int deleted_cell_size = *cell.size;
+	int deleted_cell_size = btree_cell_get_size(&cell);
 
 	// Slide keys over.
 	memmove(

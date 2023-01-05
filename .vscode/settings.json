@@ -11,6 +11,9 @@
         "binary_search.h": "c",
         "btree.h": "c",
         "btree_alg_test.h": "c",
-        "btree_cursor.h": "c"
+        "btree_cursor.h": "c",
+        "btree_utils.h": "c",
+        "btree_overflow_test.h": "c",
+        "btree_cell.h": "c"
     },
 }

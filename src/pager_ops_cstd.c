@@ -2,6 +2,7 @@
 
 #include "pager_ops.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +68,7 @@ co_write(
 {
 	int seek_result;
 	unsigned int write_result;
+	assert(offset < 0x10000);
 
 	seek_result = fseek(file, offset, SEEK_SET);
 	if( seek_result != 0 )

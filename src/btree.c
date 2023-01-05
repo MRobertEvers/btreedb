@@ -186,7 +186,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				int new_insert_index = btu_binary_search_keys(
 					node.keys, node.header->num_keys, key, &found);
 
-				struct KeyListIndex index = {0};
+				struct ChildListIndex index = {0};
 				btu_init_keylistindex_from_index(
 					&index, &node, new_insert_index);
 				index.mode = KLIM_END;
@@ -211,7 +211,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				int new_insert_index = btu_binary_search_keys(
 					node.keys, node.header->num_keys, key, &found);
 
-				struct KeyListIndex index = {0};
+				struct ChildListIndex index = {0};
 				btu_init_keylistindex_from_index(
 					&index, &node, new_insert_index);
 

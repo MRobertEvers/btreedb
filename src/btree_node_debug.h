@@ -5,4 +5,6 @@
 
 void dbg_print_node(struct BTreeNode* node);
 
+void dbg_print_buffer(void const* buffer, unsigned int buffer_size);
+
 #endif

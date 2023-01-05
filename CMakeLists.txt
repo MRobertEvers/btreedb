@@ -17,6 +17,10 @@ add_executable(db
     src/btree_alg.c
     src/btree_cursor.c
     src/btree_node_debug.c
+    src/btree_cell.c
+    src/btree_node_writer.c
+    src/btree_node_reader.c
+    src/btree_overflow.c
 )
 
 add_executable(test
@@ -25,6 +29,7 @@ add_executable(test
     src/btree_test.c
     src/btree_utils_test.c
     src/btree_alg_test.c
+    src/btree_overflow_test.c
     src/pager.c
     src/btree.c
     src/binary_search.c
@@ -35,4 +40,9 @@ add_executable(test
     src/btree_alg.c
     src/btree_cursor.c
     src/btree_node_debug.c
+    src/btree_cell.c
+    src/btree_node_writer.c
+    src/btree_node_reader.c
+    src/btree_overflow.c
 )
+

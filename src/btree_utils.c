@@ -8,11 +8,17 @@ btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 	memset(cell, 0x00, sizeof(struct CellData));
 	int offset = node->keys[index].cell_offset;
 
-	char* cell_buffer =
-		btu_get_node_buffer(node) + btu_get_node_size(node) - offset;
+	char* cell_buffer = btu_calc_highwater_offset(node, offset);
+	// btu_get_node_buffer(node) + btu_get_node_size(node) - offset;
 
 	cell->size = (int*)cell_buffer;
 	cell->pointer = &cell->size[1];
+}
+
+int
+btu_get_node_storage_size(struct BTreeNode* node)
+{
+	return btu_get_node_size(node) - sizeof(struct BTreePageHeader);
 }
 
 int
@@ -91,7 +97,9 @@ btu_binary_search_keys(
 
 int
 btu_init_keylistindex_from_index(
-	struct KeyListIndex* keylistindex, struct BTreeNode const* node, int index)
+	struct ChildListIndex* keylistindex,
+	struct BTreeNode const* node,
+	int index)
 {
 	if( index < node->header->num_keys )
 	{
@@ -107,6 +115,27 @@ btu_init_keylistindex_from_index(
 	{
 		keylistindex->mode = KLIM_END;
 		keylistindex->index = node->header->num_keys;
+	}
+
+	return 0;
+}
+
+int
+btu_get_left_insertion_from_keylistindex(
+	struct LeftInsertionIndex* insertion_index,
+	struct ChildListIndex* keylistindex)
+{
+	memset(insertion_index, 0x00, sizeof(struct LeftInsertionIndex));
+
+	// Always insert to the left of the right child.
+	if( keylistindex->mode == KLIM_RIGHT_CHILD )
+	{
+		insertion_index->mode = KLIM_END;
+	}
+	else
+	{
+		insertion_index->index = keylistindex->index;
+		insertion_index->mode = keylistindex->mode;
 	}
 
 	return 0;

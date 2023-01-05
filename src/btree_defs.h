@@ -39,6 +39,7 @@ struct BTreePageKey
 {
 	unsigned int key;
 	unsigned int cell_offset; // TODO: union
+	unsigned int flags;		  // 1 means overflow page.
 };
 
 struct BTreeNode
@@ -79,7 +80,7 @@ enum key_list_index_mode_e
 	KLIM_INDEX,
 };
 
-struct KeyListIndex
+struct ChildListIndex
 {
 	enum key_list_index_mode_e mode;
 
@@ -102,7 +103,7 @@ struct LeftInsertionIndex
 // This is like "TID" in postgres
 struct CursorBreadcrumb
 {
-	struct KeyListIndex key_index;
+	struct ChildListIndex key_index;
 	int page_id;
 };
 
@@ -112,7 +113,7 @@ struct Cursor
 	int current_page_id;
 
 	// Index of the key in the current page.
-	struct KeyListIndex current_key_index;
+	struct ChildListIndex current_key_index;
 
 	struct CursorBreadcrumb breadcrumbs[8]; // TODO: Dynamic?
 	int breadcrumbs_size;
@@ -121,6 +122,7 @@ struct Cursor
 struct CellData
 {
 	void* pointer;
+	// High bit indicates the pointer is a LinkListWrapperData
 	int* size;
 };
 

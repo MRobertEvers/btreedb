@@ -1,5 +1,6 @@
 
 #include "btree_alg_test.h"
+#include "btree_overflow_test.h"
 #include "btree_test.h"
 #include "btree_utils_test.h"
 #include "pager_test.h"
@@ -36,8 +37,10 @@ main()
 	// printf("free heap calcs: %d\n", result);
 	// result = btree_utils_test_bin_search_keys();
 	// printf("bin search keys: %d\n", result);
-	result = btree_test_deep_tree();
-	printf("deep tree test: %d\n", result);
+	// result = btree_test_deep_tree();
+	// printf("deep tree test: %d\n", result);
+	result = btree_overflow_test_overflow_rw();
+	printf("overflow test: %d\n", result);
 
 	return 0;
 }

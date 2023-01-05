@@ -13,7 +13,7 @@ dbg_print_node(struct BTreeNode* node)
 		node->header->is_leaf,
 		node->header->free_heap,
 		node->header->cell_high_water_offset);
-	for( int i = 0; i < node->header->num_keys; i++ )
+	for( int i = 0; i < node->header->num_keys && i < 10; i++ )
 	{
 		struct CellData cell = {0};
 
@@ -24,6 +24,22 @@ dbg_print_node(struct BTreeNode* node)
 	if( !node->header->is_leaf )
 	{
 		printf(";%d", node->header->right_child);
+	}
+	printf("\n");
+}
+
+void
+dbg_print_buffer(void const* buffer, unsigned int buffer_size)
+{
+	unsigned char const* p = buffer;
+	for( int i = 0; i < buffer_size; i++ )
+	{
+		unsigned char c = p[i];
+
+		if( 32 <= c && c <= 126 )
+			printf("%c", c);
+		else
+			printf("\\x%02x", c);
 	}
 	printf("\n");
 }

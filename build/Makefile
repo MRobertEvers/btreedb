@@ -247,6 +247,33 @@ src/btree_alg_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_alg_test.c.s
 .PHONY : src/btree_alg_test.c.s
 
+src/btree_cell.o: src/btree_cell.c.o
+.PHONY : src/btree_cell.o
+
+# target to build an object file
+src/btree_cell.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_cell.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cell.c.o
+.PHONY : src/btree_cell.c.o
+
+src/btree_cell.i: src/btree_cell.c.i
+.PHONY : src/btree_cell.i
+
+# target to preprocess a source file
+src/btree_cell.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_cell.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cell.c.i
+.PHONY : src/btree_cell.c.i
+
+src/btree_cell.s: src/btree_cell.c.s
+.PHONY : src/btree_cell.s
+
+# target to generate assembly for a file
+src/btree_cell.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_cell.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cell.c.s
+.PHONY : src/btree_cell.c.s
+
 src/btree_cursor.o: src/btree_cursor.c.o
 .PHONY : src/btree_cursor.o
 
@@ -327,6 +354,111 @@ src/btree_node_debug.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_debug.c.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_debug.c.s
 .PHONY : src/btree_node_debug.c.s
+
+src/btree_node_reader.o: src/btree_node_reader.c.o
+.PHONY : src/btree_node_reader.o
+
+# target to build an object file
+src/btree_node_reader.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_reader.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_reader.c.o
+.PHONY : src/btree_node_reader.c.o
+
+src/btree_node_reader.i: src/btree_node_reader.c.i
+.PHONY : src/btree_node_reader.i
+
+# target to preprocess a source file
+src/btree_node_reader.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_reader.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_reader.c.i
+.PHONY : src/btree_node_reader.c.i
+
+src/btree_node_reader.s: src/btree_node_reader.c.s
+.PHONY : src/btree_node_reader.s
+
+# target to generate assembly for a file
+src/btree_node_reader.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_reader.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_reader.c.s
+.PHONY : src/btree_node_reader.c.s
+
+src/btree_node_writer.o: src/btree_node_writer.c.o
+.PHONY : src/btree_node_writer.o
+
+# target to build an object file
+src/btree_node_writer.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_writer.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_writer.c.o
+.PHONY : src/btree_node_writer.c.o
+
+src/btree_node_writer.i: src/btree_node_writer.c.i
+.PHONY : src/btree_node_writer.i
+
+# target to preprocess a source file
+src/btree_node_writer.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_writer.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_writer.c.i
+.PHONY : src/btree_node_writer.c.i
+
+src/btree_node_writer.s: src/btree_node_writer.c.s
+.PHONY : src/btree_node_writer.s
+
+# target to generate assembly for a file
+src/btree_node_writer.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_node_writer.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_writer.c.s
+.PHONY : src/btree_node_writer.c.s
+
+src/btree_overflow.o: src/btree_overflow.c.o
+.PHONY : src/btree_overflow.o
+
+# target to build an object file
+src/btree_overflow.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_overflow.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow.c.o
+.PHONY : src/btree_overflow.c.o
+
+src/btree_overflow.i: src/btree_overflow.c.i
+.PHONY : src/btree_overflow.i
+
+# target to preprocess a source file
+src/btree_overflow.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_overflow.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow.c.i
+.PHONY : src/btree_overflow.c.i
+
+src/btree_overflow.s: src/btree_overflow.c.s
+.PHONY : src/btree_overflow.s
+
+# target to generate assembly for a file
+src/btree_overflow.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_overflow.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow.c.s
+.PHONY : src/btree_overflow.c.s
+
+src/btree_overflow_test.o: src/btree_overflow_test.c.o
+.PHONY : src/btree_overflow_test.o
+
+# target to build an object file
+src/btree_overflow_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow_test.c.o
+.PHONY : src/btree_overflow_test.c.o
+
+src/btree_overflow_test.i: src/btree_overflow_test.c.i
+.PHONY : src/btree_overflow_test.i
+
+# target to preprocess a source file
+src/btree_overflow_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow_test.c.i
+.PHONY : src/btree_overflow_test.c.i
+
+src/btree_overflow_test.s: src/btree_overflow_test.c.s
+.PHONY : src/btree_overflow_test.s
+
+# target to generate assembly for a file
+src/btree_overflow_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_overflow_test.c.s
+.PHONY : src/btree_overflow_test.c.s
 
 src/btree_test.o: src/btree_test.c.o
 .PHONY : src/btree_test.o
@@ -578,6 +710,9 @@ help:
 	@echo "... src/btree_alg_test.o"
 	@echo "... src/btree_alg_test.i"
 	@echo "... src/btree_alg_test.s"
+	@echo "... src/btree_cell.o"
+	@echo "... src/btree_cell.i"
+	@echo "... src/btree_cell.s"
 	@echo "... src/btree_cursor.o"
 	@echo "... src/btree_cursor.i"
 	@echo "... src/btree_cursor.s"
@@ -587,6 +722,18 @@ help:
 	@echo "... src/btree_node_debug.o"
 	@echo "... src/btree_node_debug.i"
 	@echo "... src/btree_node_debug.s"
+	@echo "... src/btree_node_reader.o"
+	@echo "... src/btree_node_reader.i"
+	@echo "... src/btree_node_reader.s"
+	@echo "... src/btree_node_writer.o"
+	@echo "... src/btree_node_writer.i"
+	@echo "... src/btree_node_writer.s"
+	@echo "... src/btree_overflow.o"
+	@echo "... src/btree_overflow.i"
+	@echo "... src/btree_overflow.s"
+	@echo "... src/btree_overflow_test.o"
+	@echo "... src/btree_overflow_test.i"
+	@echo "... src/btree_overflow_test.s"
 	@echo "... src/btree_test.o"
 	@echo "... src/btree_test.i"
 	@echo "... src/btree_test.s"

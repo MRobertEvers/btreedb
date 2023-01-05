@@ -4,6 +4,7 @@
 #include "btree_defs.h"
 
 void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
+
 int btu_get_node_storage_size(struct BTreeNode* node);
 int btu_get_node_size(struct BTreeNode* node);
 char* btu_get_node_buffer(struct BTreeNode* node);
@@ -61,7 +62,9 @@ int btu_binary_search_keys(
  * @return int
  */
 int btu_init_keylistindex_from_index(
-	struct KeyListIndex* keylistindex, struct BTreeNode const* node, int index);
+	struct ChildListIndex* keylistindex,
+	struct BTreeNode const* node,
+	int index);
 
 /**
  * @brief
@@ -73,6 +76,6 @@ int btu_init_keylistindex_from_index(
  */
 int btu_get_left_insertion_from_keylistindex(
 	struct LeftInsertionIndex* insertion_index,
-	struct KeyListIndex* keylistindex);
+	struct ChildListIndex* keylistindex);
 
 #endif

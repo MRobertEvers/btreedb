@@ -28,7 +28,7 @@ btree_alg_test_split_nonleaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct KeyListIndex inserter = {.mode = KLIM_END};
+	struct ChildListIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 
@@ -124,7 +124,7 @@ btree_alg_test_split_leaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct KeyListIndex inserter = {.mode = KLIM_END};
+	struct ChildListIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 
@@ -218,7 +218,7 @@ btree_alg_test_split_as_parent_nonleaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct KeyListIndex inserter = {.mode = KLIM_END};
+	struct ChildListIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 
@@ -326,7 +326,7 @@ btree_alg_test_split_as_parent_leaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct KeyListIndex inserter = {.mode = KLIM_END};
+	struct ChildListIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 

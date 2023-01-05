@@ -1,5 +1,6 @@
 #include "btree_cursor.h"
 
+#include "btree_cell.h"
 #include "btree_node.h"
 #include "btree_utils.h"
 #include "pager.h"
@@ -119,13 +120,17 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 			else
 			{
 				btu_read_cell(&node, child_key_index, &cell);
-				if( *cell.size > sizeof(cursor->current_page_id) )
+				if( btree_cell_get_size(&cell) >
+					sizeof(cursor->current_page_id) )
 				{
 					result = BTREE_ERR_CORRUPT_CELL;
 					goto end;
 				}
 
-				memcpy(&cursor->current_page_id, cell.pointer, *cell.size);
+				memcpy(
+					&cursor->current_page_id,
+					cell.pointer,
+					btree_cell_get_size(&cell));
 			}
 		}
 	} while( !node.header->is_leaf );

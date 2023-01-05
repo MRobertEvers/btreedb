@@ -2,6 +2,7 @@
 
 #include "btree.h"
 #include "btree_alg.h"
+#include "btree_cell.h"
 #include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
@@ -174,7 +175,7 @@ btree_test_split_root_node()
 	struct CellData cell;
 	btu_read_cell(node, cursor->current_key_index.index, &cell);
 
-	if( *cell.size != sizeof(charlie) )
+	if( btree_cell_get_size(&cell) != sizeof(charlie) )
 	{
 		result = 0;
 		goto end;
@@ -558,7 +559,7 @@ btree_test_deep_tree(void)
 
 	btu_read_cell(node, cursor->current_key_index.index, &cell);
 
-	if( *cell.size != sizeof(billy) )
+	if( btree_cell_get_size(&cell) != sizeof(billy) )
 	{
 		result = 0;
 		goto end;
