@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 int
 btree_overflow_test_overflow_rw(void)
 {
@@ -54,5 +54,8 @@ btree_overflow_test_overflow_rw(void)
 	char buf[201] = {0};
 	btree_node_read(node, pager, 12, buf, 200);
 
-	return 0;
+	if( memcmp(buf, billy, sizeof(billy)) != 0 )
+		result = 0;
+
+	return 1;
 }
