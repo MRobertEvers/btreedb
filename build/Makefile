@@ -664,6 +664,57 @@ src/pager_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.s
 .PHONY : src/pager_test.c.s
 
+src/serialization.o: src/serialization.c.o
+.PHONY : src/serialization.o
+
+# target to build an object file
+src/serialization.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/serialization.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization.c.o
+.PHONY : src/serialization.c.o
+
+src/serialization.i: src/serialization.c.i
+.PHONY : src/serialization.i
+
+# target to preprocess a source file
+src/serialization.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/serialization.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization.c.i
+.PHONY : src/serialization.c.i
+
+src/serialization.s: src/serialization.c.s
+.PHONY : src/serialization.s
+
+# target to generate assembly for a file
+src/serialization.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/serialization.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization.c.s
+.PHONY : src/serialization.c.s
+
+src/serialization_test.o: src/serialization_test.c.o
+.PHONY : src/serialization_test.o
+
+# target to build an object file
+src/serialization_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization_test.c.o
+.PHONY : src/serialization_test.c.o
+
+src/serialization_test.i: src/serialization_test.c.i
+.PHONY : src/serialization_test.i
+
+# target to preprocess a source file
+src/serialization_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization_test.c.i
+.PHONY : src/serialization_test.c.i
+
+src/serialization_test.s: src/serialization_test.c.s
+.PHONY : src/serialization_test.s
+
+# target to generate assembly for a file
+src/serialization_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization_test.c.s
+.PHONY : src/serialization_test.c.s
+
 src/test.o: src/test.c.o
 .PHONY : src/test.o
 
@@ -758,6 +809,12 @@ help:
 	@echo "... src/pager_test.o"
 	@echo "... src/pager_test.i"
 	@echo "... src/pager_test.s"
+	@echo "... src/serialization.o"
+	@echo "... src/serialization.i"
+	@echo "... src/serialization.s"
+	@echo "... src/serialization_test.o"
+	@echo "... src/serialization_test.i"
+	@echo "... src/serialization_test.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

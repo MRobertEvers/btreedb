@@ -3,6 +3,42 @@
 
 #include "btree_defs.h"
 
+enum btree_cell_type_e
+{
+	CELL_TYPE_NONE,
+	CELL_TYPE_INLINE,
+	CELL_TYPE_OVERFLOW
+};
+
+struct BTreeCellInline
+{
+	// Size of payload not on an overflow page.
+	unsigned int inline_size;
+	void* payload;
+};
+
+/**
+ * @brief Get the size of the cell inline with payload data of size.
+ *
+ * @return int
+ */
+unsigned int btree_cell_inline_get_inline_size(unsigned int data_size);
+
+struct BTreeCellOverflow
+{
+	unsigned int inline_size;
+	unsigned int total_size;
+	unsigned int overflow_page_id;
+	void* inline_payload;
+};
+
+/**
+ * @brief Get the minimum size required for an overflow cell.
+ *
+ * @return int
+ */
+unsigned int btree_cell_overflow_get_min_inline_size(void);
+
 /**
  * @brief Unpack the cell size from a cell.
  *

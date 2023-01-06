@@ -5,7 +5,7 @@
 
 void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
-int btu_get_node_storage_size(struct BTreeNode* node);
+int btu_get_node_heap_size(struct BTreeNode* node);
 int btu_get_node_size(struct BTreeNode* node);
 char* btu_get_node_buffer(struct BTreeNode* node);
 

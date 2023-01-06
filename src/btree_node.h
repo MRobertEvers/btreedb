@@ -123,6 +123,13 @@ enum btree_e
 btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index);
 
 /**
+ * @brief Get the heap required for insertion; Accounts for page key size
+ *
+ * @return int
+ */
+unsigned int btree_node_get_heap_required_for_insertion(unsigned int cell_size);
+
+/**
  * @brief Returns the number of children for non-leaf nodes and the number of
  * cells of leaf nodes.
  *

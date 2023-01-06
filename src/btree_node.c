@@ -191,7 +191,7 @@ btree_node_insert(
 	return BTREE_OK;
 }
 
-int
+static int
 write_partial(
 	struct BTreeNodeWriterState* state, void* data, unsigned int data_size)
 {
@@ -206,6 +206,9 @@ write_partial(
 	return data_size;
 }
 
+/**
+ * See header
+ */
 enum btree_e
 btree_node_insert_ex(
 	struct BTreeNode* node,
@@ -252,6 +255,9 @@ btree_node_insert_ex(
 	return BTREE_OK;
 }
 
+/**
+ * See header
+ */
 enum btree_e
 btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 {
@@ -316,6 +322,18 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 	return BTREE_OK;
 }
 
+/**
+ * See header
+ */
+unsigned int
+btree_node_get_heap_required_for_insertion(unsigned int cell_size)
+{
+	return cell_size + sizeof(struct BTreePageKey);
+}
+
+/**
+ * See header
+ */
 int
 btree_node_arity(struct BTreeNode* node)
 {

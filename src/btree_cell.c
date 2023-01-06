@@ -1,5 +1,17 @@
 #include "btree_cell.h"
 
+unsigned int
+btree_cell_inline_get_inline_size(unsigned int data_size)
+{
+	return sizeof(struct BTreeCellInline) - sizeof(void*) + data_size;
+}
+
+unsigned int
+btree_cell_overflow_get_min_inline_size()
+{
+	return sizeof(struct BTreeCellOverflow) - sizeof(void*);
+}
+
 int
 btree_cell_get_size(struct CellData* cell)
 {

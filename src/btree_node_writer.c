@@ -6,6 +6,12 @@
 
 #include <stdlib.h>
 
+static int
+min(int left, int right)
+{
+	return left < right ? left : right;
+}
+
 struct BTreeOverflowPayload
 {
 	// This is the data that is written to this page.
@@ -16,7 +22,7 @@ struct BTreeOverflowPayload
 	unsigned int overflow_page_next_id;
 };
 
-int
+static int
 overflow_payload_writer(
 	void* self,
 	btree_node_writer_partial_t write,
@@ -56,18 +62,19 @@ btree_node_write(
 	char found;
 	enum btree_e result = BTREE_OK;
 
-	// 1. Determine if the payload can fit on the page with restrictions.
 	// We want the page to be able to fit at least 4 keys.
 	unsigned int min_cells_per_page = 4;
 
 	// This is max size including key!
 	// I.e. key+payload_size must fit within this.
 	unsigned int max_data_size =
-		btu_get_node_storage_size(node) / min_cells_per_page;
+		btu_get_node_heap_size(node) / min_cells_per_page;
+	unsigned int max_heap_usage = min(max_data_size, node->header->free_heap);
 
 	// Size check
-	unsigned int size_needed_on_first_page =
-		btu_calc_cell_size(data_size) + sizeof(struct BTreePageKey);
+	unsigned int inline_payload_size =
+		btree_node_get_heap_required_for_insertion(
+			btree_cell_inline_get_inline_size(data_size));
 
 	insertion_index_number =
 		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
@@ -79,12 +86,9 @@ btree_node_write(
 	child_index.mode =
 		child_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
 
-	if( size_needed_on_first_page <= max_data_size )
+	// TODO: Should this be max_heap_usage
+	if( inline_payload_size <= max_data_size )
 	{
-		// struct LeftInsertionIndex insertion_index = {0};
-		// btu_get_left_insertion_from_keylistindex(&insertion_index,
-		// &child_index);
-
 		result = btree_node_insert(node, &child_index, key, data, data_size);
 		if( result == BTREE_OK )
 			pager_write_page(pager, node->page);
@@ -95,24 +99,15 @@ btree_node_write(
 	{
 		// Overflow
 
-		unsigned int min_size_needed_on_first_page =
-			// TODO: Sizeof overfload cell
-			btu_calc_cell_size(sizeof(unsigned int) * 2) +
-			sizeof(struct BTreePageKey);
+		// Check if the smallest possible overflow page will fit.
+		unsigned int min_heap_required =
+			btree_node_get_heap_required_for_insertion(
+				btree_cell_overflow_get_min_inline_size());
 
-		unsigned max_data_size_available =
-			node->header->free_heap > max_data_size ? max_data_size
-													: node->header->free_heap;
-
-		if( max_data_size_available < min_size_needed_on_first_page )
+		if( min_heap_required > max_data_size )
 			return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-		// TODO: Algorithm to maximize page usage.
-		// -2*int because we store the next page id and the size of the data on
-		// the page. another int for cell size
-		unsigned int payload_bytes_to_write_on_first_page =
-			max_data_size_available - 3 * sizeof(unsigned int) -
-			sizeof(struct BTreePageKey);
+		unsigned int inline_payload_size = max_heap_usage - min_heap_required;
 
 		unsigned int payload_bytes_writable_to_overflow_page =
 			btree_overflow_max_write_size(pager);
@@ -120,11 +115,10 @@ btree_node_write(
 		// TODO: Better way?
 		unsigned int bytes_written = 0;
 		char* overflow_data = (char*)data;
-		overflow_data += payload_bytes_to_write_on_first_page;
+		overflow_data += inline_payload_size;
 
 		unsigned int num_overflow_pages = 1;
-		unsigned int page_write_size =
-			data_size - payload_bytes_to_write_on_first_page;
+		unsigned int page_write_size = data_size - inline_payload_size;
 		// Get the last slice of data.
 		while( page_write_size > payload_bytes_writable_to_overflow_page )
 		{
@@ -142,7 +136,7 @@ btree_node_write(
 		num_overflow_pages--;
 		if( num_overflow_pages == 0 )
 		{
-			overflow_data -= payload_bytes_to_write_on_first_page;
+			overflow_data -= inline_payload_size;
 		}
 		else
 		{
@@ -153,8 +147,7 @@ btree_node_write(
 
 		page_write_size = payload_bytes_writable_to_overflow_page;
 
-		while( bytes_written <
-			   data_size - payload_bytes_to_write_on_first_page )
+		while( bytes_written < data_size - inline_payload_size )
 		{
 			btree_overflow_write(
 				pager,
@@ -165,7 +158,7 @@ btree_node_write(
 			num_overflow_pages--;
 			if( num_overflow_pages == 0 )
 			{
-				overflow_data -= payload_bytes_to_write_on_first_page;
+				overflow_data -= inline_payload_size;
 			}
 			else
 			{
@@ -178,7 +171,7 @@ btree_node_write(
 		struct BTreeOverflowPayload write_payload = {0};
 		write_payload.full_payload_size = data_size;
 		write_payload.overflow_page_next_id = last_page_id;
-		write_payload.data_size = payload_bytes_to_write_on_first_page;
+		write_payload.data_size = inline_payload_size;
 		write_payload.data = overflow_data;
 
 		btree_node_insert_ex(

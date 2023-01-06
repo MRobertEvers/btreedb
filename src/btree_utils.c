@@ -16,7 +16,7 @@ btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 }
 
 int
-btu_get_node_storage_size(struct BTreeNode* node)
+btu_get_node_heap_size(struct BTreeNode* node)
 {
 	return btu_get_node_size(node) - sizeof(struct BTreePageHeader);
 }
