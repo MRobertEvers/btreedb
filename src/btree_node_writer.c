@@ -104,7 +104,7 @@ btree_node_write(
 			btree_node_get_heap_required_for_insertion(
 				btree_cell_overflow_get_min_inline_size());
 
-		if( min_heap_required > max_data_size )
+		if( min_heap_required > max_heap_usage )
 			return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 		unsigned int inline_payload_size = max_heap_usage - min_heap_required;
