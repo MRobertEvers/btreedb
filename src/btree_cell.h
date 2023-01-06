@@ -2,6 +2,7 @@
 #define BTREE_CELL_H_
 
 #include "btree_defs.h"
+#include "buffer_writer.h"
 
 enum btree_cell_type_e
 {
@@ -36,6 +37,13 @@ unsigned int btree_cell_inline_get_inline_size(unsigned int data_size);
  */
 void btree_cell_write_inline(struct BTreeCellInline* cell, void* buffer);
 
+void btree_cell_read_inline(
+	void* cell_buffer,
+	unsigned int cell_buffer_size,
+	struct BTreeCellInline* cell,
+	void* buffer,
+	unsigned int buffer_size);
+
 struct BTreeCellOverflow
 {
 	unsigned int inline_size;
@@ -50,6 +58,26 @@ struct BTreeCellOverflow
  * @return int
  */
 unsigned int btree_cell_overflow_get_min_inline_size(void);
+
+enum btree_e btree_cell_write_overflow_ex(
+	struct BTreeCellOverflow* cell, struct BufferWriter* writer);
+
+/**
+ * @brief Reads cell meta information and places payload into buffer.
+ *
+ * Does NOT use the payload point in the cell struct.
+ *
+ * @param reader
+ * @param cell
+ * @param buffer
+ * @param buffer_size
+ * @return enum btree_e
+ */
+enum btree_e btree_cell_read_overflow_ex(
+	struct BufferReader* reader,
+	struct BTreeCellOverflow* cell,
+	void* buffer,
+	unsigned int buffer_size);
 
 /**
  * @brief Unpack the cell size from a cell.
