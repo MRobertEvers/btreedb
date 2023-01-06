@@ -4,6 +4,7 @@
 #include "btree_overflow.h"
 #include "btree_utils.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 static int
@@ -128,33 +129,19 @@ btree_node_write(
 		}
 
 		unsigned int last_page_id = 0;
-
 		struct BTreeOverflowWriteResult write_result = {0};
-		btree_overflow_write(
-			pager, overflow_data, page_write_size, last_page_id, &write_result);
-
-		num_overflow_pages--;
-		if( num_overflow_pages == 0 )
+		do
 		{
-			overflow_data -= inline_payload_size;
-		}
-		else
-		{
-			overflow_data -= payload_bytes_writable_to_overflow_page;
-		}
-		bytes_written += page_write_size;
-		last_page_id = write_result.page_id;
-
-		page_write_size = payload_bytes_writable_to_overflow_page;
-
-		while( bytes_written < data_size - inline_payload_size )
-		{
-			btree_overflow_write(
+			result = btree_overflow_write(
 				pager,
 				overflow_data,
 				page_write_size,
 				last_page_id,
 				&write_result);
+			if( result != BTREE_OK )
+				return result;
+
+			assert(num_overflow_pages >= 0);
 			num_overflow_pages--;
 			if( num_overflow_pages == 0 )
 			{
@@ -162,11 +149,13 @@ btree_node_write(
 			}
 			else
 			{
-				overflow_data -= page_write_size;
+				overflow_data -= payload_bytes_writable_to_overflow_page;
 			}
 			bytes_written += page_write_size;
 			last_page_id = write_result.page_id;
-		}
+
+			page_write_size = payload_bytes_writable_to_overflow_page;
+		} while( bytes_written < data_size - inline_payload_size );
 
 		struct BTreeOverflowPayload write_payload = {0};
 		write_payload.full_payload_size = data_size;
@@ -174,7 +163,7 @@ btree_node_write(
 		write_payload.data_size = inline_payload_size;
 		write_payload.data = overflow_data;
 
-		btree_node_insert_ex(
+		result = btree_node_insert_ex(
 			node,
 			&child_index,
 			key,
@@ -182,8 +171,9 @@ btree_node_write(
 			&write_payload,
 			CELL_FLAG_OVERFLOW);
 
-		pager_write_page(pager, node->page);
+		if( result == BTREE_OK )
+			pager_write_page(pager, node->page);
 
-		return BTREE_OK;
+		return result;
 	}
 }
