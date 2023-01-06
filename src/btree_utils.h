@@ -67,6 +67,20 @@ int btu_init_keylistindex_from_index(
 	int index);
 
 /**
+ * @brief Converts an index key to the approprate InsertionIndex for insertion
+ * into a node.
+ *
+ * @param keylistindex
+ * @param node
+ * @param index
+ * @return int
+ */
+int btu_init_insertion_index_from_index(
+	struct InsertionIndex* keylistindex,
+	struct BTreeNode const* node,
+	int index);
+
+/**
  * @brief
  *
  * @param keylistindex
@@ -75,7 +89,7 @@ int btu_init_keylistindex_from_index(
  * @return int
  */
 int btu_get_left_insertion_from_keylistindex(
-	struct LeftInsertionIndex* insertion_index,
+	struct InsertionIndex* insertion_index,
 	struct ChildListIndex* keylistindex);
 
 #endif

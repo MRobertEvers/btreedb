@@ -28,7 +28,7 @@ btree_alg_test_split_nonleaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct ChildListIndex inserter = {.mode = KLIM_END};
+	struct InsertionIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 
@@ -36,7 +36,6 @@ btree_alg_test_split_nonleaf(void)
 	node->header->is_leaf = 0;
 
 	unsigned int fake_child_page_id_as_key = 3;
-	inserter.mode = KLIM_END;
 	btree_node_insert(
 		node,
 		&inserter,
@@ -58,13 +57,7 @@ btree_alg_test_split_nonleaf(void)
 		(void*)&fake_child_page_id_as_key,
 		sizeof(fake_child_page_id_as_key));
 	fake_child_page_id_as_key = 6;
-	inserter.mode = KLIM_RIGHT_CHILD;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	node->header->right_child = fake_child_page_id_as_key;
 
 	struct SplitPage split_result = {0};
 	bta_split_node(node, pager, &split_result);
@@ -218,7 +211,7 @@ btree_alg_test_split_as_parent_nonleaf(void)
 
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
-	struct ChildListIndex inserter = {.mode = KLIM_END};
+	struct InsertionIndex inserter = {.mode = KLIM_END};
 
 	page_create(pager, &page);
 
@@ -247,13 +240,7 @@ btree_alg_test_split_as_parent_nonleaf(void)
 		(void*)&fake_child_page_id_as_key,
 		sizeof(fake_child_page_id_as_key));
 	fake_child_page_id_as_key = 6;
-	inserter.mode = KLIM_RIGHT_CHILD;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	node->header->right_child = fake_child_page_id_as_key;
 
 	pager_write_page(pager, node->page);
 

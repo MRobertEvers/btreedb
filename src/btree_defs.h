@@ -92,7 +92,7 @@ struct ChildListIndex
  * @brief Used as an insertion point by the insertion functions.
  *
  */
-struct LeftInsertionIndex
+struct InsertionIndex
 {
 	enum key_list_index_mode_e mode;
 

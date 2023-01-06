@@ -80,17 +80,15 @@ btree_node_write(
 	insertion_index_number =
 		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
 
-	struct ChildListIndex child_index = {0};
-	btu_init_keylistindex_from_index(
-		&child_index, node, insertion_index_number);
+	struct InsertionIndex insertion_index = {0};
+	btu_init_insertion_index_from_index(
+		&insertion_index, node, insertion_index_number);
 
-	child_index.mode =
-		child_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
-
-	// TODO: Should this be max_heap_usage
+	// TODO: Should this be max_heap_usage?
 	if( inline_payload_size <= max_data_size )
 	{
-		result = btree_node_insert(node, &child_index, key, data, data_size);
+		result =
+			btree_node_insert(node, &insertion_index, key, data, data_size);
 		if( result == BTREE_OK )
 			pager_write_page(pager, node->page);
 
@@ -165,7 +163,7 @@ btree_node_write(
 
 		result = btree_node_insert_ex(
 			node,
-			&child_index,
+			&insertion_index,
 			key,
 			&overflow_payload_writer,
 			&write_payload,

@@ -34,7 +34,7 @@ bta_split_node_as_parent(
 	page_create(pager, &right_page);
 	btree_node_create_from_page(&right, right_page);
 
-	struct ChildListIndex insert_end = {.mode = KLIM_END};
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
 	int first_half = ((node->header->num_keys + 1) / 2);
 	// We need to keep track of this. If this is a nonleaf node,
 	// then the left child high key will be lost.
@@ -42,7 +42,6 @@ bta_split_node_as_parent(
 	for( int i = 0; i < node->header->num_keys; i++ )
 	{
 		struct CellData cell = {0};
-		insert_end.mode = KLIM_END;
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
@@ -50,15 +49,19 @@ bta_split_node_as_parent(
 		unsigned int cell_size = btree_cell_get_size(&cell);
 		if( i < first_half )
 		{
-			// The last element in the first half should be the right child.
-			insert_end.mode = (i == first_half - 1 && !node->header->is_leaf)
-								  ? KLIM_RIGHT_CHILD
-								  : KLIM_END;
-			// We must track this regardless of whether leaf or not.
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-
-			btree_node_insert(left, &insert_end, key, data, cell_size);
+			if( i == first_half - 1 && !node->header->is_leaf )
+			{
+				memcpy(
+					&left->header->right_child,
+					data,
+					sizeof(left->header->right_child));
+			}
+			else
+			{
+				btree_node_insert(left, &insert_end, key, data, cell_size);
+			}
 		}
 		else
 		{
@@ -68,15 +71,7 @@ bta_split_node_as_parent(
 
 	// Non-leaf nodes also have to move right child too.
 	if( !node->header->is_leaf )
-	{
-		insert_end.mode = KLIM_RIGHT_CHILD;
-		btree_node_insert(
-			right,
-			&insert_end,
-			node->header->right_child,
-			(void*)&node->header->right_child,
-			sizeof(node->header->right_child));
-	}
+		right->header->right_child = node->header->right_child;
 
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = node->header->is_leaf;
@@ -153,7 +148,7 @@ bta_split_node(
 	page_create(pager, &left_page);
 	btree_node_create_from_page(&left, left_page);
 
-	struct ChildListIndex insert_end = {.mode = KLIM_END};
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
 	int first_half = ((node->header->num_keys + 1) / 2);
 
 	// We need to keep track of this. If this is a nonleaf node,
@@ -162,20 +157,26 @@ bta_split_node(
 	for( int i = 0; i < node->header->num_keys; i++ )
 	{
 		struct CellData cell = {0};
-		insert_end.mode = KLIM_END;
 
 		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
+		char* data = cell.pointer;
 		unsigned int cell_size = btree_cell_get_size(&cell);
 		if( i < first_half )
 		{
-			// The last element in the first half should be the right child.
-			insert_end.mode = (i == first_half - 1 && !node->header->is_leaf)
-								  ? KLIM_RIGHT_CHILD
-								  : KLIM_END;
 			if( i == first_half - 1 )
 				left_child_high_key = key;
-			btree_node_insert(left, &insert_end, key, cell.pointer, cell_size);
+			if( i == first_half - 1 && !node->header->is_leaf )
+			{
+				memcpy(
+					&left->header->right_child,
+					data,
+					sizeof(left->header->right_child));
+			}
+			else
+			{
+				btree_node_insert(left, &insert_end, key, data, cell_size);
+			}
 		}
 		else
 		{
@@ -184,15 +185,7 @@ bta_split_node(
 	}
 
 	if( !node->header->is_leaf )
-	{
-		insert_end.mode = KLIM_RIGHT_CHILD;
-		btree_node_insert(
-			right,
-			&insert_end,
-			node->header->right_child,
-			(void*)&node->header->right_child,
-			sizeof(node->header->right_child));
-	}
+		right->header->right_child = node->header->right_child;
 
 	right->header->is_leaf = node->header->is_leaf;
 	left->header->is_leaf = node->header->is_leaf;

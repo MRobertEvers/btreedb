@@ -43,8 +43,6 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
  *
  * High Water Mark is distance from right edge to left heap edge.
  *
- * Note: The key argument is discarded in the case of KLIM_RIGHT_CHILD.
- *
  * @param node
  * @param index
  * @param key
@@ -54,7 +52,7 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
  */
 enum btree_e btree_node_insert(
 	struct BTreeNode* node,
-	struct ChildListIndex* index,
+	struct InsertionIndex* index,
 	unsigned int key,
 	void* data,
 	int data_size);
@@ -101,7 +99,7 @@ typedef int (*btree_node_writer_t)(
  */
 enum btree_e btree_node_insert_ex(
 	struct BTreeNode* node,
-	struct ChildListIndex* index,
+	struct InsertionIndex* index,
 	unsigned int key,
 	btree_node_writer_t writer,
 	void* writer_data,

@@ -121,11 +121,30 @@ btu_init_keylistindex_from_index(
 }
 
 int
-btu_get_left_insertion_from_keylistindex(
-	struct LeftInsertionIndex* insertion_index,
-	struct ChildListIndex* keylistindex)
+btu_init_insertion_index_from_index(
+	struct InsertionIndex* keylistindex,
+	struct BTreeNode const* node,
+	int index)
 {
-	memset(insertion_index, 0x00, sizeof(struct LeftInsertionIndex));
+	if( index < node->header->num_keys )
+	{
+		keylistindex->mode = KLIM_INDEX;
+		keylistindex->index = index;
+	}
+	else
+	{
+		keylistindex->mode = KLIM_END;
+		keylistindex->index = node->header->num_keys;
+	}
+
+	return 0;
+}
+
+int
+btu_get_left_insertion_from_keylistindex(
+	struct InsertionIndex* insertion_index, struct ChildListIndex* keylistindex)
+{
+	memset(insertion_index, 0x00, sizeof(struct InsertionIndex));
 
 	// Always insert to the left of the right child.
 	if( keylistindex->mode == KLIM_RIGHT_CHILD )

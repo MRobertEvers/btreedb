@@ -103,59 +103,14 @@ btree_node_destroy(struct BTreeNode* node)
 enum btree_e
 btree_node_insert(
 	struct BTreeNode* node,
-	struct ChildListIndex* index,
+	struct InsertionIndex* index,
 	unsigned int key,
 	void* data,
 	int data_size)
 {
+	assert(index->mode != KLIM_RIGHT_CHILD);
+
 	unsigned int index_number = 0;
-
-	// If inserting right child, then data is expected to be the page id.
-	// The right child has no key.
-	if( index->mode == KLIM_RIGHT_CHILD )
-	{
-		assert(!node->header->is_leaf);
-		assert(data_size == sizeof(node->header->right_child));
-
-		unsigned int previous_right_child = node->header->right_child;
-		node->header->right_child = *(int*)data;
-
-		// If we wanted to put data into the right child
-		// and there previously wasn't a right child,
-		// then we are done.
-		if( previous_right_child == 0 )
-		{
-			// This might seem like it is an invariant failure,
-			// but if we're populating a new node, then
-			// this is correct.
-			return BTREE_OK;
-		}
-		else
-		{
-			// Probably shouldn't overwrite children..
-			// TODO: What should happen
-			assert(0);
-			return BTREE_OK;
-		}
-
-		// // Push the right_child as a key to the key list.
-		// struct ChildListIndex insert_index = {0};
-		// insert_index.index = node->header->num_keys;
-		// insert_index.mode = KLIM_END;
-
-		// enum btree_e next_right_child_result = btree_node_insert(
-		// 	node,
-		// 	&insert_index,
-		// 	previous_right_child,
-		// 	(void*)&previous_right_child,
-		// 	sizeof(previous_right_child));
-
-		// // Success, change the right_child
-		// if( next_right_child_result == BTREE_OK )
-		// 	node->header->right_child = *(int*)data;
-
-		// return next_right_child_result;
-	}
 
 	index_number =
 		index->mode == KLIM_END ? node->header->num_keys : index->index;
@@ -212,12 +167,14 @@ write_partial(
 enum btree_e
 btree_node_insert_ex(
 	struct BTreeNode* node,
-	struct ChildListIndex* index,
+	struct InsertionIndex* index,
 	unsigned int key,
 	btree_node_writer_t writer,
 	void* writer_data,
 	enum btree_cell_flag_e flags)
 {
+	assert(index->mode != KLIM_RIGHT_CHILD);
+
 	unsigned int index_number = 0;
 	struct BTreeNodeWriterState writer_state = {0};
 
@@ -250,7 +207,7 @@ btree_node_insert_ex(
 	node->header->cell_high_water_offset += btu_calc_cell_size(written_size);
 
 	node->header->free_heap -=
-		btu_calc_cell_size(written_size) + sizeof(struct BTreePageKey);
+		btree_node_get_heap_required_for_insertion(written_size);
 
 	return BTREE_OK;
 }

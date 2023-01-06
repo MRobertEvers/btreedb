@@ -3,6 +3,18 @@
 
 #include "pager.h"
 
+struct BTreeOverflowPageHeader
+{
+	unsigned int next_page_id;
+	unsigned int payload_size;
+};
+
+/**
+ * @brief Get the max amount of payload bytes writable to an overflow page.
+ *
+ * @param pager
+ * @return unsigned int
+ */
 unsigned int btree_overflow_max_write_size(struct Pager* pager);
 
 struct BTreeOverflowReadResult
