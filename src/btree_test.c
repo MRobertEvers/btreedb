@@ -19,18 +19,18 @@ btree_test_insert()
 {
 	int result = 1;
 	struct Pager* pager;
-
+	char const* db_name = "btree_test_insert2.db";
 	struct PageCache* cache = NULL;
-	remove("btree_test_insert2.db");
+	remove(db_name);
 
 	page_cache_create(&cache, 5);
-	pager_cstd_create(&pager, cache, "btree_test_insert2.db", 0x1000);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
 	struct BTree* tree;
 	btree_alloc(&tree);
 	btree_init(tree, pager);
 
-	char billy[4096 - 200] = "billy";
+	char billy[0x1000 - 200] = "billy";
 	btree_insert(tree, 12, billy, sizeof(billy));
 
 	char ruth[500] = "ruth";
@@ -46,19 +46,18 @@ btree_test_insert()
 	struct BTreeNode* raw_node;
 	btree_node_create_from_page(&raw_node, raw_page);
 
-	// There should be one key witha right child
-	if( raw_node->header->num_keys != 1 || raw_node->header->right_child == 0 )
-	{
+	char buf[sizeof(billy)] = {0};
+	btree_node_read(raw_node, pager, 12, buf, sizeof(buf));
+
+	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;
-		goto end;
-	}
 
 end:
 	btree_node_destroy(raw_node);
 	page_destroy(pager, raw_page);
 	btree_deinit(tree);
 	btree_dealloc(tree);
-	remove("btree_test_insert2.db");
+	remove(db_name);
 	return result;
 }
 
@@ -359,7 +358,6 @@ btree_test_deep_tree(void)
 	struct Pager* pager = NULL;
 	struct PageCache* cache = NULL;
 
-	printf("\n\nHello!\n\n");
 	remove(db_name);
 
 	page_cache_create(&cache, 11);

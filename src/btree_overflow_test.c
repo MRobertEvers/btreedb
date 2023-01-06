@@ -29,10 +29,13 @@ btree_overflow_test_overflow_rw(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	pager_cstd_create(&pager, cache, db_name, 200);
+	pager_cstd_create(&pager, cache, db_name, 512);
 
-	char billy[200] =
+	char billy[512 * 4] =
 		"billy_hello_how_are_you we are good thanks. Your name is what?"; // 12
+
+	billy[1008] = 'r';
+	billy[1716] = 'b';
 
 	page_create(pager, &page);
 	selector.page_id = 1;
@@ -42,17 +45,17 @@ btree_overflow_test_overflow_rw(void)
 	node->header->is_leaf = 1;
 	pager_write_page(pager, page);
 
-	char* h = page->page_buffer;
+	// char* h = page->page_buffer;
 
-	for( int i = 0; i < (btu_get_node_storage_size(node) - 8); i++ )
-	{
-		h[pager->page_size - (i + 1)] = ('a' + i % ('z' - 'a'));
-	}
+	// for( int i = 0; i < (btu_get_node_storage_size(node) - 8); i++ )
+	// {
+	// 	h[pager->page_size - (i + 1)] = ('a' + i % ('z' - 'a'));
+	// }
 
 	btree_node_write(node, pager, 12, billy, sizeof(billy));
 
-	char buf[201] = {0};
-	btree_node_read(node, pager, 12, buf, 200);
+	char buf[sizeof(billy)] = {0};
+	btree_node_read(node, pager, 12, buf, sizeof(buf));
 
 	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;

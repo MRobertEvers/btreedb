@@ -146,7 +146,7 @@ btree_node_write(
 		}
 		else
 		{
-			overflow_data -= page_write_size;
+			overflow_data -= payload_bytes_writable_to_overflow_page;
 		}
 		bytes_written += page_write_size;
 		last_page_id = write_result.page_id;
