@@ -11,7 +11,7 @@ ser_write_32bit_le(void* buffer, unsigned int val)
 }
 
 void
-ser_read_32bit_le(void* buffer, unsigned int* val)
+ser_read_32bit_le(unsigned int* val, void* buffer)
 {
 	unsigned char* byte_buffer = buffer;
 	for( int i = 0; i < 4; i++ )

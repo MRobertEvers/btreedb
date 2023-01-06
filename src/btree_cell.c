@@ -1,9 +1,23 @@
 #include "btree_cell.h"
 
+#include "serialization.h"
+
+#include <string.h>
+
 unsigned int
 btree_cell_inline_get_inline_size(unsigned int data_size)
 {
 	return sizeof(struct BTreeCellInline) - sizeof(void*) + data_size;
+}
+
+void
+btree_cell_write_inline(struct BTreeCellInline* cell, void* buffer)
+{
+	char* cell_left_edge = buffer;
+	ser_write_32bit_le(cell_left_edge, cell->inline_size);
+
+	cell_left_edge = cell_left_edge + sizeof(cell->inline_size);
+	memcpy(cell_left_edge, cell->payload, cell->inline_size);
 }
 
 unsigned int

@@ -14,7 +14,7 @@ serialization_test(void)
 
 	unsigned int out = 0;
 
-	ser_read_32bit_le(buf, &out);
+	ser_read_32bit_le(&out, buf);
 
 	if( out != val )
 		result = 0;

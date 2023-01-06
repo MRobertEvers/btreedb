@@ -15,6 +15,6 @@ void ser_write_32bit_le(void* buffer, unsigned int val);
  * @param buffer
  * @param val
  */
-void ser_read_32bit_le(void* buffer, unsigned int* val);
+void ser_read_32bit_le(unsigned int* val, void* buffer);
 
 #endif

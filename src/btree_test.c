@@ -304,7 +304,8 @@ btree_test_free_heap_calcs()
 	btree_node_create_from_page(&raw_node, raw_page);
 
 	if( free_heap_billy - raw_node->header->free_heap !=
-		sizeof(ruth) + sizeof(struct BTreePageKey) + sizeof(int) )
+		btree_node_get_heap_required_for_insertion(
+			btree_cell_inline_get_inline_size(sizeof(ruth))) )
 		result = 0;
 
 end:

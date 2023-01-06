@@ -10,6 +10,7 @@ enum btree_cell_type_e
 	CELL_TYPE_OVERFLOW
 };
 
+// TODO : Need to use these structs in the writers.
 struct BTreeCellInline
 {
 	// Size of payload not on an overflow page.
@@ -23,6 +24,17 @@ struct BTreeCellInline
  * @return int
  */
 unsigned int btree_cell_inline_get_inline_size(unsigned int data_size);
+
+/**
+ * @brief Write inline cell to buffer.
+ *
+ * // TODO: Bounds chekc
+ *
+ * @param cell
+ * @param buffer
+ * @param buffer_size
+ */
+void btree_cell_write_inline(struct BTreeCellInline* cell, void* buffer);
 
 struct BTreeCellOverflow
 {

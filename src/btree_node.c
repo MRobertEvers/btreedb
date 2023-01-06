@@ -98,50 +98,69 @@ btree_node_destroy(struct BTreeNode* node)
 }
 
 /**
+ * @brief Assumes space check has already been done.
+ *
+ * @param array
+ */
+static void
+insert_page_key(
+	struct BTreePageKey* array,
+	unsigned int array_size,
+	struct BTreePageKey* key,
+	unsigned int index_number)
+{
+	memmove(
+		&array[index_number + 1],
+		&array[index_number],
+		(array_size - index_number) * sizeof(array[0]));
+
+	array[index_number].key = key->key;
+	array[index_number].cell_offset = key->cell_offset;
+}
+
+/**
  * See header for details.
  */
 enum btree_e
-btree_node_insert(
+btree_node_insert_inline(
 	struct BTreeNode* node,
 	struct InsertionIndex* index,
 	unsigned int key,
-	void* data,
-	int data_size)
+	struct BTreeCellInline* cell)
 {
 	assert(index->mode != KLIM_RIGHT_CHILD);
 
 	unsigned int index_number = 0;
+	unsigned int data_size = cell->inline_size;
+	unsigned int cell_size = btree_cell_inline_get_inline_size(data_size);
 
 	index_number =
 		index->mode == KLIM_END ? node->header->num_keys : index->index;
 
 	// Size check
-	int size_needed =
-		btu_calc_cell_size(data_size) + sizeof(struct BTreePageKey);
-	if( node->header->free_heap < size_needed )
+	unsigned int heap_needed =
+		btree_node_get_heap_required_for_insertion(cell_size);
+	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	// The Raw insertion
-	memmove(
-		&node->keys[index_number + 1],
-		&node->keys[index_number],
-		(node->header->num_keys - index_number) *
-			sizeof(node->keys[index_number]));
+	unsigned int cell_left_edge_offset =
+		node->header->cell_high_water_offset + cell_size;
 
-	node->keys[index_number].key = key;
-	node->keys[index_number].cell_offset =
-		node->header->cell_high_water_offset + btu_calc_cell_size(data_size);
+	// The Raw insertion
+	struct BTreePageKey page_key = {0};
+	page_key.cell_offset = cell_left_edge_offset;
+	page_key.key = key;
+
+	insert_page_key(
+		node->keys, node->header->num_keys, &page_key, index_number);
 	node->header->num_keys += 1;
 
-	char* cell =
-		btu_calc_highwater_offset(node, node->keys[index_number].cell_offset);
-	memcpy(cell, &data_size, sizeof(data_size));
+	char* cell_left_edge =
+		btu_calc_highwater_offset(node, cell_left_edge_offset);
+	btree_cell_write_inline(cell, cell_left_edge);
 
-	cell = cell + sizeof(data_size);
-	memcpy(cell, data, data_size);
-	node->header->cell_high_water_offset += btu_calc_cell_size(data_size);
-
-	node->header->free_heap -= size_needed;
+	node->header->cell_high_water_offset += cell_size;
+	node->header->free_heap -= heap_needed;
 
 	return BTREE_OK;
 }

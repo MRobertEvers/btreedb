@@ -4,9 +4,95 @@
 #include "btree_node.h"
 #include "btree_utils.h"
 #include "pager.h"
+#include "serialization.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+static void
+read_key_cell(
+	struct BTreeNode* source_node, unsigned int* buffer, unsigned int index)
+{
+	// TODO: Buffer size check
+	struct CellData read_cell = {0};
+	unsigned int key = 0;
+	unsigned int cell_size = 0;
+	char* cell_data = NULL;
+
+	key = source_node->keys[index].key;
+	btu_read_cell(source_node, index, &read_cell);
+
+	ser_read_32bit_le(buffer, read_cell.pointer);
+}
+
+static void
+copy_cell(
+	struct BTreeNode* source_node, struct BTreeNode* other, unsigned int index)
+{
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
+	struct CellData read_cell = {0};
+	unsigned int key = 0;
+	unsigned int cell_size = 0;
+	char* cell_data = NULL;
+
+	struct BTreeCellInline write_cell = {0};
+
+	key = source_node->keys[index].key;
+	btu_read_cell(source_node, index, &read_cell);
+
+	cell_size = btree_cell_get_size(&read_cell);
+	cell_data = read_cell.pointer;
+
+	write_cell.inline_size = cell_size;
+	write_cell.payload = cell_data;
+
+	btree_node_insert_inline(other, &insert_end, key, &write_cell);
+}
+
+struct split_node_t
+{
+	unsigned int left_child_high_key;
+};
+
+static enum btree_e
+split_node(
+	struct BTreeNode* source_node,
+	struct BTreeNode* left,
+	struct BTreeNode* right,
+	struct split_node_t* split_result)
+{
+	split_result->left_child_high_key = 0;
+	if( source_node->header->num_keys == 0 )
+		return BTREE_OK;
+
+	int first_half = ((source_node->header->num_keys + 1) / 2);
+	// We need to keep track of this. If this is a nonleaf node,
+	// then the left child high key will be lost.
+	unsigned int left_child_high_key = source_node->keys[first_half - 1].key;
+
+	for( int i = 0; i < first_half - 1; i++ )
+	{
+		copy_cell(source_node, left, i);
+	}
+
+	if( !source_node->header->is_leaf )
+		read_key_cell(source_node, &left->header->right_child, first_half - 1);
+	else
+		copy_cell(source_node, left, first_half - 1);
+
+	for( int i = first_half; i < source_node->header->num_keys; i++ )
+	{
+		copy_cell(source_node, right, i);
+	}
+
+	// Non-leaf nodes also have to move right child too.
+	if( !source_node->header->is_leaf )
+		right->header->right_child = source_node->header->right_child;
+
+	split_result->left_child_high_key = left_child_high_key;
+
+	return BTREE_OK;
+}
 
 /**
  * See header for details.
@@ -17,6 +103,10 @@ bta_split_node_as_parent(
 	struct Pager* pager,
 	struct SplitPageAsParent* split_page)
 {
+	enum btree_e result = BTREE_OK;
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
+	struct BTreeCellInline write_cell = {0};
+
 	struct BTreeNode* parent = NULL;
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
@@ -34,44 +124,10 @@ bta_split_node_as_parent(
 	page_create(pager, &right_page);
 	btree_node_create_from_page(&right, right_page);
 
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
-	int first_half = ((node->header->num_keys + 1) / 2);
-	// We need to keep track of this. If this is a nonleaf node,
-	// then the left child high key will be lost.
-	unsigned int left_child_high_key = 0;
-	for( int i = 0; i < node->header->num_keys; i++ )
-	{
-		struct CellData cell = {0};
-
-		int key = node->keys[i].key;
-		btu_read_cell(node, i, &cell);
-		char* data = cell.pointer;
-		unsigned int cell_size = btree_cell_get_size(&cell);
-		if( i < first_half )
-		{
-			if( i == first_half - 1 )
-				left_child_high_key = key;
-			if( i == first_half - 1 && !node->header->is_leaf )
-			{
-				memcpy(
-					&left->header->right_child,
-					data,
-					sizeof(left->header->right_child));
-			}
-			else
-			{
-				btree_node_insert(left, &insert_end, key, data, cell_size);
-			}
-		}
-		else
-		{
-			btree_node_insert(right, &insert_end, key, data, cell_size);
-		}
-	}
-
-	// Non-leaf nodes also have to move right child too.
-	if( !node->header->is_leaf )
-		right->header->right_child = node->header->right_child;
+	struct split_node_t split_result = {0};
+	result = split_node(node, left, right, &split_result);
+	if( result != BTREE_OK )
+		goto end;
 
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = node->header->is_leaf;
@@ -89,15 +145,13 @@ bta_split_node_as_parent(
 	parent->header->is_leaf = 0;
 
 	parent->header->right_child = right_page->page_id;
-	insert_end.mode = KLIM_END;
+
 	// Add the middle point between the left and right pages as a key to the
 	// parent.
-	btree_node_insert(
-		parent,
-		&insert_end,
-		left_child_high_key,
-		&left_page->page_id,
-		sizeof(unsigned int));
+	write_cell.inline_size = sizeof(unsigned int);
+	write_cell.payload = &left_page->page_id;
+	btree_node_insert_inline(
+		parent, &insert_end, split_result.left_child_high_key, &write_cell);
 
 	memcpy(
 		btu_get_node_buffer(node),
@@ -110,7 +164,7 @@ bta_split_node_as_parent(
 	{
 		split_page->left_child_page_id = left_page->page_id;
 		split_page->right_child_page_id = right_page->page_id;
-		split_page->left_child_high_key = left_child_high_key;
+		split_page->left_child_high_key = split_result.left_child_high_key;
 	}
 
 end:
@@ -133,6 +187,8 @@ enum btree_e
 bta_split_node(
 	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page)
 {
+	enum btree_e result = BTREE_OK;
+
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
 
@@ -148,44 +204,10 @@ bta_split_node(
 	page_create(pager, &left_page);
 	btree_node_create_from_page(&left, left_page);
 
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
-	int first_half = ((node->header->num_keys + 1) / 2);
-
-	// We need to keep track of this. If this is a nonleaf node,
-	// then the left child high key will be lost.
-	unsigned int left_child_high_key = 0;
-	for( int i = 0; i < node->header->num_keys; i++ )
-	{
-		struct CellData cell = {0};
-
-		int key = node->keys[i].key;
-		btu_read_cell(node, i, &cell);
-		char* data = cell.pointer;
-		unsigned int cell_size = btree_cell_get_size(&cell);
-		if( i < first_half )
-		{
-			if( i == first_half - 1 )
-				left_child_high_key = key;
-			if( i == first_half - 1 && !node->header->is_leaf )
-			{
-				memcpy(
-					&left->header->right_child,
-					data,
-					sizeof(left->header->right_child));
-			}
-			else
-			{
-				btree_node_insert(left, &insert_end, key, data, cell_size);
-			}
-		}
-		else
-		{
-			btree_node_insert(right, &insert_end, key, cell.pointer, cell_size);
-		}
-	}
-
-	if( !node->header->is_leaf )
-		right->header->right_child = node->header->right_child;
+	struct split_node_t split_result = {0};
+	result = split_node(node, left, right, &split_result);
+	if( result != BTREE_OK )
+		goto end;
 
 	right->header->is_leaf = node->header->is_leaf;
 	left->header->is_leaf = node->header->is_leaf;
@@ -203,7 +225,7 @@ bta_split_node(
 	if( split_page != NULL )
 	{
 		split_page->left_page_id = left_page->page_id;
-		split_page->left_page_high_key = left_child_high_key;
+		split_page->left_page_high_key = split_result.left_child_high_key;
 	}
 
 end:

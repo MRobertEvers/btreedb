@@ -21,6 +21,8 @@ btree_alg_test_split_nonleaf(void)
 	struct PageSelector selector = {0};
 	struct PageCache* cache = NULL;
 
+	struct BTreeCellInline cell = {0};
+
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
@@ -35,27 +37,20 @@ btree_alg_test_split_nonleaf(void)
 	btree_node_create_as_page_number(&node, 1, page);
 	node->header->is_leaf = 0;
 
-	unsigned int fake_child_page_id_as_key = 3;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	unsigned int fake_child_page_id_as_key;
+
+	cell.inline_size = sizeof(fake_child_page_id_as_key);
+	cell.payload = &fake_child_page_id_as_key;
+
+	fake_child_page_id_as_key = 3;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 4;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 5;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 6;
 	node->header->right_child = fake_child_page_id_as_key;
 
@@ -109,6 +104,7 @@ btree_alg_test_split_leaf(void)
 
 	struct PageSelector selector = {0};
 	struct PageCache* cache = NULL;
+	struct BTreeCellInline cell = {0};
 
 	remove(db_name);
 
@@ -124,34 +120,23 @@ btree_alg_test_split_leaf(void)
 	btree_node_create_as_page_number(&node, 1, page);
 	node->header->is_leaf = 1;
 
-	unsigned int fake_child_page_id_as_key = 3;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	unsigned int fake_child_page_id_as_key;
+
+	cell.inline_size = sizeof(fake_child_page_id_as_key);
+	cell.payload = &fake_child_page_id_as_key;
+
+	fake_child_page_id_as_key = 3;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 4;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 5;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 6;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 
 	struct SplitPage split_result = {0};
 	bta_split_node(node, pager, &split_result);
@@ -204,6 +189,8 @@ btree_alg_test_split_as_parent_nonleaf(void)
 	struct PageSelector selector = {0};
 	struct PageCache* cache = NULL;
 
+	struct BTreeCellInline cell = {0};
+
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
@@ -218,27 +205,20 @@ btree_alg_test_split_as_parent_nonleaf(void)
 	btree_node_create_as_page_number(&node, 1, page);
 	node->header->is_leaf = 0;
 
-	unsigned int fake_child_page_id_as_key = 3;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	unsigned int fake_child_page_id_as_key;
+
+	cell.inline_size = sizeof(fake_child_page_id_as_key);
+	cell.payload = &fake_child_page_id_as_key;
+
+	fake_child_page_id_as_key = 3;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 4;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 5;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	fake_child_page_id_as_key = 6;
 	node->header->right_child = fake_child_page_id_as_key;
 
@@ -306,6 +286,8 @@ btree_alg_test_split_as_parent_leaf(void)
 	struct PageSelector selector = {0};
 	struct PageCache* cache = NULL;
 
+	struct BTreeCellInline cell = {0};
+
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
@@ -320,35 +302,23 @@ btree_alg_test_split_as_parent_leaf(void)
 	btree_node_create_as_page_number(&node, 1, page);
 	node->header->is_leaf = 1;
 
-	unsigned int fake_child_page_id_as_key = 3;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
-	fake_child_page_id_as_key = 4;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
-	fake_child_page_id_as_key = 5;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
-	fake_child_page_id_as_key = 6;
-	btree_node_insert(
-		node,
-		&inserter,
-		fake_child_page_id_as_key,
-		(void*)&fake_child_page_id_as_key,
-		sizeof(fake_child_page_id_as_key));
+	unsigned int fake_child_page_id_as_key;
 
+	cell.inline_size = sizeof(fake_child_page_id_as_key);
+	cell.payload = &fake_child_page_id_as_key;
+
+	fake_child_page_id_as_key = 3;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
+	fake_child_page_id_as_key = 4;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
+	fake_child_page_id_as_key = 5;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
+	fake_child_page_id_as_key = 6;
+	btree_node_insert_inline(
+		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 	pager_write_page(pager, node->page);
 
 	struct SplitPageAsParent split_result = {0};

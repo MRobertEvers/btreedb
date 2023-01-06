@@ -62,6 +62,7 @@ btree_node_write(
 	unsigned int insertion_index_number;
 	char found;
 	enum btree_e result = BTREE_OK;
+	struct BTreeCellInline cell = {0};
 
 	// We want the page to be able to fit at least 4 keys.
 	unsigned int min_cells_per_page = 4;
@@ -87,8 +88,9 @@ btree_node_write(
 	// TODO: Should this be max_heap_usage?
 	if( inline_payload_size <= max_data_size )
 	{
-		result =
-			btree_node_insert(node, &insertion_index, key, data, data_size);
+		cell.inline_size = data_size;
+		cell.payload = data;
+		result = btree_node_insert_inline(node, &insertion_index, key, &cell);
 		if( result == BTREE_OK )
 			pager_write_page(pager, node->page);
 
