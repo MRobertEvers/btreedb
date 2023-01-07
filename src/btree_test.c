@@ -243,21 +243,33 @@ btree_test_delete(void)
 		result = 0;
 		goto end;
 	}
+	cursor_destroy(cursor);
 
-	struct Page* page;
-	page_create(tree->pager, &page);
-
-	pager_reselect(&selector, cursor->current_page_id);
-	pager_read_page(tree->pager, &selector, page);
-	btree_node_create_from_page(&node, page);
-
-	if( node->header->num_keys != 1 )
+	// Check that the insertion is reachable.
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 12, &found);
+	if( !found )
 	{
 		result = 0;
 		goto end;
 	}
 
+	pager_reselect(&selector, cursor->current_page_id);
+	pager_read_page(tree->pager, &selector, raw_page);
+	btree_node_create_from_page(&node, raw_page);
+
+	char buf[sizeof(billy)] = {0};
+	btree_node_read(node, pager, 12, buf, sizeof(buf));
+
+	if( memcmp(buf, billy, sizeof(billy)) != 0 )
+		result = 0;
+
+	cursor_destroy(cursor);
+	cursor = NULL;
+
 end:
+	if( cursor )
+		cursor_destroy(cursor);
 	btree_node_destroy(raw_root_node);
 	page_destroy(pager, raw_page);
 	btree_node_destroy(node);
@@ -321,24 +333,24 @@ end:
 static void
 dbg_deep_tree_pages(struct Pager* pager)
 {
-	// struct Page* page = NULL;
-	// struct BTreeNode* node = NULL;
-	// struct PageSelector selector;
-	// page_create(pager, &page);
+	struct Page* page = NULL;
+	struct BTreeNode* node = NULL;
+	struct PageSelector selector;
+	page_create(pager, &page);
 
-	// for( int i = 0; i < 50; i++ )
-	// {
-	// 	pager_reselect(&selector, i + 1);
-	// 	enum pager_e result = pager_read_page(pager, &selector, page);
-	// 	if( result == PAGER_ERR_NIF )
-	// 		break;
-	// 	btree_node_create_from_page(&node, page);
+	for( int i = 0; i < 50; i++ )
+	{
+		pager_reselect(&selector, i + 1);
+		enum pager_e result = pager_read_page(pager, &selector, page);
+		if( result == PAGER_ERR_NIF )
+			break;
+		btree_node_create_from_page(&node, page);
 
-	// 	dbg_print_node(node);
-	// }
+		dbg_print_node(node);
+	}
 
-	// if( page )
-	// 	page_destroy(pager, page);
+	if( page )
+		page_destroy(pager, page);
 }
 
 struct TestRecord
@@ -448,7 +460,7 @@ btree_test_deep_tree(void)
 			goto fail;
 		cursor_destroy(cursor);
 
-		// Always check that 1 is still reachable.
+		// Check that the insertion is reachable.
 		cursor = cursor_create(tree);
 		cursor_traverse_to(cursor, test->key, &found);
 		if( !found )

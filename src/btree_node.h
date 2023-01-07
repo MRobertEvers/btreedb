@@ -129,11 +129,4 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index);
  */
 u32 btree_node_get_heap_required_for_insertion(u32 cell_size);
 
-/**
- * @brief Returns the number of children for non-leaf nodes and the number of
- * cells of leaf nodes.
- *
- */
-int btree_node_arity(struct BTreeNode* node);
-
 #endif

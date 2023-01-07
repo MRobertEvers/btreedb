@@ -286,7 +286,7 @@ btree_delete(struct BTree* tree, int key)
 		result = btree_node_delete(&node, &cursor->current_key_index);
 		pager_write_page(tree->pager, node.page);
 
-		if( btree_node_arity(&node) == 0 )
+		if( node.header->num_keys == 0 )
 		{
 			// Args for next iteration
 			// Delete the empty page from the parent..

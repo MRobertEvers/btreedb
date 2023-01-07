@@ -340,20 +340,3 @@ btree_node_get_heap_required_for_insertion(u32 cell_size)
 {
 	return cell_size + sizeof(struct BTreePageKey);
 }
-
-/**
- * See header
- */
-int
-btree_node_arity(struct BTreeNode* node)
-{
-	if( node->header->is_leaf )
-	{
-		return node->header->num_keys;
-	}
-	else
-	{
-		return node->header->num_keys +
-			   (node->header->right_child != 0 ? 1 : 0);
-	}
-}
