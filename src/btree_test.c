@@ -247,6 +247,27 @@ btree_test_delete(void)
 
 	// Check that the insertion is reachable.
 	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 1, &found);
+	if( !found )
+	{
+		result = 0;
+		goto end;
+	}
+
+	pager_reselect(&selector, cursor->current_page_id);
+	pager_read_page(tree->pager, &selector, raw_page);
+	btree_node_create_from_page(&node, raw_page);
+
+	char buf[sizeof(ruth)] = {0};
+	btree_node_read(node, pager, 1, buf, sizeof(buf));
+
+	if( memcmp(buf, ruth, sizeof(ruth)) != 0 )
+		result = 0;
+
+	cursor_destroy(cursor);
+	cursor = NULL;
+
+	cursor = cursor_create(tree);
 	cursor_traverse_to(cursor, 12, &found);
 	if( !found )
 	{
@@ -258,10 +279,10 @@ btree_test_delete(void)
 	pager_read_page(tree->pager, &selector, raw_page);
 	btree_node_create_from_page(&node, raw_page);
 
-	char buf[sizeof(billy)] = {0};
-	btree_node_read(node, pager, 12, buf, sizeof(buf));
+	char buf2[sizeof(billy)] = {0};
+	btree_node_read(node, pager, 12, buf2, sizeof(buf2));
 
-	if( memcmp(buf, billy, sizeof(billy)) != 0 )
+	if( memcmp(buf2, billy, sizeof(billy)) != 0 )
 		result = 0;
 
 	cursor_destroy(cursor);
