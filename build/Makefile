@@ -535,6 +535,33 @@ src/btree_utils_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_utils_test.c.s
 .PHONY : src/btree_utils_test.c.s
 
+src/buffer_writer.o: src/buffer_writer.c.o
+.PHONY : src/buffer_writer.o
+
+# target to build an object file
+src/buffer_writer.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/buffer_writer.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/buffer_writer.c.o
+.PHONY : src/buffer_writer.c.o
+
+src/buffer_writer.i: src/buffer_writer.c.i
+.PHONY : src/buffer_writer.i
+
+# target to preprocess a source file
+src/buffer_writer.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/buffer_writer.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/buffer_writer.c.i
+.PHONY : src/buffer_writer.c.i
+
+src/buffer_writer.s: src/buffer_writer.c.s
+.PHONY : src/buffer_writer.s
+
+# target to generate assembly for a file
+src/buffer_writer.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/buffer_writer.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/buffer_writer.c.s
+.PHONY : src/buffer_writer.c.s
+
 src/main.o: src/main.c.o
 .PHONY : src/main.o
 
@@ -794,6 +821,9 @@ help:
 	@echo "... src/btree_utils_test.o"
 	@echo "... src/btree_utils_test.i"
 	@echo "... src/btree_utils_test.s"
+	@echo "... src/buffer_writer.o"
+	@echo "... src/buffer_writer.i"
+	@echo "... src/buffer_writer.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

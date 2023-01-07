@@ -31,6 +31,7 @@ btree_test_insert()
 	btree_init(tree, pager);
 
 	char billy[0x1000 - 200] = "billy";
+	billy[3600] = 'q';
 	btree_insert(tree, 12, billy, sizeof(billy));
 
 	char ruth[500] = "ruth";
@@ -305,7 +306,7 @@ btree_test_free_heap_calcs()
 
 	if( free_heap_billy - raw_node->header->free_heap !=
 		btree_node_get_heap_required_for_insertion(
-			btree_cell_inline_get_inline_size(sizeof(ruth))) )
+			btree_cell_inline_get_inline_heap_size(sizeof(ruth))) )
 		result = 0;
 
 end:
@@ -468,8 +469,8 @@ btree_test_deep_tree(void)
 	pager_read_page(tree->pager, &selector, page);
 	btree_node_create_from_page(&node, page);
 
-	char buf[201] = {0};
-	btree_node_read(node, pager, 12, buf, 200);
+	char buf[sizeof(hoosin)] = {0};
+	btree_node_read(node, pager, 12, buf, sizeof(buf));
 
 	if( memcmp(buf, hoosin, sizeof(hoosin)) != 0 )
 		result = 0;

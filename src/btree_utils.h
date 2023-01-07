@@ -1,8 +1,16 @@
 #ifndef BTREE_UTILS_H
 #define BTREE_UTILS_H
 
+#include "btint.h"
 #include "btree_defs.h"
 
+/**
+ * @brief
+ * @deprecated
+ * @param node
+ * @param index
+ * @param cell
+ */
 void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
 int btu_get_node_heap_size(struct BTreeNode* node);
@@ -19,6 +27,27 @@ char* btu_get_node_buffer(struct BTreeNode* node);
 char* btu_calc_highwater_offset(struct BTreeNode* node, int highwater);
 
 /**
+ * @brief Return a pointer to the cell left edge.
+ *
+ * @param node
+ * @param index
+ * @return char*
+ */
+char* btu_get_cell_buffer(struct BTreeNode* node, int index);
+
+/**
+ * @brief Peeks at the cell size and returns it.
+ *
+ * @param node
+ * @param index
+ * @return char*
+ */
+u32 btu_get_cell_buffer_size(struct BTreeNode* node, int index);
+
+u32 btu_get_cell_flags(struct BTreeNode* node, int index);
+
+/**
+ * @deprecated
  * @brief Calculates the amount of space needed to store data of size in the
  * heap.
  *

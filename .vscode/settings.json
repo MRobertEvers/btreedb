@@ -16,6 +16,7 @@
         "btree_overflow_test.h": "c",
         "btree_cell.h": "c",
         "__config": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "btree_overflow.h": "c"
     },
 }

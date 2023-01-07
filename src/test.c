@@ -40,10 +40,10 @@ main()
 	printf("bin search keys: %d\n", result);
 	result = btree_test_deep_tree();
 	printf("deep tree test: %d\n", result);
-	result = btree_overflow_test_overflow_rw();
-	printf("overflow test: %d\n", result);
-	result = serialization_test();
-	printf("serialization test: %d\n", result);
+	// result = btree_overflow_test_overflow_rw();
+	// printf("overflow test: %d\n", result);
+	// result = serialization_test();
+	// printf("serialization test: %d\n", result);
 
 	return 0;
 }

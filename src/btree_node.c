@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int
+min(int left, int right)
+{
+	return left < right ? left : right;
+}
+
 static enum btree_e
 btree_node_alloc(struct BTreeNode** r_node)
 {
@@ -25,6 +31,24 @@ static enum btree_e
 btree_node_deinit(struct BTreeNode* node)
 {
 	return BTREE_OK;
+}
+
+u32
+btree_pkey_flags_set(u32 flags, enum btree_page_key_flags_e flag)
+{
+	return flags | (1 << flag);
+}
+
+/**
+ * @brief Returns 1 if flag is present; 0 otherwise
+ *
+ * @param flags
+ * @return u32
+ */
+u32
+btree_pkey_flags_get(u32 flags, enum btree_page_key_flags_e flag)
+{
+	return (flags & (1 << flag)) != 0;
 }
 
 /**
@@ -105,140 +129,150 @@ btree_node_destroy(struct BTreeNode* node)
 static void
 insert_page_key(
 	struct BTreePageKey* array,
-	unsigned int array_size,
+	u32 array_size,
 	struct BTreePageKey* key,
-	unsigned int index_number)
+	u32 index_number)
 {
 	memmove(
 		&array[index_number + 1],
 		&array[index_number],
 		(array_size - index_number) * sizeof(array[0]));
 
-	array[index_number].key = key->key;
-	array[index_number].cell_offset = key->cell_offset;
+	memcpy(&array[index_number], key, sizeof(*key));
 }
 
-/**
- * See header for details.
- */
-enum btree_e
-btree_node_insert_inline(
+static enum btree_e
+write_page_key(
 	struct BTreeNode* node,
 	struct InsertionIndex* index,
-	unsigned int key,
-	struct BTreeCellInline* cell)
+	u32 key,
+	u32 cell_size,
+	int flags)
 {
-	assert(index->mode != KLIM_RIGHT_CHILD);
-
-	unsigned int index_number = 0;
-	unsigned int data_size = cell->inline_size;
-	unsigned int cell_size = btree_cell_inline_get_inline_size(data_size);
-
-	index_number =
+	u32 index_number =
 		index->mode == KLIM_END ? node->header->num_keys : index->index;
-
-	// Size check
-	unsigned int heap_needed =
-		btree_node_get_heap_required_for_insertion(cell_size);
-	if( node->header->free_heap < heap_needed )
-		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-
-	unsigned int cell_left_edge_offset =
+	u32 cell_left_edge_offset =
 		node->header->cell_high_water_offset + cell_size;
 
 	// The Raw insertion
 	struct BTreePageKey page_key = {0};
 	page_key.cell_offset = cell_left_edge_offset;
 	page_key.key = key;
+	page_key.flags = flags;
 
 	insert_page_key(
 		node->keys, node->header->num_keys, &page_key, index_number);
 	node->header->num_keys += 1;
 
-	char* cell_left_edge =
-		btu_calc_highwater_offset(node, cell_left_edge_offset);
-	btree_cell_write_inline(cell, cell_left_edge);
-
 	node->header->cell_high_water_offset += cell_size;
-	node->header->free_heap -= heap_needed;
+	node->header->free_heap -=
+		btree_node_get_heap_required_for_insertion(cell_size);
 
 	return BTREE_OK;
 }
 
-static int
-write_partial(
-	struct BTreeNodeWriterState* state, void* data, unsigned int data_size)
-{
-	// TODO: Bounds check.
-	char* left_edge = (char*)state->buffer_right_edge;
-	left_edge -= data_size;
-
-	memcpy(left_edge, data, data_size);
-
-	state->buffer_right_edge = left_edge;
-
-	return data_size;
-}
-
-/**
- * See header
- */
 enum btree_e
-btree_node_insert_ex(
+btree_node_insert_inline(
 	struct BTreeNode* node,
 	struct InsertionIndex* index,
-	unsigned int key,
-	btree_node_writer_t writer,
-	void* writer_data,
-	enum btree_cell_flag_e flags)
+	u32 key,
+	struct BTreeCellInline* cell)
 {
-	assert(index->mode != KLIM_RIGHT_CHILD);
+	return btree_node_insert_inline_ex(
+		node,
+		index,
+		key,
+		cell,
+		btree_pkey_flags_set(0, PKEY_FLAG_CELL_TYPE_INLINE));
+}
 
-	unsigned int index_number = 0;
-	struct BTreeNodeWriterState writer_state = {0};
+enum btree_e
+btree_node_insert_inline_ex(
+	struct BTreeNode* node,
+	struct InsertionIndex* index,
+	u32 key,
+	struct BTreeCellInline* cell,
+	u32 flags)
+{
+	enum btree_e result = BTREE_OK;
+	u32 cell_size = btree_cell_inline_get_inline_heap_size(cell->inline_size);
 
-	char* cell_right_edge =
-		btu_calc_highwater_offset(node, node->header->cell_high_water_offset);
-	writer_state.buffer_right_edge = cell_right_edge;
+	u32 heap_needed = btree_node_get_heap_required_for_insertion(cell_size);
+	if( node->header->free_heap < heap_needed )
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	unsigned int written_size = writer(
-		writer_data, write_partial, &writer_state, node->header->free_heap);
+	char* cell_left_edge = btu_calc_highwater_offset(
+		node, node->header->cell_high_water_offset + cell_size);
 
-	assert(written_size > 0);
-	unsigned int cell_size_buffer = written_size;
-	btree_cell_set_flag(&cell_size_buffer, flags);
-	write_partial(&writer_state, &cell_size_buffer, sizeof(unsigned int));
+	result = btree_cell_write_inline(cell, cell_left_edge, cell_size);
+	if( result != BTREE_OK )
+		return result;
 
-	// Insert the key.
-	index_number =
-		index->mode == KLIM_END ? node->header->num_keys : index->index;
-	memmove(
-		&node->keys[index_number + 1],
-		&node->keys[index_number],
-		(node->header->num_keys - index_number) *
-			sizeof(node->keys[index_number]));
-
-	node->keys[index_number].key = key;
-	node->keys[index_number].cell_offset =
-		node->header->cell_high_water_offset + btu_calc_cell_size(written_size);
-	node->header->num_keys += 1;
-
-	node->header->cell_high_water_offset += btu_calc_cell_size(written_size);
-
-	node->header->free_heap -=
-		btree_node_get_heap_required_for_insertion(written_size);
+	result = write_page_key(node, index, key, cell_size, flags);
+	if( result != BTREE_OK )
+		return result;
 
 	return BTREE_OK;
 }
 
 /**
- * See header
+ * @brief Inserts overflow cell into a node.
+ *
+ * @param node
+ * @param index
+ * @param cell
+ * @return enum btree_e
  */
+enum btree_e
+btree_node_insert_overflow(
+	struct BTreeNode* node,
+	struct InsertionIndex* index,
+	u32 key,
+	struct BTreeCellOverflow* cell)
+{
+	enum btree_e result = BTREE_OK;
+	struct BufferWriter writer = {0};
+
+	// This is correct; since the input cell contains the inline size, NOT the
+	// inline payload size, we want the size of this cell as if it were inline.
+	u32 cell_size = btree_cell_inline_get_inline_heap_size(cell->inline_size);
+
+	u32 heap_needed = btree_node_get_heap_required_for_insertion(cell_size);
+	if( node->header->free_heap < heap_needed )
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+
+	char* cell_left_edge = btu_calc_highwater_offset(
+		node, node->header->cell_high_water_offset + cell_size);
+
+	result =
+		btree_cell_init_overflow_writer(&writer, cell_left_edge, cell_size);
+	if( result != BTREE_OK )
+		return result;
+
+	result = btree_cell_write_overflow_ex(cell, &writer);
+	if( result != BTREE_OK )
+		return result;
+
+	result = write_page_key(
+		node,
+		index,
+		key,
+		cell_size,
+		btree_pkey_flags_set(0, PKEY_FLAG_CELL_TYPE_OVERFLOW));
+	if( result != BTREE_OK )
+		return result;
+
+	return BTREE_OK;
+}
+
+// /**
+//  * See header
+//  */
 enum btree_e
 btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 {
 	struct CellData cell = {0};
-	unsigned int index_number = 0;
+	u32 index_number = 0;
 
 	assert(index->mode != KLIM_END);
 
@@ -301,8 +335,8 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 /**
  * See header
  */
-unsigned int
-btree_node_get_heap_required_for_insertion(unsigned int cell_size)
+u32
+btree_node_get_heap_required_for_insertion(u32 cell_size)
 {
 	return cell_size + sizeof(struct BTreePageKey);
 }

@@ -1,7 +1,16 @@
 #include "btree_utils.h"
 
+#include "serialization.h"
+
 #include <string.h>
 
+/**
+ * @deprecated
+ *
+ * @param node
+ * @param index
+ * @param cell
+ */
 void
 btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell)
 {
@@ -51,6 +60,48 @@ btu_calc_highwater_offset(struct BTreeNode* node, int highwater)
 /**
  * See header for details.
  */
+char*
+btu_get_cell_buffer(struct BTreeNode* node, int index)
+{
+	u32 offset = node->keys[index].cell_offset;
+
+	char* cell_buffer = btu_calc_highwater_offset(node, offset);
+
+	return cell_buffer;
+}
+
+/**
+ * See header for details.
+ */
+u32
+btu_get_cell_buffer_size(struct BTreeNode* node, int index)
+{
+	char* buffer = btu_get_cell_buffer(node, index);
+
+	u32 inline_size = 0;
+	ser_read_32bit_le(&inline_size, buffer);
+
+	// The size of the cell does not include the size value itself, so add it
+	// here.
+	return inline_size + sizeof(u32);
+}
+
+/**
+ * See header for details.
+ */
+u32
+btu_get_cell_flags(struct BTreeNode* node, int index)
+{
+	// TODO: This is here for debug.
+	struct BTreePageKey key = node->keys[index];
+	u32 flags = key.flags;
+
+	return flags;
+}
+
+/**
+ * See header for details.
+ */
 int
 btu_calc_cell_size(int size)
 {
@@ -67,7 +118,7 @@ btu_binary_search_keys(
 	int left = 0;
 	int right = num_keys - 1;
 	int mid = 0;
-	unsigned int mid_key = 0;
+	u32 mid_key = 0;
 	*found = 0;
 
 	while( left <= right )

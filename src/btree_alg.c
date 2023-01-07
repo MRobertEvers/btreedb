@@ -33,20 +33,17 @@ copy_cell(
 	struct CellData read_cell = {0};
 	unsigned int key = 0;
 	unsigned int cell_size = 0;
-	char* cell_data = NULL;
+	unsigned int flags = 0;
+	char* cell_data = btu_get_cell_buffer(source_node, index);
+	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
 
-	struct BTreeCellInline write_cell = {0};
+	struct BTreeCellInline cell = {0};
+	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
 
 	key = source_node->keys[index].key;
-	btu_read_cell(source_node, index, &read_cell);
+	flags = source_node->keys[index].key;
 
-	cell_size = btree_cell_get_size(&read_cell);
-	cell_data = read_cell.pointer;
-
-	write_cell.inline_size = cell_size;
-	write_cell.payload = cell_data;
-
-	btree_node_insert_inline(other, &insert_end, key, &write_cell);
+	btree_node_insert_inline_ex(other, &insert_end, key, &cell, flags);
 }
 
 struct split_node_t

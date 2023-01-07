@@ -1,16 +1,19 @@
 #ifndef BUFFER_WRITER_H_
 #define BUFFER_WRITER_H_
 
+struct BufferWriter;
+struct BufferReader;
+
 /**
  * @brief Writes data from left to right.
  *
  * @param int
  * @return int
  */
-int bw_write_lr(struct BufferWriter*, void*, unsigned int);
-int bw_read_lr(struct BufferReader*, void*, unsigned int);
+int bw_write_lr(struct BufferWriter*, void*, unsigned int size);
+int bw_read_lr(struct BufferReader*, void*, unsigned int size);
 
-int bw_write_rl(struct BufferWriter*, void*, unsigned int);
+int bw_write_rl(struct BufferWriter*, void*, unsigned int size);
 
 // Don't really need this...
 // int bw_read_rl(struct BufferReader*, void*, unsigned int);
@@ -70,7 +73,7 @@ int buffer_writer_write(
  * @param data data to write
  * @param data_size
  */
-typedef int (*reader_t)(struct BufferWriter*, void*, unsigned int);
+typedef int (*reader_t)(struct BufferReader*, void*, unsigned int);
 
 struct BufferReader
 {

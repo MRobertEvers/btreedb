@@ -1,11 +1,18 @@
 #include "buffer_writer.h"
 
+#include <assert.h>
 #include <string.h>
+
+static int
+min(int left, int right)
+{
+	return left < right ? left : right;
+}
 
 int
 bw_write_lr(struct BufferWriter* writer, void* data, unsigned int data_size)
 {
-	if( writer->bytes_written + data_size < writer->buffer_size )
+	if( writer->bytes_written + data_size <= writer->buffer_size )
 	{
 		memcpy(writer->write_head, data, data_size);
 		writer->write_head += data_size;
@@ -21,17 +28,14 @@ bw_write_lr(struct BufferWriter* writer, void* data, unsigned int data_size)
 int
 bw_read_lr(struct BufferReader* reader, void* buffer, unsigned int buffer_size)
 {
-	if( buffer_size <= reader->buffer_size - reader->bytes_read )
-	{
-		memcpy(buffer, reader->read_head, buffer_size);
-		reader->read_head += buffer_size;
-		reader->bytes_read += buffer_size;
-		return buffer_size;
-	}
-	else
-	{
+	if( reader->buffer_size - reader->bytes_read == 0 )
 		return 0;
-	}
+
+	int read_bytes = min(buffer_size, reader->buffer_size - reader->bytes_read);
+	memcpy(buffer, reader->read_head, read_bytes);
+	reader->read_head += read_bytes;
+	reader->bytes_read += read_bytes;
+	return read_bytes;
 }
 
 int
