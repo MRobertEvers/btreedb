@@ -2,6 +2,7 @@
 
 #include "btree_cell.h"
 #include "btree_node.h"
+#include "btree_overflow.h"
 #include "btree_utils.h"
 #include "pager.h"
 #include "serialization.h"
@@ -25,25 +26,108 @@ read_key_cell(
 	ser_read_32bit_le(buffer, read_cell.pointer);
 }
 
-static void
+static enum btree_e
 copy_cell(
 	struct BTreeNode* source_node, struct BTreeNode* other, unsigned int index)
 {
 	struct InsertionIndex insert_end = {.mode = KLIM_END};
 	struct CellData read_cell = {0};
-	unsigned int key = 0;
-	unsigned int cell_size = 0;
-	unsigned int flags = 0;
+	u32 key = 0;
+	u32 cell_size = 0;
+	u32 flags = 0;
 	char* cell_data = btu_get_cell_buffer(source_node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
 
 	struct BTreeCellInline cell = {0};
 	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
 
+	u32 dest_max_size = btree_node_max_cell_size(other);
+	if( cell.inline_size <= dest_max_size )
+	{
+		key = source_node->keys[index].key;
+		flags = source_node->keys[index].key;
+
+		return btree_node_insert_inline_ex(
+			other, &insert_end, key, &cell, flags);
+	}
+	else
+	{
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+	}
+}
+
+static enum btree_e
+copy_cell_with_overflow(
+	struct BTreeNode* source_node,
+	struct BTreeNode* other,
+	unsigned int index,
+	struct Pager* pager)
+{
+	enum btree_e result = BTREE_OK;
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
+
+	u32 key = 0;
+	u32 cell_size = 0;
+	u32 flags = 0;
+
 	key = source_node->keys[index].key;
 	flags = source_node->keys[index].key;
 
-	btree_node_insert_inline_ex(other, &insert_end, key, &cell, flags);
+	char* cell_data = btu_get_cell_buffer(source_node, index);
+	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
+
+	struct BTreeCellInline cell = {0};
+	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
+
+	u32 dest_max_size = btree_node_max_cell_size(other);
+	if( cell_data_size <= dest_max_size )
+	{
+		return btree_node_insert_inline_ex(
+			other, &insert_end, key, &cell, flags);
+	}
+	else
+	{
+		// Assumes that a btree can only be created that
+		// restricts the min cell size to be greater than
+		// the size required to fit an overflow cell.
+		u32 source_max_size = btree_node_max_cell_size(source_node);
+		u32 bytes_overflown = source_max_size - dest_max_size;
+		u32 follow_page_id = 0;
+		u32 inline_size = cell.inline_size;
+		u32 total_size = cell.inline_size;
+		char* payload = cell.payload + cell.inline_size - bytes_overflown;
+
+		u32 is_overflow =
+			btree_pkey_flags_get(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
+		if( is_overflow )
+		{
+			struct BTreeCellOverflow read_cell = {0};
+			struct BufferReader reader = {0};
+			btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
+
+			btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
+
+			payload = read_cell.inline_payload +
+					  btree_cell_overflow_calc_inline_payload_size(
+						  read_cell.inline_size) -
+					  bytes_overflown;
+
+			inline_size = read_cell.inline_size - bytes_overflown;
+			follow_page_id = read_cell.overflow_page_id;
+		}
+
+		struct BTreeOverflowWriteResult write_result = {0};
+		btree_overflow_write(
+			pager, payload, bytes_overflown, follow_page_id, &write_result);
+
+		struct BTreeCellOverflow write_cell = {0};
+		write_cell.inline_payload = payload;
+		write_cell.inline_size = inline_size;
+		write_cell.overflow_page_id = write_result.page_id;
+		write_cell.total_size = cell.inline_size;
+
+		return btree_node_insert_overflow(other, &insert_end, key, &write_cell);
+	}
 }
 
 struct split_node_t
@@ -231,6 +315,45 @@ end:
 
 	btree_node_destroy(right);
 	page_destroy(pager, right_page);
+
+	return BTREE_OK;
+}
+
+static u32
+calc_heap_used(struct BTreeNode* node)
+{
+	return btree_node_calc_heap_capacity(node) - node->header->free_heap;
+}
+
+/**
+ * See header for details.
+ */
+enum btree_e
+bta_merge_nodes(
+	struct BTreeNode* stable_node,
+	struct BTreeNode* other_node,
+	struct Pager* pager,
+	struct MergedPage* merged_page)
+{
+	// TODO: Assert here?
+	if( stable_node->header->is_leaf != other_node->header->is_leaf )
+		return BTREE_ERR_CANNOT_MERGE;
+
+	u32 left_heap_used = calc_heap_used(stable_node);
+	u32 right_heap_used = calc_heap_used(other_node);
+
+	u32 heap_capacity = btree_node_calc_heap_capacity(stable_node);
+	if( heap_capacity < (left_heap_used + right_heap_used) )
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+
+	struct InsertionIndex index = {0};
+	for( int i = 0; i < other_node->header->num_keys; i++ )
+	{
+		u32 target_key = other_node->keys[i].key;
+		btu_get_insertion_index(&index, stable_node, target_key);
+
+		copy_cell_with_overflow(other_node, stable_node, index.index, pager);
+	}
 
 	return BTREE_OK;
 }

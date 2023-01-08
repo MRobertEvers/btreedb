@@ -25,12 +25,9 @@ btree_node_write(
 	char found;
 	enum btree_e result = BTREE_OK;
 
-	// We want the page to be able to fit at least 4 keys.
-	u32 min_cells_per_page = 4;
-
 	// This is max size including key!
 	// I.e. key+payload_size must fit within this.
-	u32 max_data_size = btu_get_node_heap_size(node) / min_cells_per_page;
+	u32 max_data_size = btree_node_max_cell_size(node);
 	u32 max_heap_usage = min(max_data_size, node->header->free_heap);
 
 	// Size check

@@ -191,6 +191,19 @@ btu_init_insertion_index_from_index(
 	return 0;
 }
 
+void
+btu_get_insertion_index(
+	struct InsertionIndex* index,
+	struct BTreeNode const* node,
+	unsigned int key)
+{
+	char found;
+	unsigned int insertion_index_number =
+		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
+
+	btu_init_insertion_index_from_index(index, node, insertion_index_number);
+}
+
 int
 btu_get_left_insertion_from_keylistindex(
 	struct InsertionIndex* insertion_index, struct ChildListIndex* keylistindex)

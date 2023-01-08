@@ -6,6 +6,8 @@
 #include "btree_defs.h"
 #include "page.h"
 
+u32 btree_node_max_cell_size(struct BTreeNode* node);
+
 enum btree_page_key_flags_e
 {
 	PKEY_FLAG_UNKNOWN = 0,
@@ -108,7 +110,7 @@ enum btree_e btree_node_insert_overflow(
 	struct BTreeCellOverflow* cell);
 
 /**
- * @brief Deletes data from a node.
+ * @brief Removes data from a node.
  *
  * Removes key at index and moves data in the heap to fill the gap.
  *
@@ -119,8 +121,12 @@ enum btree_e btree_node_insert_overflow(
  * @param data_size
  * @return enum btree_e
  */
-enum btree_e
-btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index);
+enum btree_e btree_node_remove(
+	struct BTreeNode* node,
+	struct ChildListIndex* index,
+	struct BTreeCellInline* removed_cell,
+	void* buffer,
+	u32 buffer_size);
 
 /**
  * @brief Get the heap required for insertion; Accounts for page key size
@@ -128,5 +134,7 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index);
  * @return int
  */
 u32 btree_node_get_heap_required_for_insertion(u32 cell_size);
+
+u32 btree_node_calc_heap_capacity(struct BTreeNode* node);
 
 #endif

@@ -255,6 +255,38 @@ end:
 }
 
 enum btree_e
+swap_root_page(struct BTree* tree, u32 other_page_id)
+{
+	enum btree_e result = BTREE_OK;
+	struct Page* root_page = NULL;
+	struct Page* other_page = NULL;
+	struct BTreeNode* root_ptr = {0};
+	struct BTreeNode other = {0};
+	struct PageSelector selector = {0};
+
+	page_create(tree->pager, &root_page);
+	page_create(tree->pager, &other_page);
+
+	btree_node_create_as_page_number(&root_ptr, tree->root_page_id, root_page);
+
+	pager_reselect(&selector, other_page_id);
+	btree_node_init_from_page(&other, other_page);
+
+	root_ptr->header->is_leaf = other.header->is_leaf;
+
+	struct MergedPage merge_result = {0};
+	bta_merge_nodes(root_ptr, &other, tree->pager, &merge_result);
+
+	if( root_ptr )
+		btree_node_destroy(root_ptr);
+
+	page_destroy(tree->pager, root_page);
+	page_destroy(tree->pager, other_page);
+
+	return BTREE_OK;
+}
+
+enum btree_e
 btree_delete(struct BTree* tree, int key)
 {
 	enum btree_e result = BTREE_OK;
@@ -264,6 +296,7 @@ btree_delete(struct BTree* tree, int key)
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
+	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
 	page_create(tree->pager, &page);
 
@@ -273,7 +306,11 @@ btree_delete(struct BTree* tree, int key)
 
 	while( 1 )
 	{
-		pager_reselect(&selector, cursor->current_page_id);
+		result = cursor_pop(cursor, &crumb);
+		if( result != BTREE_OK )
+			goto end;
+
+		pager_reselect(&selector, crumb.page_id);
 		page_result = pager_read_page(tree->pager, &selector, page);
 		if( page_result != PAGER_OK )
 		{
@@ -283,18 +320,26 @@ btree_delete(struct BTree* tree, int key)
 
 		btree_node_init_from_page(&node, page);
 
-		result = btree_node_delete(&node, &cursor->current_key_index);
+		result = btree_node_remove(&node, &crumb.key_index, NULL, NULL, 0);
+		if( result != BTREE_OK )
+			break;
+
 		pager_write_page(tree->pager, node.page);
 
+		// TODO: Small size threshold.
 		if( node.header->num_keys == 0 )
 		{
-			// Args for next iteration
-			// Delete the empty page from the parent..
-			result = cursor_select_parent(cursor);
-			if( result == BTREE_ERR_CURSOR_NO_PARENT )
-				goto end;
-
+			// Keep deleting.
 			// TODO: Add empty page to free list if it's not the highwater page.
+
+			// TODO: Deleting the last key from the root_node should just result
+			// in a swap with the last remaining page. page.
+			if( page->page_id == tree->root_page_id )
+			{
+				result = swap_root_page(tree, page->page_id);
+				if( result != BTREE_OK )
+					break;
+			}
 		}
 		else
 		{

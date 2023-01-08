@@ -175,7 +175,16 @@ btree_cell_read_overflow_ex(
 
 	u32 read_size = min(inline_payload_size, buffer_size);
 	buffer_reader_read(reader, buffer, read_size);
-	cell->inline_payload = buffer;
+
+	// TODO: I don't like this.
+	if( buffer )
+	{
+		cell->inline_payload = buffer;
+	}
+	else
+	{
+		cell->inline_payload = reader->read_head;
+	}
 
 	return BTREE_OK;
 }

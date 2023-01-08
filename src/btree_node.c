@@ -2,6 +2,7 @@
 
 #include "btree_cell.h"
 #include "btree_utils.h"
+#include "serialization.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -31,6 +32,19 @@ static enum btree_e
 btree_node_deinit(struct BTreeNode* node)
 {
 	return BTREE_OK;
+}
+
+u32
+btree_node_max_cell_size(struct BTreeNode* node)
+{
+	// We want the page to be able to fit at least 4 keys.
+	u32 min_cells_per_page = 4;
+
+	// This is max size including key!
+	// I.e. key+payload_size must fit within this.
+	u32 max_data_size = btu_get_node_heap_size(node) / min_cells_per_page;
+
+	return max_data_size;
 }
 
 u32
@@ -68,8 +82,7 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 	node->keys = (struct BTreePageKey*)&node->header[1];
 
 	if( node->header->num_keys == 0 )
-		node->header->free_heap =
-			node->page->page_size - sizeof(struct BTreePageHeader) - offset;
+		node->header->free_heap = btree_node_calc_heap_capacity(node);
 
 	return BTREE_OK;
 }
@@ -269,7 +282,12 @@ btree_node_insert_overflow(
 //  * See header
 //  */
 enum btree_e
-btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
+btree_node_remove(
+	struct BTreeNode* node,
+	struct ChildListIndex* index,
+	struct BTreeCellInline* removed_cell,
+	void* buffer,
+	u32 buffer_size)
 {
 	struct CellData cell = {0};
 	u32 index_number = 0;
@@ -291,17 +309,23 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 		}
 
 		// The rightmost non-right-child key becomes the right-child.
+		char buf[sizeof(u32)] = {0};
+		struct BTreeCellInline removed_cell = {0};
 		struct BTreePageKey rightmost_key =
 			node->keys[node->header->num_keys - 1];
 		struct ChildListIndex delete_index = {0};
 		delete_index.index = node->header->num_keys - 1;
 		delete_index.mode = KLIM_INDEX;
-		enum btree_e next_right_child_result =
-			btree_node_delete(node, &delete_index);
+		enum btree_e next_right_child_result = btree_node_remove(
+			node, &delete_index, &removed_cell, buf, sizeof(buf));
+
 		if( next_right_child_result != BTREE_OK )
 			return BTREE_ERR_UNK;
 
-		node->header->right_child = rightmost_key.key;
+		u32 child_value = 0;
+		ser_read_32bit_le(&child_value, buf);
+
+		node->header->right_child = child_value;
 
 		return BTREE_OK;
 	}
@@ -310,6 +334,17 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 
 	btu_read_cell(node, index_number, &cell);
 	int deleted_cell_size = btree_cell_get_size(&cell);
+
+	if( buffer )
+	{
+		memcpy(buffer, cell.pointer, min(buffer_size, deleted_cell_size));
+	}
+
+	if( removed_cell )
+	{
+		removed_cell->inline_size = deleted_cell_size;
+		removed_cell->payload = buffer;
+	}
 
 	// Slide keys over.
 	memmove(
@@ -328,6 +363,8 @@ btree_node_delete(struct BTreeNode* node, struct ChildListIndex* index)
 	memmove((void*)dest, (void*)src, deleted_cell_size);
 
 	node->header->cell_high_water_offset -= deleted_cell_size;
+	node->header->free_heap +=
+		btree_node_get_heap_required_for_insertion(deleted_cell_size);
 
 	return BTREE_OK;
 }
@@ -339,4 +376,11 @@ u32
 btree_node_get_heap_required_for_insertion(u32 cell_size)
 {
 	return cell_size + sizeof(struct BTreePageKey);
+}
+
+u32
+btree_node_calc_heap_capacity(struct BTreeNode* node)
+{
+	u32 offset = node->page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
+	return node->page->page_size - sizeof(struct BTreePageHeader) - offset;
 }

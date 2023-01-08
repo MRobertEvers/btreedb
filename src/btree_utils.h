@@ -109,6 +109,11 @@ int btu_init_insertion_index_from_index(
 	struct BTreeNode const* node,
 	int index);
 
+void btu_get_insertion_index(
+	struct InsertionIndex* keylistindex,
+	struct BTreeNode const* node,
+	unsigned int key);
+
 /**
  * @brief
  *
