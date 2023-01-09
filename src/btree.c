@@ -86,6 +86,18 @@ btree_dealloc(struct BTree* tree)
 	return BTREE_OK;
 }
 
+u32
+btree_min_page_size(void)
+{
+	u32 min_heap_required_for_largest_cell_type =
+		btree_node_get_heap_required_for_insertion(
+			btree_cell_overflow_get_min_inline_heap_size());
+	// Minimum size to fit 4 overflow cells on the root page.
+	return (
+		(BTREE_HEADER_SIZE) + (4 * min_heap_required_for_largest_cell_type) +
+		+sizeof(struct BTreePageHeader));
+}
+
 /**
  * @brief Load the root page into memory and read out information from the btree
  * header.
@@ -93,7 +105,6 @@ btree_dealloc(struct BTree* tree)
  * @param tree
  * @return enum btree_e
  */
-
 enum btree_e
 btree_init(struct BTree* tree, struct Pager* pager)
 {
@@ -101,9 +112,7 @@ btree_init(struct BTree* tree, struct Pager* pager)
 
 	// Arbitrary 4*12 is approximately 4 entries that overflow.
 	// 1 int for cell size, 2 more for overflow page meta.
-	if( pager->page_size <
-		((BTREE_HEADER_SIZE) + (4 * 12) + (4 * sizeof(struct BTreePageKey)) +
-		 +sizeof(struct BTreePageHeader)) )
+	if( pager->page_size < btree_min_page_size() )
 		return BTREE_ERR_INVALID_PAGE_SIZE_TOO_SMALL;
 
 	tree->root_page_id = 1;
@@ -113,11 +122,13 @@ btree_init(struct BTree* tree, struct Pager* pager)
 	page_create(tree->pager, &page);
 	btree_result = btree_init_root_page(tree, page);
 	if( btree_result != BTREE_OK )
-		return BTREE_ERR_UNK;
+		goto end;
 
 	tree->header = *(struct BTreeHeader*)page->page_buffer;
-
-	return BTREE_OK;
+end:
+	if( page )
+		page_destroy(tree->pager, page);
+	return btree_result;
 }
 
 enum btree_e
@@ -270,6 +281,7 @@ swap_root_page(struct BTree* tree, u32 other_page_id)
 	btree_node_create_as_page_number(&root_ptr, tree->root_page_id, root_page);
 
 	pager_reselect(&selector, other_page_id);
+	pager_read_page(tree->pager, &selector, other_page);
 	btree_node_init_from_page(&other, other_page);
 
 	root_ptr->header->is_leaf = other.header->is_leaf;
@@ -302,7 +314,7 @@ btree_delete(struct BTree* tree, int key)
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
-		return result;
+		goto end;
 
 	while( 1 )
 	{
@@ -336,9 +348,10 @@ btree_delete(struct BTree* tree, int key)
 			// in a swap with the last remaining page. page.
 			if( page->page_id == tree->root_page_id )
 			{
-				result = swap_root_page(tree, page->page_id);
-				if( result != BTREE_OK )
-					break;
+				if( !node.header->is_leaf )
+					result = swap_root_page(tree, node.header->right_child);
+
+				break;
 			}
 		}
 		else
@@ -348,5 +361,7 @@ btree_delete(struct BTree* tree, int key)
 	}
 
 end:
+	cursor_destroy(cursor);
+	page_destroy(tree->pager, page);
 	return result;
 }

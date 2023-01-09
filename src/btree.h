@@ -1,8 +1,11 @@
 #ifndef BTREE_H_
 #define BTREE_H_
 
+#include "btint.h"
 #include "btree_defs.h"
 #include "pager.h"
+
+u32 btree_min_page_size(void);
 
 enum btree_e btree_alloc(struct BTree**);
 enum btree_e btree_dealloc(struct BTree*);

@@ -1,6 +1,7 @@
 #include "btree_node.h"
 
 #include "btree_cell.h"
+#include "btree_node_debug.h"
 #include "btree_utils.h"
 #include "serialization.h"
 
@@ -356,15 +357,15 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	int old_highwater = node->header->cell_high_water_offset;
-	char* src = btu_calc_highwater_offset(node, old_highwater);
-	char* dest =
-		btu_calc_highwater_offset(node, old_highwater - deleted_cell_size);
-	memmove((void*)dest, (void*)src, deleted_cell_size);
+	// int old_highwater = node->header->cell_high_water_offset;
+	// char* src = btu_calc_highwater_offset(node, old_highwater);
+	// char* dest =
+	// 	btu_calc_highwater_offset(node, old_highwater - deleted_cell_size);
+	// memmove((void*)dest, (void*)src, deleted_cell_size);
 
-	node->header->cell_high_water_offset -= deleted_cell_size;
-	node->header->free_heap +=
-		btree_node_get_heap_required_for_insertion(deleted_cell_size);
+	// node->header->cell_high_water_offset -= deleted_cell_size;
+	// node->header->free_heap +=
+	// 	btree_node_get_heap_required_for_insertion(deleted_cell_size);
 
 	return BTREE_OK;
 }

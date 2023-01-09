@@ -7,11 +7,13 @@
 #include "btree_node.h"
 #include "btree_node_debug.h"
 #include "btree_node_reader.h"
+#include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
 #include "serialization.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -629,6 +631,142 @@ btree_test_delete_last(void)
 		goto end;
 	}
 	if( test_node->header->right_child != middle_node->page->page_id )
+	{
+		result = 0;
+		goto end;
+	}
+
+end:
+
+	remove(db_name);
+
+	return result;
+}
+
+int
+btree_test_delete_merge_root(void)
+{
+	char const* db_name = "delete_merge_root.db";
+	int result = 1;
+	struct BTreeNode* node = 0;
+	struct PageSelector selector;
+	struct Pager* pager;
+	struct PageCache* cache = NULL;
+	struct InsertionIndex index = {0};
+	struct BTreeCellInline cell = {0};
+
+	remove(db_name);
+	page_cache_create(&cache, 3);
+	// 1 byte of payload can fit on the first page.
+	u32 page_size = btree_min_page_size() + 1 * 4;
+	pager_cstd_create(&pager, cache, db_name, page_size);
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	enum btree_e btresult = btree_init(tree, pager);
+	if( btresult != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	struct Page* test_page;
+	struct Page* root_page;
+	struct Page* left_page;
+	struct Page* right_page;
+
+	page_create(pager, &test_page);
+	page_create(pager, &root_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+
+	pager_reselect(&selector, 1);
+	pager_read_page(pager, &selector, root_page);
+
+	struct BTreeNode* test_node;
+	struct BTreeNode* root_node;
+	struct BTreeNode* left_node;
+	struct BTreeNode* right_node;
+
+	btree_node_create_from_page(&root_node, root_page);
+	root_node->header->is_leaf = 0;
+	pager_write_page(pager, root_page);
+
+	btree_node_create_from_page(&left_node, left_page);
+	left_node->header->is_leaf = 1;
+	pager_write_page(pager, left_page);
+
+	btree_node_create_from_page(&right_node, right_page);
+	right_node->header->is_leaf = 1;
+	pager_write_page(pager, right_page);
+
+	char const alpha[30] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
+	char const beta[60] =
+		"abcdefghijkLMnopqrstuvwxyz0123abcdefghijklmnopqrstuvwxyz0123";
+
+	index.mode = KLIM_END;
+
+	// TODO:
+	cell.inline_size = sizeof(alpha);
+	cell.payload = alpha;
+	btree_node_write(left_node, pager, 1, alpha, sizeof(alpha));
+
+	pager_write_page(pager, left_page);
+
+	btree_node_write(left_node, pager, 2, beta, sizeof(beta));
+	pager_write_page(pager, left_page);
+	btree_node_write(right_node, pager, 3, beta, sizeof(beta));
+	pager_write_page(pager, right_page);
+
+	char page_key_buf[sizeof(u32)] = {0};
+	cell.payload = page_key_buf;
+	cell.inline_size = sizeof(page_key_buf);
+
+	root_node->header->is_leaf = 0;
+	ser_write_32bit_le(page_key_buf, left_node->page->page_id);
+	btree_node_write(root_node, pager, 2, page_key_buf, sizeof(page_key_buf));
+
+	root_node->header->right_child = right_node->page->page_id;
+	pager_write_page(pager, root_page);
+
+	// dbg_print_buffer(left_page->page_buffer, left_page->page_size);
+	btree_delete(tree, 3);
+
+	pager_reselect(&selector, 1);
+	pager_read_page(pager, &selector, test_page);
+	btree_node_create_from_page(&test_node, test_page);
+	// dbg_print_buffer(test_page->page_buffer, test_page->page_size);
+
+	if( test_node->header->num_keys != 2 )
+	{
+		result = 0;
+		goto end;
+	}
+	if( test_node->header->right_child != 0 )
+	{
+		result = 0;
+		goto end;
+	}
+	if( test_node->header->is_leaf == 0 )
+	{
+		result = 0;
+		goto end;
+	}
+
+	char alpha_buf[sizeof(alpha)] = {0};
+
+	btree_node_read(test_node, tree->pager, 1, alpha_buf, sizeof(alpha_buf));
+
+	if( memcmp(alpha, alpha_buf, sizeof(alpha)) != 0 )
+	{
+		result = 0;
+		goto end;
+	}
+
+	char beta_buf[sizeof(beta)] = {0};
+	btree_node_read(test_node, tree->pager, 2, beta_buf, sizeof(beta_buf));
+
+	if( memcmp(beta, beta_buf, sizeof(beta)) != 0 )
 	{
 		result = 0;
 		goto end;
