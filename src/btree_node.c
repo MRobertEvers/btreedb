@@ -357,15 +357,20 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	// int old_highwater = node->header->cell_high_water_offset;
-	// char* src = btu_calc_highwater_offset(node, old_highwater);
-	// char* dest =
-	// 	btu_calc_highwater_offset(node, old_highwater - deleted_cell_size);
-	// memmove((void*)dest, (void*)src, deleted_cell_size);
+	for( int i = index_number; i < node->header->num_keys; i++ )
+	{
+		u32 offset = node->keys[i].cell_offset;
+		btu_read_cell(node, index_number, &cell);
+		char* src = btu_calc_highwater_offset(node, offset);
+		char* dest = btu_calc_highwater_offset(
+			node, offset - (deleted_cell_size + sizeof(u32)));
+		memmove(
+			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
+	}
 
-	// node->header->cell_high_water_offset -= deleted_cell_size;
-	// node->header->free_heap +=
-	// 	btree_node_get_heap_required_for_insertion(deleted_cell_size);
+	node->header->cell_high_water_offset -= deleted_cell_size + sizeof(u32);
+	node->header->free_heap += btree_node_get_heap_required_for_insertion(
+		deleted_cell_size + sizeof(u32));
 
 	return BTREE_OK;
 }
