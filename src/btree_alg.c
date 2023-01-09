@@ -364,6 +364,7 @@ bta_merge_nodes(
 	struct Pager* pager,
 	struct MergedPage* merged_page)
 {
+	enum btree_e result = BTREE_OK;
 	// TODO: Assert here?
 	if( stable_node->header->is_leaf != other_node->header->is_leaf )
 		return BTREE_ERR_CANNOT_MERGE;
@@ -382,10 +383,13 @@ bta_merge_nodes(
 	struct InsertionIndex index = {0};
 	for( int i = 0; i < other_node->header->num_keys; i++ )
 	{
-		copy_cell_with_overflow(other_node, stable_node, i, pager);
+		result = copy_cell_with_overflow(other_node, stable_node, i, pager);
+		if( result != BTREE_OK )
+			break;
 	}
 
-	pager_write_page(pager, stable_node->page);
+	if( result == BTREE_OK )
+		pager_write_page(pager, stable_node->page);
 
-	return BTREE_OK;
+	return result;
 }
