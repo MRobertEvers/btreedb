@@ -700,6 +700,8 @@ btree_test_delete_merge_root(void)
 	right_node->header->is_leaf = 1;
 	pager_write_page(pager, right_page);
 
+	// TODO: Reliably allocate one field that will be larger than a inline cell
+	// and one that will be less.
 	char const alpha[30] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
 	char const beta[60] =
 		"abcdefghijkLMnopqrstuvwxyz0123abcdefghijklmnopqrstuvwxyz0123";
