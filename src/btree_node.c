@@ -334,16 +334,16 @@ btree_node_remove(
 	index_number = index->index;
 
 	btu_read_cell(node, index_number, &cell);
-	int deleted_cell_size = btree_cell_get_size(&cell);
+	int deleted_inline_size = btree_cell_get_size(&cell);
 
 	if( buffer )
 	{
-		memcpy(buffer, cell.pointer, min(buffer_size, deleted_cell_size));
+		memcpy(buffer, cell.pointer, min(buffer_size, deleted_inline_size));
 	}
 
 	if( removed_cell )
 	{
-		removed_cell->inline_size = deleted_cell_size;
+		removed_cell->inline_size = deleted_inline_size;
 		removed_cell->payload = buffer;
 	}
 
@@ -357,20 +357,21 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
+	// TODO: This is seriously flaky.
 	for( int i = index_number; i < node->header->num_keys; i++ )
 	{
 		u32 offset = node->keys[i].cell_offset;
 		btu_read_cell(node, index_number, &cell);
 		char* src = btu_calc_highwater_offset(node, offset);
 		char* dest = btu_calc_highwater_offset(
-			node, offset - (deleted_cell_size + sizeof(u32)));
+			node, offset - (deleted_inline_size + sizeof(u32)));
 		memmove(
 			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
 	}
 
-	node->header->cell_high_water_offset -= deleted_cell_size + sizeof(u32);
+	node->header->cell_high_water_offset -= deleted_inline_size + sizeof(u32);
 	node->header->free_heap += btree_node_get_heap_required_for_insertion(
-		deleted_cell_size + sizeof(u32));
+		deleted_inline_size + sizeof(u32));
 
 	return BTREE_OK;
 }
