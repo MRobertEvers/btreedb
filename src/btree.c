@@ -269,9 +269,10 @@ enum btree_e
 swap_root_page(struct BTree* tree, u32 other_page_id)
 {
 	enum btree_e result = BTREE_OK;
+	enum pager_e page_result = PAGER_OK;
 	struct Page* root_page = NULL;
 	struct Page* other_page = NULL;
-	struct BTreeNode* root_ptr = {0};
+	struct BTreeNode* root_ptr = NULL;
 	struct BTreeNode other = {0};
 	struct PageSelector selector = {0};
 
@@ -281,21 +282,30 @@ swap_root_page(struct BTree* tree, u32 other_page_id)
 	btree_node_create_as_page_number(&root_ptr, tree->root_page_id, root_page);
 
 	pager_reselect(&selector, other_page_id);
-	pager_read_page(tree->pager, &selector, other_page);
-	btree_node_init_from_page(&other, other_page);
+	page_result = pager_read_page(tree->pager, &selector, other_page);
+	if( page_result != PAGER_OK )
+	{
+		result = BTREE_ERR_UNK;
+		goto end;
+	}
+
+	result = btree_node_init_from_page(&other, other_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	root_ptr->header->is_leaf = other.header->is_leaf;
 
 	struct MergedPage merge_result = {0};
-	bta_merge_nodes(root_ptr, &other, tree->pager, &merge_result);
+	result = bta_merge_nodes(root_ptr, &other, tree->pager, &merge_result);
 
+end:
 	if( root_ptr )
 		btree_node_destroy(root_ptr);
 
 	page_destroy(tree->pager, root_page);
 	page_destroy(tree->pager, other_page);
 
-	return BTREE_OK;
+	return result;
 }
 
 enum btree_e
@@ -346,11 +356,20 @@ btree_delete(struct BTree* tree, int key)
 
 			// TODO: Deleting the last key from the root_node should just result
 			// in a swap with the last remaining page. page.
-			if( page->page_id == tree->root_page_id )
+			if( node.page->page_id == tree->root_page_id )
 			{
 				if( !node.header->is_leaf )
+				{
 					result = swap_root_page(tree, node.header->right_child);
-
+					if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+					{
+						// We need to split the child node and insert two keys
+						// into root.
+						// TODO: This
+						assert(0);
+					}
+				}
+				// If the root page is a leaf, then there is nothing more to do.
 				break;
 			}
 		}

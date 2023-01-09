@@ -61,7 +61,8 @@ struct MergedPage
  * @brief Nodes must be in order such that all keys of right a greater than all
  * keys of left.
  *
- * TODO: Need to handle when merging into page 1.
+ * TODO: Need to correctly handle space limitations if there are more keys than
+ * can fit on page 1.
  *
  * @param left
  * @param right

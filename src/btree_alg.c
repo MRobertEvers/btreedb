@@ -368,12 +368,16 @@ bta_merge_nodes(
 	if( stable_node->header->is_leaf != other_node->header->is_leaf )
 		return BTREE_ERR_CANNOT_MERGE;
 
-	// u32 left_heap_used = calc_heap_used(stable_node);
-	// u32 right_heap_used = calc_heap_used(other_node);
+	// Calculate the smallest amount of space that all the cells
+	// from other_node could take up if they were overflow nodes.
+	u32 min_reasonable_size_per_cell =
+		btree_node_get_heap_required_for_insertion(
+			btree_cell_overflow_get_min_inline_heap_size());
+	u32 min_size_required =
+		min_reasonable_size_per_cell * other_node->header->num_keys;
 
-	// u32 heap_capacity = btree_node_calc_heap_capacity(stable_node);
-	// if( heap_capacity < (left_heap_used + right_heap_used) )
-	// 	return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+	if( stable_node->header->free_heap < min_size_required )
+		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 	struct InsertionIndex index = {0};
 	for( int i = 0; i < other_node->header->num_keys; i++ )
