@@ -41,8 +41,8 @@ struct BTreePageHeader
 struct BTreePageKey
 {
 	unsigned int key;
-	unsigned int cell_offset; // TODO: union
-	unsigned int flags;		  // 1 means overflow page.
+	unsigned int cell_offset;
+	unsigned int flags; // 1 means overflow page.
 };
 
 struct BTreeNode
@@ -122,6 +122,10 @@ struct Cursor
 	int breadcrumbs_size;
 };
 
+/**
+ * @deprecated
+ *
+ */
 struct CellData
 {
 	void* pointer;

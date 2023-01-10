@@ -7,34 +7,35 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned int
+u32
 btree_overflow_max_write_size(struct Pager* pager)
 {
-	return pager->page_size - sizeof(unsigned int) * 2;
+	return pager->page_size - sizeof(u32) * 2;
 }
 
 enum btree_e
 btree_overflow_read(
 	struct Pager* pager,
-	unsigned int page_id,
+	u32 page_id,
 	void* buffer,
-	unsigned int buffer_size,
-	struct BTreeOverflowReadResult* result)
+	u32 buffer_size,
+	struct BTreeOverflowReadResult* out)
 {
-	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
-	unsigned int bytes_on_page = 0;
-	unsigned int next_page_id = 0;
+	u32 bytes_on_page = 0;
+	u32 next_page_id = 0;
 	enum btree_e read_result = BTREE_OK;
+	struct PageSelector selector = {0};
 
-	result->next_page_id = 0;
-	result->bytes_read = 0;
+	out->next_page_id = 0;
+	out->bytes_read = 0;
 
-	page_create(pager, &page);
+	read_result = btpage_err(page_create(pager, &page));
+	if( read_result != BTREE_OK )
+		goto end;
 
-	struct PageSelector select = {0};
-	pager_reselect(&select, page_id);
-	read_result = btpage_err(pager_read_page(pager, &select, page));
+	pager_reselect(&selector, page_id);
+	read_result = btpage_err(pager_read_page(pager, &selector, page));
 	if( read_result != BTREE_OK )
 		goto end;
 
@@ -56,11 +57,12 @@ btree_overflow_read(
 	payload_buffer += sizeof(next_page_id);
 	memcpy(buffer, payload_buffer, bytes_on_page);
 
-	result->next_page_id = next_page_id;
-	result->bytes_read = bytes_on_page;
+	out->next_page_id = next_page_id;
+	out->bytes_read = bytes_on_page;
 
 end:
-	page_destroy(pager, page);
+	if( page )
+		page_destroy(pager, page);
 
 	return read_result;
 }
@@ -69,8 +71,8 @@ enum btree_e
 btree_overflow_write(
 	struct Pager* pager,
 	void* data,
-	unsigned int data_size,
-	unsigned int follow_page_id,
+	u32 data_size,
+	u32 follow_page_id,
 	struct BTreeOverflowWriteResult* out)
 {
 	enum btree_e result = BTREE_OK;
@@ -79,7 +81,9 @@ btree_overflow_write(
 	if( data_size > btree_overflow_max_write_size(pager) )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	page_create(pager, &page);
+	result = btpage_err(page_create(pager, &page));
+	if( result != BTREE_OK )
+		goto end;
 
 	char* payload_buffer = (char*)page->page_buffer;
 	memcpy(payload_buffer, &follow_page_id, sizeof(follow_page_id));
@@ -99,7 +103,8 @@ btree_overflow_write(
 	out->page_id = page->page_id;
 
 end:
-	page_destroy(pager, page);
+	if( page )
+		page_destroy(pager, page);
 
 	return result;
 }

@@ -1,6 +1,7 @@
 #ifndef BTREE_NODE_READER_H_
 #define BTREE_NODE_READER_H_
 
+#include "btint.h"
 #include "btree_defs.h"
 
 /**
@@ -16,8 +17,8 @@
 enum btree_e btree_node_read(
 	struct BTreeNode* node,
 	struct Pager* tree,
-	unsigned int key,
+	u32 key,
 	void* buffer,
-	unsigned int buffer_size);
+	u32 buffer_size);
 
 #endif
