@@ -11,7 +11,7 @@ min(int left, int right)
 }
 
 u32
-btree_cell_get_inline_size_from_heap_size(u32 heap_size)
+btree_cell_inline_size_from_disk_size(u32 heap_size)
 {
 	return heap_size - sizeof(((struct BTreeCellInline*)0)->inline_size);
 }
@@ -20,7 +20,7 @@ btree_cell_get_inline_size_from_heap_size(u32 heap_size)
  * See header for details.
  */
 u32
-btree_cell_inline_get_inline_heap_size(u32 data_size)
+btree_cell_inline_disk_size(u32 data_size)
 {
 	/**
 	 * Attention! I do not want to pack my BTreeCellInline struct,
@@ -85,7 +85,7 @@ btree_cell_read_inline(
  * See header for details.
  */
 u32
-btree_cell_overflow_get_min_inline_heap_size()
+btree_cell_overflow_min_disk_size()
 {
 	/**
 	 * Attention! I do not want to pack my BTreeCellInline struct,
@@ -105,9 +105,9 @@ btree_cell_overflow_get_min_inline_heap_size()
  * See header for details.
  */
 u32
-btree_cell_overflow_get_inline_heap_size(u32 payload_size)
+btree_cell_overflow_disk_size(u32 payload_size)
 {
-	return btree_cell_overflow_get_min_inline_heap_size() + payload_size;
+	return btree_cell_overflow_min_disk_size() + payload_size;
 }
 
 /**
@@ -116,7 +116,7 @@ btree_cell_overflow_get_inline_heap_size(u32 payload_size)
 u32
 btree_cell_overflow_calc_inline_payload_size(u32 inline_size)
 {
-	return inline_size - btree_cell_overflow_get_min_inline_heap_size() +
+	return inline_size - btree_cell_overflow_min_disk_size() +
 		   sizeof(((struct BTreeCellOverflow*)0)->inline_size);
 }
 

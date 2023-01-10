@@ -23,7 +23,7 @@
  *
  * @return int
  */
-u32 btree_cell_get_inline_size_from_heap_size(u32 heap_size);
+u32 btree_cell_inline_size_from_disk_size(u32 heap_size);
 
 // Attention! If you change this, you must change the size calculation!!!
 struct BTreeCellInline
@@ -39,7 +39,7 @@ struct BTreeCellInline
  *
  * @return int
  */
-u32 btree_cell_inline_get_inline_heap_size(u32 data_size);
+u32 btree_cell_inline_disk_size(u32 data_size);
 
 /**
  * @brief Write inline cell to buffer.
@@ -91,11 +91,11 @@ struct BTreeCellOverflow
  *
  * @return int
  */
-u32 btree_cell_overflow_get_min_inline_heap_size(void);
+u32 btree_cell_overflow_min_disk_size(void);
 
 /**
  * @brief Get the size required of an overflow cell with payload size to be
- * stored in the heap.
+ * stored on disk.
  *
  * Note: This includes the size of the inline_size field as well.
  *
@@ -103,7 +103,7 @@ u32 btree_cell_overflow_get_min_inline_heap_size(void);
  *
  * @return u32
  */
-u32 btree_cell_overflow_get_inline_heap_size(u32 payload_size);
+u32 btree_cell_overflow_disk_size(u32 payload_size);
 
 /**
  * @brief Get the inline payload size of an overflow cell with inline size.

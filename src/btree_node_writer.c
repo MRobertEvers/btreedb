@@ -31,8 +31,8 @@ btree_node_write(
 	u32 max_heap_usage = min(max_data_size, node->header->free_heap);
 
 	// Size check
-	u32 heap_size = btree_node_get_heap_required_for_insertion(
-		btree_cell_inline_get_inline_heap_size(data_size));
+	u32 heap_size = btree_node_heap_required_for_insertion(
+		btree_cell_inline_disk_size(data_size));
 
 	insertion_index_number =
 		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
@@ -58,8 +58,8 @@ btree_node_write(
 		// Overflow
 
 		// Check if the smallest possible overflow page will fit.
-		u32 min_heap_required = btree_node_get_heap_required_for_insertion(
-			btree_cell_overflow_get_min_inline_heap_size());
+		u32 min_heap_required = btree_node_heap_required_for_insertion(
+			btree_cell_overflow_min_disk_size());
 
 		if( min_heap_required > max_heap_usage )
 			return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
@@ -116,8 +116,8 @@ btree_node_write(
 		struct BTreeCellOverflow write_payload = {0};
 		write_payload.total_size = data_size;
 		write_payload.overflow_page_id = last_page_id;
-		write_payload.inline_size = btree_cell_get_inline_size_from_heap_size(
-			btree_cell_overflow_get_inline_heap_size(inline_payload_size));
+		write_payload.inline_size = btree_cell_inline_size_from_disk_size(
+			btree_cell_overflow_disk_size(inline_payload_size));
 		write_payload.inline_payload = overflow_data;
 
 		result = btree_node_insert_overflow(

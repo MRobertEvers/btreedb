@@ -95,15 +95,15 @@ copy_cell_with_overflow(
 			btree_pkey_flags_get(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
 		// u32 source_max_size = btree_node_max_cell_size(source_node);
 		// u32 cell_heap_size =
-		// 	is_overflow ? btree_cell_overflow_get_inline_heap_size(
+		// 	is_overflow ? btree_cell_overflow_disk_size(
 		// 					  btree_cell_overflow_calc_inline_payload_size(
 		// 						  cell.inline_size))
 		// 				: cell.inline_size;
 		// u32 new_heap_required =
-		// 	btree_node_get_heap_required_for_insertion(cell_heap_size);
+		// 	btree_node_heap_required_for_insertion(cell_heap_size);
 		u32 follow_page_id = 0;
 		u32 bytes_overflown =
-			btree_node_get_heap_required_for_insertion(cell_data_size) -
+			btree_node_heap_required_for_insertion(cell_data_size) -
 			dest_max_size;
 
 		char* overflow_payload = NULL;
@@ -371,9 +371,8 @@ bta_merge_nodes(
 
 	// Calculate the smallest amount of space that all the cells
 	// from other_node could take up if they were overflow nodes.
-	u32 min_reasonable_size_per_cell =
-		btree_node_get_heap_required_for_insertion(
-			btree_cell_overflow_get_min_inline_heap_size());
+	u32 min_reasonable_size_per_cell = btree_node_heap_required_for_insertion(
+		btree_cell_overflow_min_disk_size());
 	u32 min_size_required =
 		min_reasonable_size_per_cell * other_node->header->num_keys;
 

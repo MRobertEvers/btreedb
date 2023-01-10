@@ -180,7 +180,7 @@ write_page_key(
 
 	node->header->cell_high_water_offset += cell_size;
 	node->header->free_heap -=
-		btree_node_get_heap_required_for_insertion(cell_size);
+		btree_node_heap_required_for_insertion(cell_size);
 
 	return BTREE_OK;
 }
@@ -209,9 +209,9 @@ btree_node_insert_inline_ex(
 	u32 flags)
 {
 	enum btree_e result = BTREE_OK;
-	u32 cell_size = btree_cell_inline_get_inline_heap_size(cell->inline_size);
+	u32 cell_size = btree_cell_inline_disk_size(cell->inline_size);
 
-	u32 heap_needed = btree_node_get_heap_required_for_insertion(cell_size);
+	u32 heap_needed = btree_node_heap_required_for_insertion(cell_size);
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
@@ -249,9 +249,9 @@ btree_node_insert_overflow(
 
 	// This is correct; since the input cell contains the inline size, NOT the
 	// inline payload size, we want the size of this cell as if it were inline.
-	u32 cell_size = btree_cell_inline_get_inline_heap_size(cell->inline_size);
+	u32 cell_size = btree_cell_inline_disk_size(cell->inline_size);
 
-	u32 heap_needed = btree_node_get_heap_required_for_insertion(cell_size);
+	u32 heap_needed = btree_node_heap_required_for_insertion(cell_size);
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
@@ -370,7 +370,7 @@ btree_node_remove(
 	}
 
 	node->header->cell_high_water_offset -= deleted_inline_size + sizeof(u32);
-	node->header->free_heap += btree_node_get_heap_required_for_insertion(
+	node->header->free_heap += btree_node_heap_required_for_insertion(
 		deleted_inline_size + sizeof(u32));
 
 	return BTREE_OK;
@@ -380,9 +380,9 @@ btree_node_remove(
  * See header
  */
 u32
-btree_node_get_heap_required_for_insertion(u32 cell_size)
+btree_node_heap_required_for_insertion(u32 cell_disk_size)
 {
-	return cell_size + sizeof(struct BTreePageKey);
+	return cell_disk_size + sizeof(struct BTreePageKey);
 }
 
 u32

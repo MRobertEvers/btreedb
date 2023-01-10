@@ -342,8 +342,8 @@ btree_test_free_heap_calcs()
 	btree_node_create_from_page(&raw_node, raw_page);
 
 	if( free_heap_billy - raw_node->header->free_heap !=
-		btree_node_get_heap_required_for_insertion(
-			btree_cell_inline_get_inline_heap_size(sizeof(ruth))) )
+		btree_node_heap_required_for_insertion(
+			btree_cell_inline_disk_size(sizeof(ruth))) )
 		result = 0;
 
 end:

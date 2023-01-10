@@ -131,9 +131,10 @@ enum btree_e btree_node_remove(
 /**
  * @brief Get the heap required for insertion; Accounts for page key size
  *
+ * @param cell_heap_size Size of cell in the heap (i.e. including size value)
  * @return int
  */
-u32 btree_node_get_heap_required_for_insertion(u32 cell_size);
+u32 btree_node_heap_required_for_insertion(u32 cell_heap_size);
 
 u32 btree_node_calc_heap_capacity(struct BTreeNode* node);
 

@@ -10,33 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 
-static int
-overflow_payload_reader(
-	void* data,
-	unsigned int data_size,
-	void* buffer,
-	unsigned int buffer_size,
-	unsigned int* next_page,
-	unsigned int* total_size)
-{
-	// TODO: Check buffer size.
-	assert(data_size >= sizeof(unsigned int) * 2);
-
-	// NOTE! Read reverse from the writer.
-	char* payload_buffer = (char*)data;
-	memcpy(total_size, payload_buffer, sizeof(*total_size));
-
-	payload_buffer += sizeof(*total_size);
-	memcpy(next_page, payload_buffer, sizeof(*next_page));
-
-	payload_buffer += sizeof(*next_page);
-	int bytes_read_to_buffer =
-		data_size - sizeof(*next_page) - sizeof(*total_size);
-	memcpy(buffer, payload_buffer, bytes_read_to_buffer);
-
-	return bytes_read_to_buffer;
-}
-
 enum btree_e
 btree_node_read(
 	struct BTreeNode* node,

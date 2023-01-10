@@ -90,8 +90,8 @@ u32
 btree_min_page_size(void)
 {
 	u32 min_heap_required_for_largest_cell_type =
-		btree_node_get_heap_required_for_insertion(
-			btree_cell_overflow_get_min_inline_heap_size());
+		btree_node_heap_required_for_insertion(
+			btree_cell_overflow_min_disk_size());
 	// Minimum size to fit 4 overflow cells on the root page.
 	return (
 		(BTREE_HEADER_SIZE) + (4 * min_heap_required_for_largest_cell_type) +
@@ -285,7 +285,7 @@ swap_root_page(struct BTree* tree, u32 other_page_id)
 	page_result = pager_read_page(tree->pager, &selector, other_page);
 	if( page_result != PAGER_OK )
 	{
-		result = BTREE_ERR_UNK;
+		result = BTREE_ERR_PAGING;
 		goto end;
 	}
 
@@ -336,7 +336,7 @@ btree_delete(struct BTree* tree, int key)
 		page_result = pager_read_page(tree->pager, &selector, page);
 		if( page_result != PAGER_OK )
 		{
-			result = BTREE_ERR_UNK;
+			result = BTREE_ERR_PAGING;
 			goto end;
 		}
 
