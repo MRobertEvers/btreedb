@@ -77,20 +77,18 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	struct CellData cell = {0};
 	struct CursorBreadcrumb* crumb = NULL;
 
-	page_result = page_create(cursor->tree->pager, &page);
-	if( page_result != PAGER_OK )
-		return BTREE_ERR_UNK; // TODO: No-mem
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end; // TODO: No-mem
 
 	do
 	{
 		pager_reselect(&selector, cursor->current_page_id);
 
-		page_result = pager_read_page(cursor->tree->pager, &selector, page);
-		if( page_result != PAGER_OK )
-		{
-			result = BTREE_ERR_PAGING;
+		page_result =
+			btpage_err(pager_read_page(cursor->tree->pager, &selector, page));
+		if( result != BTREE_OK )
 			goto end;
-		}
 
 		result = btree_node_init_from_page(&node, page);
 		if( result != BTREE_OK )
@@ -128,7 +126,8 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	} while( !node.header->is_leaf );
 
 end:
-	page_destroy(cursor->tree->pager, page);
+	if( page )
+		page_destroy(cursor->tree->pager, page);
 
 	return result;
 }
