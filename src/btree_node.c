@@ -72,7 +72,7 @@ btree_pkey_flags_get(u32 flags, enum btree_page_key_flags_e flag)
 enum btree_e
 btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 {
-	int offset = page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
+	u32 offset = page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
 	char* byte_buffer = (char*)page->page_buffer;
 	void* data = byte_buffer + offset;
 

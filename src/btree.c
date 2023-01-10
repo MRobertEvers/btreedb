@@ -21,13 +21,15 @@
  * @return enum btree_e
  */
 static enum btree_e
-init_new_root_page(struct BTree* tree, struct Page* page)
+init_new_root_page(struct BTree* tree, struct Page* page, u32 page_id)
 {
-	assert(page->page_id == 1);
-
 	struct BTreeNode temp_node = {0};
+	enum btree_e result = BTREE_OK;
 
-	btree_node_init_from_page(&temp_node, page);
+	page->page_id = page_id;
+	result = btree_node_init_from_page(&temp_node, page);
+	if( result != BTREE_OK )
+		return result;
 
 	struct BTreeHeader* temp_btree_header =
 		(struct BTreeHeader*)page->page_buffer;
@@ -40,30 +42,27 @@ init_new_root_page(struct BTree* tree, struct Page* page)
 }
 
 static enum btree_e
-btree_init_root_page(struct BTree* tree, struct Page* page)
+btree_init_root_page(struct BTree* tree, struct Page* page, u32 page_id)
 {
+	enum btree_e result = BTREE_OK;
 	enum pager_e pager_status = PAGER_OK;
 	struct PageSelector selector;
-	pager_reselect(&selector, 1);
+	pager_reselect(&selector, page_id);
 
 	pager_status = pager_read_page(tree->pager, &selector, page);
 	if( pager_status == PAGER_ERR_NIF )
 	{
-		init_new_root_page(tree, page);
+		result = init_new_root_page(tree, page, page_id);
+		if( result != BTREE_OK )
+			return result;
 
-		pager_status = pager_write_page(tree->pager, page);
-		if( pager_status == PAGER_OK )
-		{
-			return BTREE_OK;
-		}
-		else
-		{
-			return BTREE_ERR_UNK;
-		}
+		result = btpage_err(pager_write_page(tree->pager, page));
+
+		return result;
 	}
 	else if( pager_status != PAGER_OK )
 	{
-		return BTREE_ERR_UNK;
+		return BTREE_ERR_PAGING;
 	}
 	else
 	{
@@ -105,7 +104,7 @@ btree_min_page_size(void)
  * @return enum btree_e
  */
 enum btree_e
-btree_init(struct BTree* tree, struct Pager* pager)
+btree_init(struct BTree* tree, struct Pager* pager, u32 root_page_id)
 {
 	enum btree_e btree_result = BTREE_OK;
 
@@ -114,12 +113,12 @@ btree_init(struct BTree* tree, struct Pager* pager)
 	if( pager->page_size < btree_min_page_size() )
 		return BTREE_ERR_INVALID_PAGE_SIZE_TOO_SMALL;
 
-	tree->root_page_id = 1;
+	tree->root_page_id = root_page_id;
 	tree->pager = pager;
 
 	struct Page* page = NULL;
 	page_create(tree->pager, &page);
-	btree_result = btree_init_root_page(tree, page);
+	btree_result = btree_init_root_page(tree, page, root_page_id);
 	if( btree_result != BTREE_OK )
 		goto end;
 
@@ -294,7 +293,7 @@ swap_root_page(struct BTree* tree, u32 other_page_id)
 
 	root_ptr->header->is_leaf = other.header->is_leaf;
 
-	struct MergedPage merge_result = {0};
+	struct MergedPage merge_result = {};
 	result = bta_merge_nodes(root_ptr, &other, tree->pager, &merge_result);
 
 end:
@@ -362,9 +361,8 @@ btree_delete(struct BTree* tree, int key)
 					result = swap_root_page(tree, node.header->right_child);
 					if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 					{
-						// We need to split the child node and insert two keys
-						// into root.
-						// TODO: This
+						// TODO: What do when 1 remaining child cant fit in
+						// root?
 						assert(0);
 					}
 				}

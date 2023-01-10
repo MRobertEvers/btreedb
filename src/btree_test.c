@@ -31,7 +31,7 @@ btree_test_insert()
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager);
+	btree_init(tree, pager, 1);
 
 	char billy[0x1000 - 200] = "billy";
 	billy[3600] = 'q';
@@ -79,7 +79,7 @@ btree_test_insert_root_with_space()
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager);
+	btree_init(tree, pager, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -132,7 +132,7 @@ btree_test_split_root_node()
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager);
+	btree_init(tree, pager, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -215,7 +215,7 @@ btree_test_delete(void)
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager);
+	btree_init(tree, pager, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -317,7 +317,7 @@ btree_test_free_heap_calcs()
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager);
+	btree_init(tree, pager, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -404,7 +404,7 @@ btree_test_deep_tree(void)
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager);
+	enum btree_e btresult = btree_init(tree, pager, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -543,7 +543,7 @@ btree_test_delete_last(void)
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager);
+	enum btree_e btresult = btree_init(tree, pager, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -663,7 +663,7 @@ btree_test_delete_merge_root(void)
 
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager);
+	enum btree_e btresult = btree_init(tree, pager, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
