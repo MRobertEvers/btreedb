@@ -130,3 +130,70 @@ end:
 
 	return result;
 }
+
+enum btree_e
+cursor_traverse_to_ex(
+	struct Cursor* cursor, void* key, u32 key_size, char* found)
+{
+	u32 child_key_index = 0;
+	enum btree_e result = BTREE_OK;
+	struct Page* page = NULL;
+	struct PageSelector selector = {0};
+	struct BTreeNode node = {0};
+	struct CellData cell = {0};
+	struct CursorBreadcrumb* crumb = NULL;
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end; // TODO: No-mem
+
+	do
+	{
+		pager_reselect(&selector, cursor->current_page_id);
+
+		result =
+			btpage_err(pager_read_page(cursor->tree->pager, &selector, page));
+		if( result != BTREE_OK )
+			goto end;
+
+		result = btree_node_init_from_page(&node, page);
+		if( result != BTREE_OK )
+			goto end;
+
+		result = btree_node_search_keys(
+			cursor->tree, &node, key, key_size, &child_key_index);
+
+		btu_init_keylistindex_from_index(
+			&cursor->current_key_index, &node, child_key_index);
+
+		result = cursor_push(cursor);
+		if( result != BTREE_OK )
+			goto end;
+
+		if( !node.header->is_leaf )
+		{
+			if( child_key_index == node.header->num_keys )
+			{
+				cursor->current_page_id = node.header->right_child;
+			}
+			else
+			{
+				btu_read_cell(&node, child_key_index, &cell);
+				u32 cell_size = btree_cell_get_size(&cell);
+				if( cell_size != sizeof(cursor->current_page_id) )
+				{
+					result = BTREE_ERR_CORRUPT_CELL;
+					goto end;
+				}
+
+				memcpy(&cursor->current_page_id, cell.pointer, cell_size);
+			}
+		}
+	} while( !node.header->is_leaf );
+
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+
+	return result;
+}

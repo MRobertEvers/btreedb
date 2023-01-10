@@ -14,25 +14,20 @@ btree_overflow_max_write_size(struct Pager* pager)
 }
 
 enum btree_e
-btree_overflow_read(
+btree_overflow_peek(
 	struct Pager* pager,
+	struct Page* page,
 	u32 page_id,
-	void* buffer,
-	u32 buffer_size,
+	byte** out_payload,
 	struct BTreeOverflowReadResult* out)
 {
-	struct Page* page = NULL;
 	u32 bytes_on_page = 0;
 	u32 next_page_id = 0;
 	enum btree_e read_result = BTREE_OK;
 	struct PageSelector selector = {0};
 
 	out->next_page_id = 0;
-	out->bytes_read = 0;
-
-	read_result = btpage_err(page_create(pager, &page));
-	if( read_result != BTREE_OK )
-		goto end;
+	out->payload_bytes = 0;
 
 	pager_reselect(&selector, page_id);
 	read_result = btpage_err(pager_read_page(pager, &selector, page));
@@ -42,23 +37,55 @@ btree_overflow_read(
 	// dbg_print_buffer(page->page_buffer, page->page_size);
 
 	char* payload_buffer = (char*)page->page_buffer;
+	// TODO: Serialization
 	memcpy(&next_page_id, payload_buffer, sizeof(next_page_id));
 
 	payload_buffer += sizeof(bytes_on_page);
 	memcpy(&bytes_on_page, payload_buffer, sizeof(bytes_on_page));
 	assert(bytes_on_page < pager->page_size);
 
-	if( bytes_on_page > buffer_size )
+	payload_buffer += sizeof(next_page_id);
+	*out_payload = payload_buffer;
+
+	out->next_page_id = next_page_id;
+	out->payload_bytes = bytes_on_page;
+
+end:
+	return read_result;
+}
+
+enum btree_e
+btree_overflow_read(
+	struct Pager* pager,
+	u32 page_id,
+	void* buffer,
+	u32 buffer_size,
+	struct BTreeOverflowReadResult* out)
+{
+	struct Page* page = NULL;
+	enum btree_e read_result = BTREE_OK;
+	byte* payload = NULL;
+
+	out->next_page_id = 0;
+	out->payload_bytes = 0;
+
+	read_result = btpage_err(page_create(pager, &page));
+	if( read_result != BTREE_OK )
+		goto end;
+
+	read_result = btree_overflow_peek(pager, page, page_id, &payload, out);
+	if( read_result != BTREE_OK )
+		goto end;
+
+	// dbg_print_buffer(page->page_buffer, page->page_size);
+
+	if( out->payload_bytes > buffer_size )
 	{
 		read_result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 		goto end;
 	}
 
-	payload_buffer += sizeof(next_page_id);
-	memcpy(buffer, payload_buffer, bytes_on_page);
-
-	out->next_page_id = next_page_id;
-	out->bytes_read = bytes_on_page;
+	memcpy(buffer, payload, out->payload_bytes);
 
 end:
 	if( page )

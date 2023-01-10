@@ -68,12 +68,20 @@ struct BTreeHeader
 	enum btree_type type;
 };
 
+/**
+ * @brief Return -1 if left is less than right, 1 if right is; 0 if equal.
+ */
+typedef int (*btree_compare_fn)(
+	void* left, u32 left_size, void* right, u32 right_size);
+
 struct BTree
 {
 	struct BTreeHeader header;
 	struct Pager* pager;
 
 	int root_page_id;
+
+	btree_compare_fn compare;
 };
 
 enum key_list_index_mode_e

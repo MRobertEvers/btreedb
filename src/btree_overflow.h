@@ -21,8 +21,15 @@ u32 btree_overflow_max_write_size(struct Pager* pager);
 struct BTreeOverflowReadResult
 {
 	u32 next_page_id;
-	u32 bytes_read;
+	u32 payload_bytes;
 };
+enum btree_e btree_overflow_peek(
+	struct Pager* pager,
+	struct Page* page,
+	u32 page_id,
+	byte** out_payload,
+	struct BTreeOverflowReadResult* out);
+
 enum btree_e btree_overflow_read(
 	struct Pager* pager,
 	u32 page_id,

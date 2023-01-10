@@ -2,10 +2,12 @@
 
 #include "btree_cell.h"
 #include "btree_node_debug.h"
+#include "btree_overflow.h"
 #include "btree_utils.h"
 #include "serialization.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -387,4 +389,233 @@ btree_node_calc_heap_capacity(struct BTreeNode* node)
 {
 	u32 offset = node->page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
 	return node->page->page_size - sizeof(struct BTreePageHeader) - offset;
+}
+
+/**
+ * See header for details.
+ */
+int
+btu_binary_search_node_keys(
+	struct BTreeNode* node,
+	struct BTreePageKey* arr,
+	unsigned char num_keys,
+	int key,
+	char* found)
+{
+	int left = 0;
+	int right = num_keys - 1;
+	int mid = 0;
+	u32 mid_key = 0;
+	*found = 0;
+
+	while( left <= right )
+	{
+		mid = (right - left) / 2 + left;
+		mid_key = arr[mid].key;
+
+		// TODO: Key compare function.
+		if( mid_key == key )
+		{
+			if( found )
+				*found = 1;
+			return mid;
+		}
+		else if( mid_key < key )
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			right = mid - 1;
+		}
+	}
+
+	return left;
+}
+
+// TODO: Return error
+// TODO: Might have to read onto overflow page...
+static byte*
+get_cell_payload(
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page)
+{
+	struct BTreePageKey* key = &node->keys[index];
+	bool is_overflow =
+		btree_pkey_flags_get(key->flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
+
+	byte* cell_data = btu_get_cell_buffer(node, index);
+	u32 cell_data_size = btu_get_cell_buffer_size(node, index);
+
+	byte* payload = NULL;
+	*out_size = 0;
+	*out_total_size = 0;
+	*out_follow_page = 0;
+	if( is_overflow )
+	{
+		// Overflow page -> Overflow page.
+		struct BTreeCellOverflow read_cell = {0};
+		struct BufferReader reader = {0};
+		btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
+
+		btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
+
+		payload = (byte*)read_cell.inline_payload;
+		*out_size =
+			btree_cell_overflow_calc_inline_payload_size(read_cell.inline_size);
+		*out_total_size = read_cell.total_size;
+		*out_follow_page = read_cell.overflow_page_id;
+	}
+	else
+	{
+		struct BTreeCellInline cell = {0};
+		btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
+
+		payload = (byte*)cell.payload;
+		*out_size = cell.inline_size;
+		*out_total_size = cell.inline_size;
+	}
+
+	return payload;
+}
+
+// Returns 1 if key is less than index
+// 0 if equal
+// -1 if index is less.
+static enum btree_e
+compare_cell(
+	struct BTree* tree,
+	struct BTreeNode* node,
+	u32 index,
+	void* key,
+	u32 key_size,
+	int* out_result)
+{
+	enum btree_e result = BTREE_OK;
+	byte* key_head = (byte*)key;
+	u32 key_read_offset = 0;
+	u32 cmp_total_size = 0;
+	u32 next_page_id = 0;
+	u32 cmp_size = 0;
+
+	byte* cmp = NULL;
+	cmp = get_cell_payload(
+		node, index, &cmp_size, &cmp_total_size, &next_page_id);
+
+	*out_result =
+		tree->compare(cmp, cmp_size, key_head, key_size - key_read_offset);
+	key_read_offset += cmp_size;
+	key_head += cmp_size;
+
+	if( *out_result != 0 )
+	{
+		return BTREE_OK;
+	}
+	else
+	{
+		if( next_page_id == 0 )
+			return 0;
+		// We have to go to overflow pages to find out.
+		struct Page* page = NULL;
+		struct BTreeOverflowReadResult ov = {0};
+
+		result = btpage_err(page_create(tree->pager, &page));
+		if( result != BTREE_OK )
+			goto end_overflow;
+
+		do
+		{
+			result =
+				btree_overflow_peek(tree->pager, page, next_page_id, cmp, &ov);
+			if( result != BTREE_OK )
+				goto end_overflow;
+
+			cmp_size = ov.payload_bytes;
+
+			*out_result = tree->compare(
+				cmp, cmp_size, key_head, key_size - key_read_offset);
+
+			key_read_offset += cmp_size;
+			key_head += cmp_size;
+
+			if( *out_result != 0 )
+				break;
+
+		} while( next_page_id != 0 && key_size > key_read_offset );
+
+		// If they were equal all the way up to the end
+		if( *out_result == 0 )
+		{
+			// Key read all the way through and there is another page.
+			if( key_size <= key_read_offset && next_page_id != 0 )
+			{
+				// Key is less than
+				*out_result = -1;
+			}
+			// There are no more pages and there are key bytes left.
+			else if( key_size > key_read_offset && next_page_id != 0 )
+			{
+				// Key is greater than
+				*out_result = 1;
+			}
+			else
+			{
+				*out_result = 0;
+			}
+		}
+
+	end_overflow:
+		if( page )
+			page_destroy(tree->pager, page);
+	}
+
+	return result;
+}
+
+enum btree_e
+btree_node_search_keys(
+	struct BTree* tree,
+	struct BTreeNode* node,
+	void* key,
+	u32 key_size,
+	u32* out_index)
+{
+	assert(tree->compare != NULL);
+	u32 num_keys = node->header->num_keys;
+	enum btree_e result = BTREE_OK;
+	int left = 0;
+	int right = num_keys - 1;
+	int mid = 0;
+	int compare_result = 0;
+
+	while( left <= right )
+	{
+		mid = (right - left) / 2 + left;
+
+		result = compare_cell(tree, node, mid, key, key_size, &compare_result);
+		if( result != BTREE_OK )
+			goto err;
+
+		if( compare_result == 0 )
+		{
+			*out_index = mid;
+			return BTREE_OK;
+		}
+		else if( compare_result == -1 )
+		{
+			left = mid + 1;
+		}
+		else
+		{
+			right = mid - 1;
+		}
+	}
+
+	return BTREE_ERR_KEY_NOT_FOUND;
+
+err:
+	return result;
 }

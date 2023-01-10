@@ -138,4 +138,20 @@ u32 btree_node_heap_required_for_insertion(u32 cell_disk_size);
 
 u32 btree_node_calc_heap_capacity(struct BTreeNode* node);
 
+/**
+ * @brief Returns index of key; BTREE_ERR_KEY_NOT_FOUND if not found.
+ *
+ * @param node
+ * @param key
+ * @param key_size
+ * @param found
+ * @return enum btree_e
+ */
+enum btree_e btree_node_search_keys(
+	struct BTree* tree,
+	struct BTreeNode* node,
+	void* key,
+	u32 key_size,
+	u32* out_index);
+
 #endif

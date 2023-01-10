@@ -14,9 +14,9 @@ enum btree_e
 btree_node_read(
 	struct BTreeNode* node,
 	struct Pager* pager,
-	unsigned int key,
+	u32 key,
 	void* buffer,
-	unsigned int buffer_size)
+	u32 buffer_size)
 {
 	enum btree_e result = BTREE_OK;
 	char found;
@@ -26,8 +26,8 @@ btree_node_read(
 	if( !found )
 		return BTREE_ERR_KEY_NOT_FOUND;
 
-	unsigned int total_payload_size = 0;
-	unsigned int next_page_id = 0;
+	u32 total_payload_size = 0;
+	u32 next_page_id = 0;
 
 	char is_overflow_cell = btree_pkey_flags_get(
 		btu_get_cell_flags(node, key_index), PKEY_FLAG_CELL_TYPE_OVERFLOW);
@@ -78,8 +78,8 @@ btree_node_read(
 				break;
 
 			next_page_id = overflow_read_result.next_page_id;
-			written_size += overflow_read_result.bytes_read;
-			next_buffer += overflow_read_result.bytes_read;
+			written_size += overflow_read_result.payload_bytes;
+			next_buffer += overflow_read_result.payload_bytes;
 		}
 	}
 

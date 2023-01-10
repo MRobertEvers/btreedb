@@ -139,7 +139,6 @@ enum btree_e
 btree_insert(struct BTree* tree, int key, void* data, int data_size)
 {
 	enum btree_e result = BTREE_OK;
-	int index = 0;
 	char found = 0;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
@@ -302,7 +301,6 @@ enum btree_e
 btree_delete(struct BTree* tree, int key)
 {
 	enum btree_e result = BTREE_OK;
-	int index = 0;
 	char found = 0;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};

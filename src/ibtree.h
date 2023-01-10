@@ -4,12 +4,6 @@
 #include "btint.h"
 #include "btree_defs.h"
 
-enum btree_e ibtree_alloc(struct BTree**);
-enum btree_e ibtree_dealloc(struct BTree*);
-enum btree_e
-ibtree_init(struct BTree* tree, struct Pager* pager, u32 root_page_id);
-enum btree_e ibtree_deinit(struct BTree* tree);
-
 /**
  * @brief
  *
