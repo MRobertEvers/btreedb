@@ -42,11 +42,21 @@ btree_cell_write_inline(
 	struct BTreeCellInline* cell, void* buffer, u32 buffer_size)
 {
 	char* payload = (char*)cell->payload;
-	char* cell_left_edge = buffer;
-	ser_write_32bit_le(cell_left_edge, cell->inline_size);
 
-	cell_left_edge = cell_left_edge + sizeof(cell->inline_size);
-	memcpy(cell_left_edge, payload, cell->inline_size);
+	struct BufferWriter writer = {0};
+	buffer_writer_init(&writer, buffer, buffer_size, NULL);
+
+	byte* buf[sizeof(u32)];
+	ser_write_32bit_le(buf, cell->inline_size);
+	buffer_writer_write(&writer, buf, sizeof(buf));
+
+	u32 payload_bytes_prewritten = 0;
+	if( cell->on_write_payload != NULL )
+		payload_bytes_prewritten =
+			cell->on_write_payload(cell->on_write_payload_data, cell, &writer);
+
+	buffer_writer_write(
+		&writer, payload, cell->inline_size - payload_bytes_prewritten);
 
 	return BTREE_OK;
 }
@@ -140,8 +150,14 @@ btree_cell_write_overflow_ex(
 	ser_write_32bit_le(buf, cell->overflow_page_id);
 	written_size += buffer_writer_write(writer, buf, sizeof(buf));
 
-	u32 inline_payload_size =
-		btree_cell_overflow_calc_inline_payload_size(cell->inline_size);
+	u32 payload_bytes_prewritten = 0;
+	if( cell->on_write_payload != NULL )
+		payload_bytes_prewritten =
+			cell->on_write_payload(cell->on_write_payload_data, cell, &writer);
+	written_size += payload_bytes_prewritten;
+
+	u32 inline_payload_size = btree_cell_overflow_calc_inline_payload_size(
+		cell->inline_size - payload_bytes_prewritten);
 	written_size +=
 		buffer_writer_write(writer, cell->inline_payload, inline_payload_size);
 

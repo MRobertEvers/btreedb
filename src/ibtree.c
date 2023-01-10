@@ -12,6 +12,54 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int
+min(int left, int right)
+{
+	return left < right ? left : right;
+}
+
+int
+ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer)
+{}
+
+enum btree_e
+ibtree_compare(
+	void* left,
+	u32 left_size,
+	void* right,
+	u32 right_size,
+	u32 bytes_compared,
+	u32* out_bytes_compared)
+{
+	assert(right_size > bytes_compared);
+
+	// The inline payload of a cell on disk for an IBTree always starts with the
+	// left child page id.
+	byte* left_buffer = (byte*)left;
+	byte* right_buffer = (byte*)right;
+	right += bytes_compared;
+
+	if( bytes_compared == 0 )
+	{
+		left_buffer += sizeof(u32);
+		left_size -= sizeof(u32);
+	}
+
+	*out_bytes_compared = min(left_size, right_size - bytes_compared);
+	int cmp = memcmp(left, right, *out_bytes_compared);
+	if( cmp == 0 )
+	{
+		if( left_size == right_size )
+			return 0;
+		else
+			return left_size < right_size ? -1 : 1;
+	}
+	else
+	{
+		return cmp;
+	}
+}
+
 enum btree_e
 ibtree_insert(struct BTree* tree, void* key, int key_size)
 {

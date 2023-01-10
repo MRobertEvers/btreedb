@@ -25,6 +25,15 @@
  */
 u32 btree_cell_inline_size_from_disk_size(u32 disk_size);
 
+/**
+ * @brief Called before the first bytes are written to the payload
+ * section.
+ *
+ * @return must return number of bytes written.
+ */
+typedef int (*cell_on_write_payload_fn)(
+	void* data, void* cell, struct BufferWriter* writer);
+
 // Attention! If you change this, you must change the size calculation!!!
 struct BTreeCellInline
 {
@@ -32,6 +41,11 @@ struct BTreeCellInline
 	// I.e. inline_payload_size
 	u32 inline_size;
 	void* payload;
+
+	// Callbacks for writers...
+	// ATTENTION! Inline size should account for any data written here.
+	cell_on_write_payload_fn on_write_payload;
+	void* on_write_payload_data;
 };
 
 /**
@@ -82,6 +96,11 @@ struct BTreeCellOverflow
 	u32 total_size;
 	u32 overflow_page_id;
 	void* inline_payload;
+
+	// Callbacks for writers...
+	// ATTENTION! Inline size should account for any data written here.
+	cell_on_write_payload_fn on_write_payload;
+	void* on_write_payload_data;
 };
 
 /**
