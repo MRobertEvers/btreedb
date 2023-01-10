@@ -92,7 +92,7 @@ copy_cell_with_overflow(
 		// restricts the min cell size to be greater than
 		// the size required to fit an overflow cell.
 		u32 is_overflow =
-			btree_pkey_flags_get(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
+			btree_pkey_is_cell_type(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
 		// u32 source_max_size = btree_node_max_cell_size(source_node);
 		// u32 cell_heap_size =
 		// 	is_overflow ? btree_cell_overflow_disk_size(

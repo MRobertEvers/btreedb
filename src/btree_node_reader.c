@@ -29,7 +29,7 @@ btree_node_read(
 	u32 total_payload_size = 0;
 	u32 next_page_id = 0;
 
-	char is_overflow_cell = btree_pkey_flags_get(
+	char is_overflow_cell = btree_pkey_is_cell_type(
 		btu_get_cell_flags(node, key_index), PKEY_FLAG_CELL_TYPE_OVERFLOW);
 
 	char* cell_buffer = btu_get_cell_buffer(node, key_index);

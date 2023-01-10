@@ -37,6 +37,20 @@ btree_node_deinit(struct BTreeNode* node)
 	return BTREE_OK;
 }
 
+static u32
+cell_type_code(enum btree_page_key_flags_e flag)
+{
+	switch( flag )
+	{
+	case PKEY_FLAG_CELL_TYPE_INLINE:
+		return 1;
+	case PKEY_FLAG_CELL_TYPE_OVERFLOW:
+		return 2;
+	default:
+		return 0;
+	}
+}
+
 u32
 btree_node_max_cell_size(struct BTreeNode* node)
 {
@@ -51,9 +65,14 @@ btree_node_max_cell_size(struct BTreeNode* node)
 }
 
 u32
-btree_pkey_flags_set(u32 flags, enum btree_page_key_flags_e flag)
+btree_pkey_set_cell_type(u32 flags, enum btree_page_key_flags_e flag)
 {
-	return flags | (1 << flag);
+	u32 code = cell_type_code(flag);
+	if( code == 0 )
+		return flags;
+
+	assert(code < (1 << 4));
+	return flags | (code);
 }
 
 /**
@@ -63,9 +82,13 @@ btree_pkey_flags_set(u32 flags, enum btree_page_key_flags_e flag)
  * @return u32
  */
 u32
-btree_pkey_flags_get(u32 flags, enum btree_page_key_flags_e flag)
+btree_pkey_is_cell_type(u32 flags, enum btree_page_key_flags_e flag)
 {
-	return (flags & (1 << flag)) != 0;
+	u32 test = cell_type_code(flag);
+	if( test == 0 )
+		return 0;
+
+	return (flags & 0xF) == test;
 }
 
 /**
@@ -199,7 +222,7 @@ btree_node_insert_inline(
 		index,
 		key,
 		cell,
-		btree_pkey_flags_set(0, PKEY_FLAG_CELL_TYPE_INLINE));
+		btree_pkey_set_cell_type(0, PKEY_FLAG_CELL_TYPE_INLINE));
 }
 
 enum btree_e
@@ -271,7 +294,7 @@ btree_node_insert_overflow(
 		index,
 		key,
 		cell_size,
-		btree_pkey_flags_set(0, PKEY_FLAG_CELL_TYPE_OVERFLOW));
+		btree_pkey_set_cell_type(0, PKEY_FLAG_CELL_TYPE_OVERFLOW));
 	if( result != BTREE_OK )
 		return result;
 
@@ -445,7 +468,7 @@ get_cell_payload(
 {
 	struct BTreePageKey* key = &node->keys[index];
 	bool is_overflow =
-		btree_pkey_flags_get(key->flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
+		btree_pkey_is_cell_type(key->flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
 
 	byte* cell_data = btu_get_cell_buffer(node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(node, index);
@@ -529,7 +552,7 @@ compare_cell(
 		do
 		{
 			result =
-				btree_overflow_peek(tree->pager, page, next_page_id, cmp, &ov);
+				btree_overflow_peek(tree->pager, page, next_page_id, &cmp, &ov);
 			if( result != BTREE_OK )
 				goto end_overflow;
 

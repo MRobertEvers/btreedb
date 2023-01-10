@@ -108,7 +108,7 @@ u32 btree_cell_overflow_disk_size(u32 payload_size);
 /**
  * @brief Get the inline payload size of an overflow cell with inline size.
  *
- * ATTENTION! NOT inline_heap_size...
+ * ATTENTION! NOT disk_size...
  *
  * @return u32
  */

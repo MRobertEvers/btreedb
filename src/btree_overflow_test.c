@@ -60,5 +60,7 @@ btree_overflow_test_overflow_rw(void)
 	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;
 
+	remove(db_name);
+
 	return 1;
 }

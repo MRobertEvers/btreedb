@@ -15,7 +15,7 @@ enum btree_page_key_flags_e
 	PKEY_FLAG_CELL_TYPE_INLINE,
 };
 
-u32 btree_pkey_flags_set(u32 flags, enum btree_page_key_flags_e);
+u32 btree_pkey_set_cell_type(u32 flags, enum btree_page_key_flags_e);
 
 /**
  * @brief Returns 1 if flag is present; 0 otherwise
@@ -23,7 +23,7 @@ u32 btree_pkey_flags_set(u32 flags, enum btree_page_key_flags_e);
  * @param flags
  * @return u32
  */
-u32 btree_pkey_flags_get(u32 flags, enum btree_page_key_flags_e);
+u32 btree_pkey_is_cell_type(u32 flags, enum btree_page_key_flags_e);
 
 /**
  * @brief Used to initialize a node from a page.

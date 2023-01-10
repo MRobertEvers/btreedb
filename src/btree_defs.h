@@ -1,6 +1,7 @@
 #ifndef BTREE_DEFS_H
 #define BTREE_DEFS_H
 
+#include "btint.h"
 #include "page.h"
 
 #define BTREE_HEADER_SIZE 100
@@ -30,19 +31,19 @@ struct BTreePageHeader
 {
 	char is_leaf;
 	char persisted;
-	unsigned int free_heap;
-	unsigned int num_keys;
-	unsigned int right_child;
+	u32 free_heap;
+	u32 num_keys;
+	u32 right_child;
 
 	// Offset from cell_base_offset
-	unsigned int cell_high_water_offset;
+	u32 cell_high_water_offset;
 };
 
 struct BTreePageKey
 {
-	unsigned int key;
-	unsigned int cell_offset;
-	unsigned int flags; // 1 means overflow page.
+	u32 key;
+	u32 cell_offset;
+	u32 flags;
 };
 
 struct BTreeNode
@@ -96,7 +97,7 @@ struct ChildListIndex
 	enum key_list_index_mode_e mode;
 
 	// If mode=KLIM_INDEX, then this should be populated
-	unsigned int index;
+	u32 index;
 };
 
 /**
@@ -108,7 +109,7 @@ struct InsertionIndex
 	enum key_list_index_mode_e mode;
 
 	// If mode=KLIM_INDEX, then this should be populated
-	unsigned int index;
+	u32 index;
 };
 
 // This is like "TID" in postgres
