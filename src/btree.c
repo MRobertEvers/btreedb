@@ -141,7 +141,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	enum btree_e result = BTREE_OK;
 	int index = 0;
 	char found = 0;
-	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
@@ -160,12 +159,9 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			goto end;
 
 		pager_reselect(&selector, crumb.page_id);
-		page_result = pager_read_page(tree->pager, &selector, page);
-		if( page_result != PAGER_OK )
-		{
-			result = BTREE_ERR_UNK;
+		result = btpage_err(pager_read_page(tree->pager, &selector, page));
+		if( result != BTREE_OK )
 			goto end;
-		}
 
 		btree_node_init_from_page(&node, page);
 
@@ -267,7 +263,6 @@ enum btree_e
 swap_root_page(struct BTree* tree, u32 other_page_id)
 {
 	enum btree_e result = BTREE_OK;
-	enum pager_e page_result = PAGER_OK;
 	struct Page* root_page = NULL;
 	struct Page* other_page = NULL;
 	struct BTreeNode* root_ptr = NULL;
@@ -280,12 +275,9 @@ swap_root_page(struct BTree* tree, u32 other_page_id)
 	btree_node_create_as_page_number(&root_ptr, tree->root_page_id, root_page);
 
 	pager_reselect(&selector, other_page_id);
-	page_result = pager_read_page(tree->pager, &selector, other_page);
-	if( page_result != PAGER_OK )
-	{
-		result = BTREE_ERR_PAGING;
+	result = btpage_err(pager_read_page(tree->pager, &selector, other_page));
+	if( result != BTREE_OK )
 		goto end;
-	}
 
 	result = btree_node_init_from_page(&other, other_page);
 	if( result != BTREE_OK )
@@ -312,7 +304,6 @@ btree_delete(struct BTree* tree, int key)
 	enum btree_e result = BTREE_OK;
 	int index = 0;
 	char found = 0;
-	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
@@ -331,12 +322,9 @@ btree_delete(struct BTree* tree, int key)
 			goto end;
 
 		pager_reselect(&selector, crumb.page_id);
-		page_result = pager_read_page(tree->pager, &selector, page);
-		if( page_result != PAGER_OK )
-		{
-			result = BTREE_ERR_PAGING;
+		result = btpage_err(pager_read_page(tree->pager, &selector, page));
+		if( result != BTREE_OK )
 			goto end;
-		}
 
 		btree_node_init_from_page(&node, page);
 
