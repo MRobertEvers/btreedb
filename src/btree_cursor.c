@@ -70,7 +70,6 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 {
 	int child_key_index = 0;
 	enum btree_e result = BTREE_OK;
-	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
@@ -85,7 +84,7 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 	{
 		pager_reselect(&selector, cursor->current_page_id);
 
-		page_result =
+		result =
 			btpage_err(pager_read_page(cursor->tree->pager, &selector, page));
 		if( result != BTREE_OK )
 			goto end;
