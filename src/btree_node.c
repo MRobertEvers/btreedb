@@ -258,10 +258,7 @@ btree_node_insert_overflow(
 	char* cell_left_edge = btu_calc_highwater_offset(
 		node, node->header->cell_high_water_offset + cell_size);
 
-	result =
-		btree_cell_init_overflow_writer(&writer, cell_left_edge, cell_size);
-	if( result != BTREE_OK )
-		return result;
+	btree_cell_init_overflow_writer(&writer, cell_left_edge, cell_size);
 
 	result = btree_cell_write_overflow_ex(cell, &writer);
 	if( result != BTREE_OK )

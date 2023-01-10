@@ -7,6 +7,7 @@ enum pager_e
 	// It is not known whether this page exists on disk.
 	PAGER_ERR_PAGE_PERSISTENCE_UNKNOWN,
 	PAGER_ERR_CACHE_MISS,
+	PAGER_ERR_NO_MEM,
 	PAGER_ERR_NIF, // Not in file
 	PAGER_UNK_ERR,
 	PAGER_OPEN_ERR,

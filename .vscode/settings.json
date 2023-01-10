@@ -18,6 +18,8 @@
         "__config": "c",
         "stdlib.h": "c",
         "btree_overflow.h": "c",
-        "btree_node_debug.h": "c"
+        "btree_node_debug.h": "c",
+        "btint.h": "c",
+        "btree_node_writer.h": "c"
     },
 }

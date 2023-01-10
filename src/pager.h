@@ -37,9 +37,8 @@ enum pager_e page_create(struct Pager* pager, struct Page** r_page);
  *
  * @param page
  * @param r_page
- * @return enum pager_e
  */
-enum pager_e pager_reselect(struct PageSelector* selector, int page_id);
+void pager_reselect(struct PageSelector* selector, int page_id);
 
 /**
  * @brief Release page; Takes ownership of page

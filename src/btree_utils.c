@@ -4,6 +4,20 @@
 
 #include <string.h>
 
+enum btree_e
+btpage_err(enum pager_e err)
+{
+	switch( err )
+	{
+	case PAGER_OK:
+		return BTREE_OK;
+	case PAGER_ERR_NO_MEM:
+		return BTREE_ERR_NO_MEM;
+	default:
+		return BTREE_ERR_PAGING;
+	}
+}
+
 /**
  * @deprecated
  *
@@ -146,7 +160,7 @@ btu_binary_search_keys(
 	return left;
 }
 
-int
+void
 btu_init_keylistindex_from_index(
 	struct ChildListIndex* keylistindex,
 	struct BTreeNode const* node,
@@ -167,11 +181,9 @@ btu_init_keylistindex_from_index(
 		keylistindex->mode = KLIM_END;
 		keylistindex->index = node->header->num_keys;
 	}
-
-	return 0;
 }
 
-int
+void
 btu_init_insertion_index_from_index(
 	struct InsertionIndex* keylistindex,
 	struct BTreeNode const* node,
@@ -187,39 +199,4 @@ btu_init_insertion_index_from_index(
 		keylistindex->mode = KLIM_END;
 		keylistindex->index = node->header->num_keys;
 	}
-
-	return 0;
-}
-
-void
-btu_get_insertion_index(
-	struct InsertionIndex* index,
-	struct BTreeNode const* node,
-	unsigned int key)
-{
-	char found;
-	unsigned int insertion_index_number =
-		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
-
-	btu_init_insertion_index_from_index(index, node, insertion_index_number);
-}
-
-int
-btu_get_left_insertion_from_keylistindex(
-	struct InsertionIndex* insertion_index, struct ChildListIndex* keylistindex)
-{
-	memset(insertion_index, 0x00, sizeof(struct InsertionIndex));
-
-	// Always insert to the left of the right child.
-	if( keylistindex->mode == KLIM_RIGHT_CHILD )
-	{
-		insertion_index->mode = KLIM_END;
-	}
-	else
-	{
-		insertion_index->index = keylistindex->index;
-		insertion_index->mode = keylistindex->mode;
-	}
-
-	return 0;
 }

@@ -79,21 +79,16 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 
 	page_result = page_create(cursor->tree->pager, &page);
 	if( page_result != PAGER_OK )
-		return BTREE_ERR_UNK;
+		return BTREE_ERR_UNK; // TODO: No-mem
 
 	do
 	{
-		page_result = pager_reselect(&selector, cursor->current_page_id);
-		if( page_result != PAGER_OK )
-		{
-			result = BTREE_ERR_UNK;
-			goto end;
-		}
+		pager_reselect(&selector, cursor->current_page_id);
 
 		page_result = pager_read_page(cursor->tree->pager, &selector, page);
 		if( page_result != PAGER_OK )
 		{
-			result = BTREE_ERR_UNK;
+			result = BTREE_ERR_PAGING;
 			goto end;
 		}
 
@@ -120,7 +115,7 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 			else
 			{
 				btu_read_cell(&node, child_key_index, &cell);
-				unsigned int cell_size = btree_cell_get_size(&cell);
+				u32 cell_size = btree_cell_get_size(&cell);
 				if( cell_size != sizeof(cursor->current_page_id) )
 				{
 					result = BTREE_ERR_CORRUPT_CELL;

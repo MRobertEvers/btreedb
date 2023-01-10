@@ -3,10 +3,19 @@
 
 #include "btint.h"
 #include "btree_defs.h"
+#include "pager_e.h"
 
 /**
- * @brief
+ * @brief Convert page error to btree error.
+ *
+ * @param page_err
+ * @return enum btree_e
+ */
+enum btree_e btpage_err(enum pager_e page_err);
+
+/**
  * @deprecated
+ * @brief
  * @param node
  * @param index
  * @param cell
@@ -90,7 +99,7 @@ int btu_binary_search_keys(
  * @param index
  * @return int
  */
-int btu_init_keylistindex_from_index(
+void btu_init_keylistindex_from_index(
 	struct ChildListIndex* keylistindex,
 	struct BTreeNode const* node,
 	int index);
@@ -104,26 +113,9 @@ int btu_init_keylistindex_from_index(
  * @param index
  * @return int
  */
-int btu_init_insertion_index_from_index(
+void btu_init_insertion_index_from_index(
 	struct InsertionIndex* keylistindex,
 	struct BTreeNode const* node,
 	int index);
-
-void btu_get_insertion_index(
-	struct InsertionIndex* keylistindex,
-	struct BTreeNode const* node,
-	unsigned int key);
-
-/**
- * @brief
- *
- * @param keylistindex
- * @param node
- * @param index
- * @return int
- */
-int btu_get_left_insertion_from_keylistindex(
-	struct InsertionIndex* insertion_index,
-	struct ChildListIndex* keylistindex);
 
 #endif

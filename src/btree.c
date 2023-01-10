@@ -1,6 +1,5 @@
 #include "btree.h"
 
-#include "binary_search.h"
 #include "btree_alg.h"
 #include "btree_cursor.h"
 #include "btree_node.h"

@@ -192,22 +192,18 @@ btree_cell_read_overflow_ex(
 /**
  * See header for details.
  */
-enum btree_e
+void
 btree_cell_init_overflow_writer(
 	struct BufferWriter* writer, void* buffer, u32 buffer_size)
 {
 	buffer_writer_init(writer, buffer, buffer_size, bw_write_lr);
-
-	return BTREE_OK;
 }
 
-enum btree_e
+void
 btree_cell_init_overflow_reader(
 	struct BufferReader* reader, void* buffer, u32 buffer_size)
 {
 	buffer_reader_init(reader, buffer, buffer_size, bw_read_lr);
-
-	return BTREE_OK;
 }
 
 int

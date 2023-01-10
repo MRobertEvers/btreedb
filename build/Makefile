@@ -142,33 +142,6 @@ test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/build
 .PHONY : test/fast
 
-src/binary_search.o: src/binary_search.c.o
-.PHONY : src/binary_search.o
-
-# target to build an object file
-src/binary_search.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.o
-.PHONY : src/binary_search.c.o
-
-src/binary_search.i: src/binary_search.c.i
-.PHONY : src/binary_search.i
-
-# target to preprocess a source file
-src/binary_search.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.i
-.PHONY : src/binary_search.c.i
-
-src/binary_search.s: src/binary_search.c.s
-.PHONY : src/binary_search.s
-
-# target to generate assembly for a file
-src/binary_search.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/binary_search.c.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/binary_search.c.s
-.PHONY : src/binary_search.c.s
-
 src/btree.o: src/btree.c.o
 .PHONY : src/btree.o
 
@@ -776,9 +749,6 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... db"
 	@echo "... test"
-	@echo "... src/binary_search.o"
-	@echo "... src/binary_search.i"
-	@echo "... src/binary_search.s"
 	@echo "... src/btree.o"
 	@echo "... src/btree.i"
 	@echo "... src/btree.s"

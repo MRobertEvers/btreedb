@@ -1,6 +1,7 @@
 #include "btree_overflow.h"
 
 #include "btree_defs.h"
+#include "btree_utils.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@ btree_overflow_read(
 	unsigned int buffer_size,
 	struct BTreeOverflowReadResult* result)
 {
+	enum pager_e page_result = PAGER_OK;
 	struct Page* page = NULL;
 	unsigned int bytes_on_page = 0;
 	unsigned int next_page_id = 0;
@@ -32,7 +34,9 @@ btree_overflow_read(
 
 	struct PageSelector select = {0};
 	pager_reselect(&select, page_id);
-	pager_read_page(pager, &select, page);
+	read_result = btpage_err(pager_read_page(pager, &select, page));
+	if( read_result != BTREE_OK )
+		goto end;
 
 	// dbg_print_buffer(page->page_buffer, page->page_size);
 
@@ -67,8 +71,9 @@ btree_overflow_write(
 	void* data,
 	unsigned int data_size,
 	unsigned int follow_page_id,
-	struct BTreeOverflowWriteResult* result)
+	struct BTreeOverflowWriteResult* out)
 {
+	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
 
 	if( data_size > btree_overflow_max_write_size(pager) )
@@ -87,10 +92,14 @@ btree_overflow_write(
 
 	// dbg_print_buffer(page->page_buffer, page->page_size);
 
-	pager_write_page(pager, page);
-	result->page_id = page->page_id;
+	result = btpage_err(pager_write_page(pager, page));
+	if( result != BTREE_OK )
+		goto end;
 
+	out->page_id = page->page_id;
+
+end:
 	page_destroy(pager, page);
 
-	return BTREE_OK;
+	return result;
 }

@@ -9,7 +9,6 @@ add_executable(db
     src/main.c
     src/pager.c
     src/btree.c
-    src/binary_search.c
     src/pager_ops_cstd.c
     src/page_cache.c
     src/btree_node.c
@@ -35,7 +34,6 @@ add_executable(test
     src/serialization_test.c
     src/pager.c
     src/btree.c
-    src/binary_search.c
     src/pager_ops_cstd.c
     src/page_cache.c
     src/btree_node.c

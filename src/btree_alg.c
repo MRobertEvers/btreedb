@@ -19,7 +19,7 @@ read_key_cell(
 	struct CellData read_cell = {0};
 	unsigned int key = 0;
 	unsigned int cell_size = 0;
-	char* cell_data = NULL;
+	byte* cell_data = NULL;
 
 	key = source_node->keys[index].key;
 	btu_read_cell(source_node, index, &read_cell);
@@ -83,8 +83,8 @@ copy_cell_with_overflow(
 	u32 dest_max_size = btree_node_max_cell_size(other);
 	if( cell_data_size <= dest_max_size )
 	{
-		return btree_node_insert_inline_ex(
-			other, &insert_end, key, &cell, flags);
+		result =
+			btree_node_insert_inline_ex(other, &insert_end, key, &cell, flags);
 	}
 	else
 	{
@@ -142,12 +142,14 @@ copy_cell_with_overflow(
 		}
 
 		struct BTreeOverflowWriteResult write_result = {0};
-		btree_overflow_write(
+		result = btree_overflow_write(
 			pager,
 			overflow_payload,
 			overflow_payload_size,
 			follow_page_id,
 			&write_result);
+		if( result != BTREE_OK )
+			goto end;
 
 		struct BTreeCellOverflow write_cell = {0};
 		write_cell.inline_payload = payload;
@@ -155,8 +157,12 @@ copy_cell_with_overflow(
 		write_cell.overflow_page_id = write_result.page_id;
 		write_cell.total_size = cell.inline_size;
 
-		return btree_node_insert_overflow(other, &insert_end, key, &write_cell);
+		result =
+			btree_node_insert_overflow(other, &insert_end, key, &write_cell);
 	}
+
+end:
+	return result;
 }
 
 struct split_node_t
@@ -226,13 +232,20 @@ bta_split_node_as_parent(
 	struct Page* right_page = NULL;
 
 	page_create(pager, &parent_page);
-	btree_node_create_as_page_number(&parent, node->page_number, parent_page);
+	result = btree_node_create_as_page_number(
+		&parent, node->page_number, parent_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	page_create(pager, &left_page);
-	btree_node_create_from_page(&left, left_page);
+	result = btree_node_create_from_page(&left, left_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	page_create(pager, &right_page);
-	btree_node_create_from_page(&right, right_page);
+	result = btree_node_create_from_page(&right, right_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	struct split_node_t split_result = {0};
 	result = split_node(node, left, right, &split_result);
@@ -241,10 +254,14 @@ bta_split_node_as_parent(
 
 	// We need to write the pages out to get the page ids.
 	left->header->is_leaf = node->header->is_leaf;
-	pager_write_page(pager, left_page);
+	result = btpage_err(pager_write_page(pager, left_page));
+	if( result != BTREE_OK )
+		goto end;
 
 	right->header->is_leaf = node->header->is_leaf;
-	pager_write_page(pager, right_page);
+	result = btpage_err(pager_write_page(pager, right_page));
+	if( result != BTREE_OK )
+		goto end;
 
 	// When splitting a leaf-node,
 	// the right_child pointer becomes the right_page id
@@ -260,15 +277,19 @@ bta_split_node_as_parent(
 	// parent.
 	write_cell.inline_size = sizeof(unsigned int);
 	write_cell.payload = &left_page->page_id;
-	btree_node_insert_inline(
+	result = btree_node_insert_inline(
 		parent, &insert_end, split_result.left_child_high_key, &write_cell);
+	if( result != BTREE_OK )
+		goto end;
 
 	memcpy(
 		btu_get_node_buffer(node),
 		btu_get_node_buffer(parent),
 		btu_get_node_size(parent));
 
-	pager_write_page(pager, node->page);
+	result = btpage_err(pager_write_page(pager, node->page));
+	if( result != BTREE_OK )
+		goto end;
 
 	if( split_page != NULL )
 	{
@@ -278,14 +299,20 @@ bta_split_node_as_parent(
 	}
 
 end:
-	btree_node_destroy(left);
-	page_destroy(pager, left_page);
+	if( left )
+		btree_node_destroy(left);
+	if( left_page )
+		page_destroy(pager, left_page);
 
-	btree_node_destroy(right);
-	page_destroy(pager, right_page);
+	if( right )
+		btree_node_destroy(right);
+	if( right_page )
+		page_destroy(pager, right_page);
 
-	btree_node_destroy(parent);
-	page_destroy(pager, parent_page);
+	if( parent )
+		btree_node_destroy(parent);
+	if( parent_page )
+		page_destroy(pager, parent_page);
 
 	return BTREE_OK;
 }
@@ -298,6 +325,7 @@ bta_split_node(
 	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page)
 {
 	enum btree_e result = BTREE_OK;
+	enum pager_e page_result = PAGER_OK;
 
 	struct BTreeNode* left = NULL;
 	struct BTreeNode* right = NULL;
@@ -309,10 +337,16 @@ bta_split_node(
 	// in parent nodes are already pointing to the high-key of the input
 	// node which becomes the high key of the right child.
 	page_create(pager, &right_page);
-	btree_node_create_as_page_number(&right, node->page_number, right_page);
+
+	result =
+		btree_node_create_as_page_number(&right, node->page_number, right_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	page_create(pager, &left_page);
-	btree_node_create_from_page(&left, left_page);
+	result = btree_node_create_from_page(&left, left_page);
+	if( result != BTREE_OK )
+		goto end;
 
 	struct split_node_t split_result = {0};
 	result = split_node(node, left, right, &split_result);
@@ -322,9 +356,13 @@ bta_split_node(
 	right->header->is_leaf = node->header->is_leaf;
 	left->header->is_leaf = node->header->is_leaf;
 	// We need to write the pages out to get the page ids.
-	pager_write_page(pager, right_page);
+	result = btpage_err(pager_write_page(pager, right_page));
+	if( result != BTREE_OK )
+		goto end;
 	// Write out the input page.
-	pager_write_page(pager, left_page);
+	result = btpage_err(pager_write_page(pager, left_page));
+	if( result != BTREE_OK )
+		goto end;
 
 	memcpy(
 		btu_get_node_buffer(node),
@@ -339,13 +377,17 @@ bta_split_node(
 	}
 
 end:
-	btree_node_destroy(left);
-	page_destroy(pager, left_page);
+	if( left )
+		btree_node_destroy(left);
+	if( left_page )
+		page_destroy(pager, left_page);
 
-	btree_node_destroy(right);
-	page_destroy(pager, right_page);
+	if( right )
+		btree_node_destroy(right);
+	if( right_page )
+		page_destroy(pager, right_page);
 
-	return BTREE_OK;
+	return result;
 }
 
 static u32
@@ -388,7 +430,7 @@ bta_merge_nodes(
 	}
 
 	if( result == BTREE_OK )
-		pager_write_page(pager, stable_node->page);
+		result = btpage_err(pager_write_page(pager, stable_node->page));
 
 	return result;
 }

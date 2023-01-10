@@ -55,11 +55,10 @@ page_create(struct Pager* pager, struct Page** r_page)
 	return PAGER_OK;
 }
 
-enum pager_e
+void
 pager_reselect(struct PageSelector* selector, int page_id)
 {
 	selector->page_id = page_id;
-	return PAGER_OK;
 }
 
 enum pager_e

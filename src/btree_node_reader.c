@@ -43,7 +43,7 @@ btree_node_read(
 		btree_cell_read_inline(
 			cell_buffer, cell_buffer_size, &cell, buffer, buffer_size);
 
-		return BTREE_OK;
+		result = BTREE_OK;
 	}
 	else
 	{
@@ -51,10 +51,7 @@ btree_node_read(
 		struct BufferReader reader = {0};
 		char* next_buffer = (char*)buffer;
 
-		result = btree_cell_init_overflow_reader(
-			&reader, cell_buffer, cell_buffer_size);
-		if( result != BTREE_OK )
-			return result;
+		btree_cell_init_overflow_reader(&reader, cell_buffer, cell_buffer_size);
 
 		result = btree_cell_read_overflow_ex(
 			&reader, &cell, next_buffer, buffer_size);
@@ -71,12 +68,14 @@ btree_node_read(
 		struct BTreeOverflowReadResult overflow_read_result = {0};
 		while( next_page_id != 0 && buffer_size > written_size )
 		{
-			btree_overflow_read(
+			result = btree_overflow_read(
 				pager,
 				next_page_id,
 				next_buffer,
 				buffer_size - written_size,
 				&overflow_read_result);
+			if( result != BTREE_OK )
+				break;
 
 			next_page_id = overflow_read_result.next_page_id;
 			written_size += overflow_read_result.bytes_read;
@@ -84,5 +83,5 @@ btree_node_read(
 		}
 	}
 
-	return BTREE_OK;
+	return result;
 }

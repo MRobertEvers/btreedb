@@ -23,7 +23,7 @@
  *
  * @return int
  */
-u32 btree_cell_inline_size_from_disk_size(u32 heap_size);
+u32 btree_cell_inline_size_from_disk_size(u32 disk_size);
 
 // Attention! If you change this, you must change the size calculation!!!
 struct BTreeCellInline
@@ -141,10 +141,10 @@ enum btree_e btree_cell_read_overflow_ex(
 	void* buffer,
 	u32 buffer_size);
 
-enum btree_e btree_cell_init_overflow_writer(
+void btree_cell_init_overflow_writer(
 	struct BufferWriter* writer, void* buffer, u32 buffer_size);
 
-enum btree_e btree_cell_init_overflow_reader(
+void btree_cell_init_overflow_reader(
 	struct BufferReader* reader, void* buffer, u32 buffer_size);
 
 /**

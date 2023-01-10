@@ -1,6 +1,7 @@
 #ifndef BTREE_CURSOR_H
 #define BTREE_CURSOR_H
 
+#include "btint.h"
 #include "btree_defs.h"
 
 struct Cursor* cursor_create(struct BTree* tree);
@@ -17,10 +18,6 @@ enum btree_e cursor_push(struct Cursor* cursor);
 enum btree_e
 cursor_push_crumb(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 enum btree_e cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
-
-#define CURSOR_MOVE_END -1
-#define CURSOR_MOVE_RIGHT_CHILD -2
-enum btree_e curser_move_index(struct Cursor* cursor, int dest);
 
 enum btree_e cursor_traverse_to(struct Cursor* cursor, int key, char* found);
 
