@@ -41,7 +41,7 @@ struct BTreePageHeader
 
 struct BTreePageKey
 {
-	u32 key;
+	u32 key; // Or left child.
 	u32 cell_offset;
 	u32 flags;
 };

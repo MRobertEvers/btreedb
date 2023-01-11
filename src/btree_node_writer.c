@@ -21,7 +21,27 @@ btree_node_write(
 	void* data,
 	u32 data_size)
 {
-	u32 insertion_index_number;
+	char found;
+	u32 insertion_index_number =
+		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
+
+	struct InsertionIndex insertion_index = {0};
+	btu_init_insertion_index_from_index(
+		&insertion_index, node, insertion_index_number);
+
+	return btree_node_write_ex(
+		node, pager, &insertion_index, key, data, data_size);
+}
+
+enum btree_e
+btree_node_write_ex(
+	struct BTreeNode* node,
+	struct Pager* pager,
+	struct InsertionIndex* insertion_index,
+	u32 key,
+	void* data,
+	u32 data_size)
+{
 	char found;
 	enum btree_e result = BTREE_OK;
 
@@ -34,20 +54,13 @@ btree_node_write(
 	u32 heap_size = btree_node_heap_required_for_insertion(
 		btree_cell_inline_disk_size(data_size));
 
-	insertion_index_number =
-		btu_binary_search_keys(node->keys, node->header->num_keys, key, &found);
-
-	struct InsertionIndex insertion_index = {0};
-	btu_init_insertion_index_from_index(
-		&insertion_index, node, insertion_index_number);
-
 	// TODO: Should this be max_heap_usage?
 	if( heap_size <= max_data_size )
 	{
 		struct BTreeCellInline cell = {0};
 		cell.inline_size = data_size;
 		cell.payload = data;
-		result = btree_node_insert_inline(node, &insertion_index, key, &cell);
+		result = btree_node_insert_inline(node, insertion_index, key, &cell);
 		if( result == BTREE_OK )
 			result = btpage_err(pager_write_page(pager, node->page));
 
@@ -121,7 +134,7 @@ btree_node_write(
 		write_payload.inline_payload = overflow_data;
 
 		result = btree_node_insert_overflow(
-			node, &insertion_index, key, &write_payload);
+			node, insertion_index, key, &write_payload);
 
 		if( result == BTREE_OK )
 			result = btpage_err(pager_write_page(pager, node->page));

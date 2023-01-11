@@ -3,6 +3,27 @@
 
 #include "btint.h"
 #include "btree_defs.h"
+#include "buffer_writer.h"
+
+int ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer);
+
+/**
+ * @brief TODO: cmp_chunk_number is ugly
+ *
+ * @param left
+ * @param left_size
+ * @param right
+ * @param right_size
+ * @param bytes_compared The number of bytes already compared.
+ * @return enum btree_e
+ */
+enum btree_e ibtree_compare(
+	void* left,
+	u32 left_size,
+	void* right,
+	u32 right_size,
+	u32 bytes_compared,
+	u32* out_bytes_compared);
 
 /**
  * @brief

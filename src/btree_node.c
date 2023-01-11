@@ -642,6 +642,7 @@ btree_node_search_keys(
 		}
 	}
 
+	*out_index = left;
 	return BTREE_ERR_KEY_NOT_FOUND;
 
 err:

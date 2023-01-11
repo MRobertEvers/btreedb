@@ -20,6 +20,8 @@
         "btree_overflow.h": "c",
         "btree_node_debug.h": "c",
         "btint.h": "c",
-        "btree_node_writer.h": "c"
+        "btree_node_writer.h": "c",
+        "ibtree_test.h": "c",
+        "pager_ops_cstd.h": "c"
     },
 }

@@ -9,11 +9,13 @@ add_executable(db
     src/main.c
     src/pager.c
     src/btree.c
+    src/ibtree.c
     src/pager_ops_cstd.c
     src/page_cache.c
     src/btree_node.c
     src/btree_utils.c
     src/btree_alg.c
+    src/ibtree_alg.c
     src/btree_cursor.c
     src/btree_node_debug.c
     src/btree_cell.c
@@ -28,17 +30,20 @@ add_executable(test
     src/test.c
     src/pager_test.c
     src/btree_test.c
+    src/ibtree_test.c
     src/btree_utils_test.c
     src/btree_alg_test.c
     src/btree_overflow_test.c
     src/serialization_test.c
     src/pager.c
     src/btree.c
+    src/ibtree.c
     src/pager_ops_cstd.c
     src/page_cache.c
     src/btree_node.c
     src/btree_utils.c
     src/btree_alg.c
+    src/ibtree_alg.c
     src/btree_cursor.c
     src/btree_node_debug.c
     src/btree_cell.c

@@ -535,6 +535,84 @@ src/buffer_writer.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/buffer_writer.c.s
 .PHONY : src/buffer_writer.c.s
 
+src/ibtree.o: src/ibtree.c.o
+.PHONY : src/ibtree.o
+
+# target to build an object file
+src/ibtree.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree.c.o
+.PHONY : src/ibtree.c.o
+
+src/ibtree.i: src/ibtree.c.i
+.PHONY : src/ibtree.i
+
+# target to preprocess a source file
+src/ibtree.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree.c.i
+.PHONY : src/ibtree.c.i
+
+src/ibtree.s: src/ibtree.c.s
+.PHONY : src/ibtree.s
+
+# target to generate assembly for a file
+src/ibtree.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree.c.s
+.PHONY : src/ibtree.c.s
+
+src/ibtree_alg.o: src/ibtree_alg.c.o
+.PHONY : src/ibtree_alg.o
+
+# target to build an object file
+src/ibtree_alg.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_alg.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_alg.c.o
+.PHONY : src/ibtree_alg.c.o
+
+src/ibtree_alg.i: src/ibtree_alg.c.i
+.PHONY : src/ibtree_alg.i
+
+# target to preprocess a source file
+src/ibtree_alg.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_alg.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_alg.c.i
+.PHONY : src/ibtree_alg.c.i
+
+src/ibtree_alg.s: src/ibtree_alg.c.s
+.PHONY : src/ibtree_alg.s
+
+# target to generate assembly for a file
+src/ibtree_alg.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_alg.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_alg.c.s
+.PHONY : src/ibtree_alg.c.s
+
+src/ibtree_test.o: src/ibtree_test.c.o
+.PHONY : src/ibtree_test.o
+
+# target to build an object file
+src/ibtree_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_test.c.o
+.PHONY : src/ibtree_test.c.o
+
+src/ibtree_test.i: src/ibtree_test.c.i
+.PHONY : src/ibtree_test.i
+
+# target to preprocess a source file
+src/ibtree_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_test.c.i
+.PHONY : src/ibtree_test.c.i
+
+src/ibtree_test.s: src/ibtree_test.c.s
+.PHONY : src/ibtree_test.s
+
+# target to generate assembly for a file
+src/ibtree_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_test.c.s
+.PHONY : src/ibtree_test.c.s
+
 src/main.o: src/main.c.o
 .PHONY : src/main.o
 
@@ -794,6 +872,15 @@ help:
 	@echo "... src/buffer_writer.o"
 	@echo "... src/buffer_writer.i"
 	@echo "... src/buffer_writer.s"
+	@echo "... src/ibtree.o"
+	@echo "... src/ibtree.i"
+	@echo "... src/ibtree.s"
+	@echo "... src/ibtree_alg.o"
+	@echo "... src/ibtree_alg.i"
+	@echo "... src/ibtree_alg.s"
+	@echo "... src/ibtree_test.o"
+	@echo "... src/ibtree_test.i"
+	@echo "... src/ibtree_test.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
