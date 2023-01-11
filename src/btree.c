@@ -330,7 +330,9 @@ btree_delete(struct BTree* tree, int key)
 		if( result != BTREE_OK )
 			break;
 
-		pager_write_page(tree->pager, node.page);
+		result = btpage_err(pager_write_page(tree->pager, node.page));
+		if( result != BTREE_OK )
+			break;
 
 		// TODO: Small size threshold.
 		if( node.header->num_keys == 0 )
