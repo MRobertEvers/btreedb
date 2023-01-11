@@ -71,9 +71,17 @@ struct BTreeHeader
 
 /**
  * @brief Return -1 if left is less than right, 1 if right is; 0 if equal.
+ *
+ * If compare needs to be called more than once. The right hand side should be
+ * used as the buffer that gets re-compared.
  */
 typedef int (*btree_compare_fn)(
-	void* left, u32 left_size, void* right, u32 right_size);
+	void* left,
+	u32 left_size,
+	void* right,
+	u32 right_size,
+	u32 right_offset,
+	u32* out_bytes_compared);
 
 struct BTree
 {
