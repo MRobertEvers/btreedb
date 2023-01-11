@@ -36,7 +36,7 @@ btree_overflow_peek(
 
 	// dbg_print_buffer(page->page_buffer, page->page_size);
 
-	char* payload_buffer = (char*)page->page_buffer;
+	byte* payload_buffer = (byte*)page->page_buffer;
 	// TODO: Serialization
 	memcpy(&next_page_id, payload_buffer, sizeof(next_page_id));
 
@@ -112,7 +112,7 @@ btree_overflow_write(
 	if( result != BTREE_OK )
 		goto end;
 
-	char* payload_buffer = (char*)page->page_buffer;
+	byte* payload_buffer = (byte*)page->page_buffer;
 	memcpy(payload_buffer, &follow_page_id, sizeof(follow_page_id));
 	payload_buffer += sizeof(follow_page_id);
 
