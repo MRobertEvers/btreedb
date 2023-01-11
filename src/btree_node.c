@@ -508,8 +508,8 @@ get_cell_payload(
 // Returns 1 if key is less than index
 // 0 if equal
 // -1 if index is less.
-static enum btree_e
-compare_cell(
+enum btree_e
+btree_node_compare_cell(
 	struct BTree* tree,
 	struct BTreeNode* node,
 	u32 index,
@@ -518,20 +518,19 @@ compare_cell(
 	int* out_result)
 {
 	enum btree_e result = BTREE_OK;
-	byte* key_head = (byte*)key;
-	u32 key_read_offset = 0;
+	u32 bytes_compared = 0;
 	u32 cmp_total_size = 0;
 	u32 next_page_id = 0;
 	u32 cmp_size = 0;
+	u32 comparison_bytes_count = 0;
 
 	byte* cmp = NULL;
 	cmp = get_cell_payload(
 		node, index, &cmp_size, &cmp_total_size, &next_page_id);
 
-	*out_result =
-		tree->compare(cmp, cmp_size, key_head, key_size - key_read_offset);
-	key_read_offset += cmp_size;
-	key_head += cmp_size;
+	*out_result = tree->compare(
+		cmp, cmp_size, key, key_size, bytes_compared, &comparison_bytes_count);
+	bytes_compared += comparison_bytes_count;
 
 	if( *out_result != 0 )
 	{
@@ -559,33 +558,38 @@ compare_cell(
 			cmp_size = ov.payload_bytes;
 
 			*out_result = tree->compare(
-				cmp, cmp_size, key_head, key_size - key_read_offset);
+				cmp,
+				cmp_size,
+				key,
+				key_size,
+				bytes_compared,
+				&comparison_bytes_count);
 
-			key_read_offset += cmp_size;
-			key_head += cmp_size;
+			bytes_compared += comparison_bytes_count;
 
 			if( *out_result != 0 )
 				break;
 
-		} while( next_page_id != 0 && key_size > key_read_offset );
+		} while( next_page_id != 0 && bytes_compared < key_size );
 
 		// If they were equal all the way up to the end
 		if( *out_result == 0 )
 		{
-			// Key read all the way through and there is another page.
-			if( key_size <= key_read_offset && next_page_id != 0 )
-			{
-				// Key is less than
-				*out_result = -1;
-			}
 			// There are no more pages and there are key bytes left.
-			else if( key_size > key_read_offset && next_page_id != 0 )
+			if( bytes_compared < key_size )
 			{
-				// Key is greater than
+				// Key is less than because it is longer than cmp.
 				*out_result = 1;
+			}
+			// There are no more key bytes and there are pages left.
+			else if( (next_page_id != 0 || comparison_bytes_count != cmp_size) )
+			{
+				// Key is less than than because it is shorter than cmp
+				*out_result = -1;
 			}
 			else
 			{
+				// Keys are same length;
 				*out_result = 0;
 			}
 		}
@@ -618,7 +622,8 @@ btree_node_search_keys(
 	{
 		mid = (right - left) / 2 + left;
 
-		result = compare_cell(tree, node, mid, key, key_size, &compare_result);
+		result = btree_node_compare_cell(
+			tree, node, mid, key, key_size, &compare_result);
 		if( result != BTREE_OK )
 			goto err;
 

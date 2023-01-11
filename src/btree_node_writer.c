@@ -49,7 +49,7 @@ btree_node_write(
 		cell.payload = data;
 		result = btree_node_insert_inline(node, &insertion_index, key, &cell);
 		if( result == BTREE_OK )
-			pager_write_page(pager, node->page);
+			result = btpage_err(pager_write_page(pager, node->page));
 
 		return result;
 	}
@@ -124,7 +124,7 @@ btree_node_write(
 			node, &insertion_index, key, &write_payload);
 
 		if( result == BTREE_OK )
-			pager_write_page(pager, node->page);
+			result = btpage_err(pager_write_page(pager, node->page));
 
 		return result;
 	}
