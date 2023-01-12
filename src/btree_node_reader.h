@@ -21,4 +21,12 @@ enum btree_e btree_node_read(
 	void* buffer,
 	u32 buffer_size);
 
+enum btree_e btree_node_read_ex(
+	struct BTree* tree,
+	struct BTreeNode* node,
+	struct Pager* pager,
+	void* key,
+	u32 key_size,
+	void* buffer,
+	u32 buffer_size);
 #endif

@@ -145,7 +145,9 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	struct BTreeNode node = {0};
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
-	page_create(tree->pager, &page);
+	result = btpage_err(page_create(tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
@@ -162,7 +164,9 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		btree_node_init_from_page(&node, page);
+		result = btree_node_init_from_page(&node, page);
+		if( result != BTREE_OK )
+			goto end;
 
 		result = btree_node_write(&node, tree->pager, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )

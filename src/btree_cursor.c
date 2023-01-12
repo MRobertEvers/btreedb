@@ -162,6 +162,11 @@ cursor_traverse_to_ex(
 
 		result = btree_node_search_keys(
 			cursor->tree, &node, key, key_size, &child_key_index);
+		if( result == BTREE_ERR_KEY_NOT_FOUND )
+			result = BTREE_OK;
+
+		if( result != BTREE_OK )
+			goto end;
 
 		btu_init_keylistindex_from_index(
 			&cursor->current_key_index, &node, child_key_index);

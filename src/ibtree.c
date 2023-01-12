@@ -23,6 +23,18 @@ ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer)
 {}
 
 enum btree_e
+ibtree_init(
+	struct BTree* tree,
+	struct Pager* pager,
+	u32 root_page_id,
+	btree_compare_fn compare)
+{
+	enum btree_e result = btree_init(tree, pager, root_page_id);
+	tree->compare = compare;
+	return result;
+}
+
+int
 ibtree_compare(
 	void* left,
 	u32 left_size,
@@ -69,6 +81,30 @@ from_cli(struct ChildListIndex* cli)
 	return result;
 }
 
+/**
+ * @brief
+ *
+ * @param index
+ * @param node
+ * @return int 1 for right, -1 for left
+ */
+int
+left_or_right_insertion(struct InsertionIndex* index, struct BTreeNode* node)
+{
+	if( index->mode != KLIM_INDEX )
+		return 1;
+
+	u32 first_half = (node->header->num_keys + 1) / 2;
+	if( index->index < first_half )
+	{
+		return -1;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
 enum btree_e
 ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 {
@@ -98,7 +134,9 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		btree_node_init_from_page(&node, page);
+		result = btree_node_init_from_page(&node, page);
+		if( result != BTREE_OK )
+			goto end;
 
 		struct InsertionIndex index = from_cli(&cursor->current_key_index);
 
@@ -106,35 +144,37 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 			&node, tree->pager, &index, 0, payload, payload_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
-			// // We want to keep the root node as the first page.
-			// // So if the first page is to be split, then split
-			// // the data in this page between two children nodes.
-			// // This node becomes the new parent of those nodes.
-			// if( node.page->page_id == 1 )
-			// {
-			// 	struct SplitPageAsParent split_result;
-			// 	ibta_split_node_as_parent(&node, tree->pager, &split_result);
+			if( node.page->page_id == 1 )
+			{
+				int child_insertion = left_or_right_insertion(&index, &node);
 
-			// 	// TODO: Key compare function.
-			// 	if( key <= split_result.left_child_high_key )
-			// 	{
-			// 		pager_reselect(&selector, split_result.left_child_page_id);
-			// 	}
-			// 	else
-			// 	{
-			// 		pager_reselect(&selector, split_result.right_child_page_id);
-			// 	}
+				struct SplitPageAsParent split_result;
+				result = ibta_split_node_as_parent(
+					&node, tree->pager, &split_result);
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	pager_read_page(tree->pager, &selector, page);
-			// 	btree_node_init_from_page(&node, page);
+				pager_reselect(
+					&selector,
+					child_insertion == -1 ? split_result.left_child_page_id
+										  : split_result.right_child_page_id);
 
-			// 	result =
-			// 		btree_node_write(&node, tree->pager, key, data, data_size);
-			// 	if( result != BTREE_OK )
-			// 		goto end;
+				result =
+					btpage_err(pager_read_page(tree->pager, &selector, page));
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	goto end;
-			// }
+				result = btree_node_init_from_page(&node, page);
+				if( result != BTREE_OK )
+					goto end;
+
+				result = btree_node_write(
+					&node, tree->pager, 0, payload, payload_size);
+				if( result != BTREE_OK )
+					goto end;
+
+				goto end;
+			}
 			// else
 			// {
 			// 	struct SplitPage split_result;

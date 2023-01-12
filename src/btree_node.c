@@ -556,6 +556,7 @@ btree_node_compare_cell(
 				goto end_overflow;
 
 			cmp_size = ov.payload_bytes;
+			next_page_id = ov.next_page_id;
 
 			*out_result = tree->compare(
 				cmp,

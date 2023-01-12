@@ -8,6 +8,20 @@
 int ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer);
 
 /**
+ * @brief
+ *
+ * @param tree
+ * @param pager
+ * @param root_page_id
+ * @return enum btree_e
+ */
+enum btree_e ibtree_init(
+	struct BTree* tree,
+	struct Pager* pager,
+	u32 root_page_id,
+	btree_compare_fn compare);
+
+/**
  * @brief TODO: cmp_chunk_number is ugly
  *
  * @param left
@@ -17,7 +31,7 @@ int ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer);
  * @param bytes_compared The number of bytes already compared.
  * @return enum btree_e
  */
-enum btree_e ibtree_compare(
+int ibtree_compare(
 	void* left,
 	u32 left_size,
 	void* right,

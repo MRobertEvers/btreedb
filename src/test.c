@@ -50,7 +50,8 @@ main()
 	// result = btree_test_delete_merge_root();
 	// printf("delete merge root: %d\n", result);
 
-	ibtree_test_insert_shallow();
+	result = ibtree_test_insert_shallow();
+	printf("ibtree insert shallow: %d\n", result);
 
 	return 0;
 }
