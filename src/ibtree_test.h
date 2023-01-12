@@ -2,5 +2,6 @@
 #define IBTREE_TEST_H_
 
 int ibtree_test_insert_shallow(void);
+int ibtree_test_insert_split_root(void);
 
 #endif

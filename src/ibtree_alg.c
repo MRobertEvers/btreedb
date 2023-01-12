@@ -45,7 +45,7 @@ copy_cell(
 	if( cell.inline_size <= dest_max_size )
 	{
 		key = source_node->keys[index].key;
-		flags = source_node->keys[index].key;
+		flags = source_node->keys[index].flags;
 
 		return btree_node_insert_inline_ex(
 			other, &insert_end, key, &cell, flags);
@@ -71,7 +71,7 @@ copy_cell_with_overflow(
 	u32 cell_size = 0;
 	u32 flags = 0;
 
-	flags = source_node->keys[index].key;
+	flags = source_node->keys[index].flags;
 
 	char* cell_data = btu_get_cell_buffer(source_node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);

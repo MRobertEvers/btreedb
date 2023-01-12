@@ -3,6 +3,7 @@
 #include "btree.h"
 #include "btree_cursor.h"
 #include "btree_node.h"
+#include "btree_node_debug.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "ibtree_alg.h"
@@ -146,6 +147,7 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 		{
 			if( node.page->page_id == 1 )
 			{
+				u32 first_half = (node.header->num_keys + 1) / 2;
 				int child_insertion = left_or_right_insertion(&index, &node);
 
 				struct SplitPageAsParent split_result;
@@ -168,8 +170,11 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 				if( result != BTREE_OK )
 					goto end;
 
-				result = btree_node_write(
-					&node, tree->pager, 0, payload, payload_size);
+				if( child_insertion == 1 )
+					index.index -= first_half;
+
+				result = btree_node_write_ex(
+					&node, tree->pager, &index, 0, payload, payload_size);
 				if( result != BTREE_OK )
 					goto end;
 

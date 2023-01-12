@@ -162,6 +162,9 @@ cursor_traverse_to_ex(
 
 		result = btree_node_search_keys(
 			cursor->tree, &node, key, key_size, &child_key_index);
+		if( result == BTREE_OK )
+			*found = 1;
+
 		if( result == BTREE_ERR_KEY_NOT_FOUND )
 			result = BTREE_OK;
 

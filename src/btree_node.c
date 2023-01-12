@@ -539,7 +539,7 @@ btree_node_compare_cell(
 	else
 	{
 		if( next_page_id == 0 )
-			return 0;
+			return BTREE_OK;
 		// We have to go to overflow pages to find out.
 		struct Page* page = NULL;
 		struct BTreeOverflowReadResult ov = {0};
@@ -599,7 +599,7 @@ btree_node_compare_cell(
 		if( page )
 			page_destroy(tree->pager, page);
 	}
-
+done:
 	return result;
 }
 
