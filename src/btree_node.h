@@ -109,6 +109,19 @@ enum btree_e btree_node_insert_overflow(
 	u32 key,
 	struct BTreeCellOverflow* cell);
 
+enum btree_e btree_node_move(
+	struct BTreeNode* source_node,
+	struct BTreeNode* other,
+	u32 index,
+	struct Pager* pager);
+
+enum btree_e btree_node_move_ex(
+	struct BTreeNode* source_node,
+	struct BTreeNode* other,
+	u32 index,
+	u32 new_key,
+	struct Pager* pager);
+
 /**
  * @brief Removes data from a node.
  *

@@ -40,10 +40,11 @@ struct SplitPage
 /**
  * @brief Split node algorithm
  *
- * Create a right child node. Move the upper half the data to the right child,
- * then keep the lower half in the left child.
- * Input node becomes right child.
- * Input node and left child are both written to disk.
+ * Split Page->left_child_high_key becomes the index of the key that was not
+ * included from the parent. (The index as it was in the parent node.)
+ *
+ * If the input node has more than 1 key, the holding_node will contain one
+ * key
  *
  * @param tree
  * @param node
@@ -52,7 +53,10 @@ struct SplitPage
  * @return enum btree_e
  */
 enum btree_e ibta_split_node(
-	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page);
+	struct BTreeNode* node,
+	struct Pager* pager,
+	struct BTreeNode* holding_node,
+	struct SplitPage* split_page);
 
 struct MergedPage
 {};

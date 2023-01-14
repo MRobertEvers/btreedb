@@ -1,5 +1,6 @@
 #include "btree_node_writer.h"
 
+#include "btree_cell.h"
 #include "btree_node.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
@@ -32,6 +33,17 @@ btree_node_write(
 	return btree_node_write_ex(
 		node, pager, &insertion_index, key, data, data_size);
 }
+
+// enum btree_e
+// node_write_unknown(
+// 	struct BTreeNode* node,
+// 	struct Pager* pager,
+// 	struct InsertionIndex* insertion_index,
+// 	cell_type_e cell_type,
+// 	u32 key,
+// 	void* data,
+// 	u32 data_size)
+// {}
 
 enum btree_e
 btree_node_write_ex(

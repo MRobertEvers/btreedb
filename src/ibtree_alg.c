@@ -10,160 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void
-read_key_cell(
-	struct BTreeNode* source_node, unsigned int* buffer, unsigned int index)
-{
-	// TODO: Buffer size check
-	struct CellData read_cell = {0};
-	unsigned int key = 0;
-	unsigned int cell_size = 0;
-	byte* cell_data = NULL;
-
-	key = source_node->keys[index].key;
-	btu_read_cell(source_node, index, &read_cell);
-
-	ser_read_32bit_le(buffer, read_cell.pointer);
-}
-
-static enum btree_e
-copy_cell(
-	struct BTreeNode* source_node, struct BTreeNode* other, unsigned int index)
-{
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
-	struct CellData read_cell = {0};
-	u32 key = 0;
-	u32 cell_size = 0;
-	u32 flags = 0;
-	char* cell_data = btu_get_cell_buffer(source_node, index);
-	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
-
-	struct BTreeCellInline cell = {0};
-	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
-
-	u32 dest_max_size = btree_node_max_cell_size(other);
-	if( cell.inline_size <= dest_max_size )
-	{
-		key = source_node->keys[index].key;
-		flags = source_node->keys[index].flags;
-
-		return btree_node_insert_inline_ex(
-			other, &insert_end, key, &cell, flags);
-	}
-	else
-	{
-		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-	}
-}
-
-static enum btree_e
-copy_cell_with_overflow(
-	struct BTreeNode* source_node,
-	struct BTreeNode* other,
-	unsigned int index,
-	u32 new_key,
-	struct Pager* pager)
-{
-	enum btree_e result = BTREE_OK;
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
-
-	u32 key = new_key;
-	u32 cell_size = 0;
-	u32 flags = 0;
-
-	flags = source_node->keys[index].flags;
-
-	char* cell_data = btu_get_cell_buffer(source_node, index);
-	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
-
-	struct BTreeCellInline cell = {0};
-	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
-
-	u32 dest_max_size = btree_node_max_cell_size(other);
-	if( cell_data_size <= dest_max_size )
-	{
-		result =
-			btree_node_insert_inline_ex(other, &insert_end, key, &cell, flags);
-	}
-	else
-	{
-		// Assumes that a btree can only be created that
-		// restricts the min cell size to be greater than
-		// the size required to fit an overflow cell.
-		u32 is_overflow =
-			btree_pkey_is_cell_type(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
-		// u32 source_max_size = btree_node_max_cell_size(source_node);
-		// u32 cell_heap_size =
-		// 	is_overflow ? btree_cell_overflow_disk_size(
-		// 					  btree_cell_overflow_calc_inline_payload_size(
-		// 						  cell.inline_size))
-		// 				: cell.inline_size;
-		// u32 new_heap_required =
-		// 	btree_node_heap_required_for_insertion(cell_heap_size);
-		u32 follow_page_id = 0;
-		u32 bytes_overflown =
-			btree_node_heap_required_for_insertion(cell_data_size) -
-			dest_max_size;
-
-		char* overflow_payload = NULL;
-		char* payload = NULL;
-		u32 overflow_payload_size = 0;
-		u32 inline_size = 0;
-
-		if( is_overflow )
-		{
-			// Overflow page -> Overflow page.
-			struct BTreeCellOverflow read_cell = {0};
-			struct BufferReader reader = {0};
-			btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
-
-			btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
-			u32 previous_inline_payload_size =
-				btree_cell_overflow_calc_inline_payload_size(cell.inline_size);
-			inline_size = cell.inline_size - bytes_overflown;
-			payload = (char*)read_cell.inline_payload;
-			u32 new_inline_payload_size =
-				btree_cell_overflow_calc_inline_payload_size(inline_size);
-			overflow_payload = payload + new_inline_payload_size;
-			overflow_payload_size =
-				previous_inline_payload_size - new_inline_payload_size;
-			follow_page_id = read_cell.overflow_page_id;
-		}
-		else
-		{
-			inline_size = cell.inline_size - bytes_overflown;
-			payload = cell.payload;
-			u32 new_inline_payload_size =
-				btree_cell_overflow_calc_inline_payload_size(inline_size);
-			overflow_payload = cell.payload + new_inline_payload_size;
-			overflow_payload_size = cell.inline_size - new_inline_payload_size;
-			follow_page_id = 0;
-		}
-
-		struct BTreeOverflowWriteResult write_result = {0};
-		result = btree_overflow_write(
-			pager,
-			overflow_payload,
-			overflow_payload_size,
-			follow_page_id,
-			&write_result);
-		if( result != BTREE_OK )
-			goto end;
-
-		struct BTreeCellOverflow write_cell = {0};
-		write_cell.inline_payload = payload;
-		write_cell.inline_size = inline_size;
-		write_cell.overflow_page_id = write_result.page_id;
-		write_cell.total_size = cell.inline_size;
-
-		result =
-			btree_node_insert_overflow(other, &insert_end, key, &write_cell);
-	}
-
-end:
-	return result;
-}
-
 struct split_node_t
 {
 	unsigned int left_child_index;
@@ -172,8 +18,10 @@ struct split_node_t
 static enum btree_e
 split_node(
 	struct BTreeNode* source_node,
+	struct Pager* pager,
 	struct BTreeNode* left,
 	struct BTreeNode* right,
+	struct BTreeNode* holding_node,
 	struct split_node_t* split_result)
 {
 	split_result->left_child_index = 0;
@@ -186,15 +34,19 @@ split_node(
 
 	for( int i = 0; i < first_half - 1; i++ )
 	{
-		copy_cell(source_node, left, i);
+		btree_node_move(source_node, left, i, pager);
 	}
 
 	// The last child on the left node is not included in ibtrees split. That
 	// must go to the parent.
+	if( holding_node && (first_half > 0) )
+	{
+		btree_node_move(source_node, holding_node, first_half - 1, pager);
+	}
 
 	for( int i = first_half; i < source_node->header->num_keys; i++ )
 	{
-		copy_cell(source_node, right, i);
+		btree_node_move(source_node, right, i, pager);
 	}
 
 	// Non-leaf nodes also have to move right child too.
@@ -225,24 +77,33 @@ ibta_split_node_as_parent(
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
-	page_create(pager, &parent_page);
+	result = btpage_err(page_create(pager, &parent_page));
+	if( result != BTREE_OK )
+		goto end;
+
 	result = btree_node_create_as_page_number(
 		&parent, node->page_number, parent_page);
 	if( result != BTREE_OK )
 		goto end;
 
-	page_create(pager, &left_page);
+	result = btpage_err(page_create(pager, &left_page));
+	if( result != BTREE_OK )
+		goto end;
+
 	result = btree_node_create_from_page(&left, left_page);
 	if( result != BTREE_OK )
 		goto end;
 
-	page_create(pager, &right_page);
+	result = btpage_err(page_create(pager, &right_page));
+	if( result != BTREE_OK )
+		goto end;
+
 	result = btree_node_create_from_page(&right, right_page);
 	if( result != BTREE_OK )
 		goto end;
 
 	struct split_node_t split_result = {0};
-	result = split_node(node, left, right, &split_result);
+	result = split_node(node, pager, left, right, NULL, &split_result);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -257,8 +118,10 @@ ibta_split_node_as_parent(
 	if( result != BTREE_OK )
 		goto end;
 
-	copy_cell_with_overflow(
+	result = btree_node_move_ex(
 		node, parent, split_result.left_child_index, left_page->page_id, pager);
+	if( result != BTREE_OK )
+		goto end;
 
 	// When splitting a leaf-node,
 	// the right_child pointer becomes the right_page id
@@ -309,7 +172,10 @@ end:
  */
 enum btree_e
 ibta_split_node(
-	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page)
+	struct BTreeNode* node,
+	struct Pager* pager,
+	struct BTreeNode* holding_node,
+	struct SplitPage* split_page)
 {
 	enum btree_e result = BTREE_OK;
 	enum pager_e page_result = PAGER_OK;
@@ -336,7 +202,7 @@ ibta_split_node(
 		goto end;
 
 	struct split_node_t split_result = {0};
-	result = split_node(node, left, right, &split_result);
+	result = split_node(node, pager, left, right, holding_node, &split_result);
 	if( result != BTREE_OK )
 		goto end;
 

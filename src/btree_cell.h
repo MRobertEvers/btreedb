@@ -5,6 +5,13 @@
 #include "btree_defs.h"
 #include "buffer_writer.h"
 
+enum cell_type_e
+{
+	CELL_TYPE_UNKNOWN,
+	CELL_TYPE_INLINE,
+	CELL_TYPE_OVERFLOW
+};
+
 /**
  * Attention!!! Terminology!
  *

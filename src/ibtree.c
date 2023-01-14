@@ -113,12 +113,28 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 
 	enum btree_e result = BTREE_OK;
 	char found = 0;
+	int page_index_as_key =
+		0; // This is only not zero when there is a page split.
 	struct Page* page = NULL;
+	struct Page* holding_page = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
+	struct BTreeNode holding_node = {0};
 	struct CursorBreadcrumb crumb = {0};
+	enum cell_type_e cell_type = CELL_TYPE_UNKNOWN;
 	struct Cursor* cursor = cursor_create(tree);
-	page_create(tree->pager, &page);
+	// Holding page and node is required to move cells up the tree.
+	result = btpage_err(page_create(tree->pager, &holding_page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_page(&holding_node, holding_page);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
 
 	result = cursor_traverse_to_ex(cursor, payload, payload_size, &found);
 	if( result != BTREE_OK )
@@ -142,11 +158,17 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 		struct InsertionIndex index = from_cli(&cursor->current_key_index);
 
 		result = btree_node_write_ex(
-			&node, tree->pager, &index, 0, payload, payload_size);
+			&node,
+			tree->pager,
+			&index,
+			page_index_as_key,
+			payload,
+			payload_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			if( node.page->page_id == 1 )
 			{
+				// TODO: This first half thing is shaky.
 				u32 first_half = (node.header->num_keys + 1) / 2;
 				int child_insertion = left_or_right_insertion(&index, &node);
 
@@ -180,55 +202,45 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 
 				goto end;
 			}
-			// else
-			// {
-			// 	struct SplitPage split_result;
-			// 	bta_split_node(&node, tree->pager, &split_result);
+			else
+			{
+				u32 first_half = (node.header->num_keys + 1) / 2;
+				int child_insertion = left_or_right_insertion(&index, &node);
 
-			// 	// TODO: Key compare function.
-			// 	if( key <= split_result.left_page_high_key )
-			// 	{
-			// 		pager_reselect(&selector, split_result.left_page_id);
-			// 		pager_read_page(tree->pager, &selector, page);
-			// 		btree_node_init_from_page(&node, page);
-			// 	}
+				struct SplitPage split_result;
+				result = ibta_split_node(
+					&node, tree->pager, &holding_node, &split_result);
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	result =
-			// 		btree_node_write(&node, tree->pager, key, data, data_size);
-			// 	if( result != BTREE_OK )
-			// 		goto end;
+				// TODO: Key compare function.
+				if( child_insertion == -1 )
+				{
+					pager_reselect(&selector, split_result.left_page_id);
+					pager_read_page(tree->pager, &selector, page);
+					btree_node_init_from_page(&node, page);
+				}
 
-			// 	// Move the cursor one to the left so we can insert there.
-			// 	result = cursor_pop(cursor, &crumb);
-			// 	if( result != BTREE_OK )
-			// 		goto end;
+				// Write the input payload to the correct child.
+				result = btree_node_write_ex(
+					&node, tree->pager, &index, 0, payload, payload_size);
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	// TODO: Better way to do this?
-			// 	// Basically we have to insert the left child to the left of the
-			// 	// node that was split.
-			// 	//
-			// 	// It is expected that the index of a key with KLIM_RIGHT_CHILD
-			// 	// is the num keys on that page.
-			// 	// cursor->current_key_index.index;
+				// Now we need to write the holding key.
+				result = cursor_pop(cursor, &crumb);
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	cursor->current_key_index.mode = KLIM_INDEX;
-			// 	result = cursor_push(cursor);
-			// 	if( result != BTREE_OK )
-			// 		goto end;
+				cursor->current_key_index.mode = KLIM_INDEX;
+				result = cursor_push(cursor);
+				if( result != BTREE_OK )
+					goto end;
 
-			// 	// Args for next iteration
-			// 	// Insert the new child's page number into the parent.
-			// 	// The parent pointer is already the key of the highest
-			// 	// key in the right page, so that can stay the same.
-			// 	// Insert the highest key of the left page.
-			// 	//    K5              K<5   K5
-			// 	//     |   ---->      |     |
-			// 	//    K5              K<5   K5
-			// 	//
-			// 	key = split_result.left_page_high_key;
-			// 	data = (void*)&split_result.left_page_id;
-			// 	data_size = sizeof(split_result.left_page_id);
-			// }
+				page_index_as_key = split_result.left_page_id;
+				payload = (void*)&split_result.left_page_id;
+				payload_size = sizeof(split_result.left_page_id);
+			}
 		}
 		else
 		{
@@ -237,7 +249,11 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 	}
 
 end:
-	cursor_destroy(cursor);
-	page_destroy(tree->pager, page);
+	if( cursor )
+		cursor_destroy(cursor);
+	if( page )
+		page_destroy(tree->pager, page);
+	if( holding_page )
+		page_destroy(tree->pager, holding_page);
 	return BTREE_OK;
 }
