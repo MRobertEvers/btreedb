@@ -122,6 +122,14 @@ enum btree_e btree_node_move_ex(
 	u32 new_key,
 	struct Pager* pager);
 
+enum btree_e btree_node_move_from_data(
+	struct BTreeNode* dest_node,
+	u32 new_key,
+	u32 flags,
+	byte* cell_buffer,
+	u32 cell_buffer_size,
+	struct Pager* pager);
+
 /**
  * @brief Removes data from a node.
  *

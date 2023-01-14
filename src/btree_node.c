@@ -320,10 +320,6 @@ btree_node_move_ex(
 	u32 new_key,
 	struct Pager* pager)
 {
-	enum btree_e result = BTREE_OK;
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
-
-	u32 key = new_key;
 	u32 cell_size = 0;
 	u32 flags = 0;
 
@@ -332,14 +328,29 @@ btree_node_move_ex(
 	char* cell_data = btu_get_cell_buffer(source_node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
 
-	struct BTreeCellInline cell = {0};
-	btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
+	return btree_node_move_from_data(
+		other, new_key, flags, cell_data, cell_data_size, pager);
+}
 
-	u32 dest_max_size = btree_node_max_cell_size(other);
-	if( cell_data_size <= dest_max_size )
+enum btree_e
+btree_node_move_from_data(
+	struct BTreeNode* dest_node,
+	u32 key,
+	u32 flags,
+	byte* cell_buffer,
+	u32 cell_buffer_size,
+	struct Pager* pager)
+{
+	enum btree_e result = BTREE_OK;
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
+	struct BTreeCellInline cell = {0};
+	btree_cell_read_inline(cell_buffer, cell_buffer_size, &cell, NULL, 0);
+
+	u32 dest_max_size = btree_node_max_cell_size(dest_node);
+	if( cell_buffer_size <= dest_max_size )
 	{
-		result =
-			btree_node_insert_inline_ex(other, &insert_end, key, &cell, flags);
+		result = btree_node_insert_inline_ex(
+			dest_node, &insert_end, key, &cell, flags);
 	}
 	else
 	{
@@ -348,17 +359,10 @@ btree_node_move_ex(
 		// the size required to fit an overflow cell.
 		u32 is_overflow =
 			btree_pkey_is_cell_type(flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
-		// u32 source_max_size = btree_node_max_cell_size(source_node);
-		// u32 cell_heap_size =
-		// 	is_overflow ? btree_cell_overflow_disk_size(
-		// 					  btree_cell_overflow_calc_inline_payload_size(
-		// 						  cell.inline_size))
-		// 				: cell.inline_size;
-		// u32 new_heap_required =
-		// 	btree_node_heap_required_for_insertion(cell_heap_size);
+
 		u32 follow_page_id = 0;
 		u32 bytes_overflown =
-			btree_node_heap_required_for_insertion(cell_data_size) -
+			btree_node_heap_required_for_insertion(cell_buffer_size) -
 			dest_max_size;
 
 		char* overflow_payload = NULL;
@@ -371,7 +375,8 @@ btree_node_move_ex(
 			// Overflow page -> Overflow page.
 			struct BTreeCellOverflow read_cell = {0};
 			struct BufferReader reader = {0};
-			btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
+			btree_cell_init_overflow_reader(
+				&reader, cell_buffer, cell_buffer_size);
 
 			btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
 			u32 previous_inline_payload_size =
@@ -412,8 +417,8 @@ btree_node_move_ex(
 		write_cell.overflow_page_id = write_result.page_id;
 		write_cell.total_size = cell.inline_size;
 
-		result =
-			btree_node_insert_overflow(other, &insert_end, key, &write_cell);
+		result = btree_node_insert_overflow(
+			dest_node, &insert_end, key, &write_cell);
 	}
 
 end:

@@ -22,6 +22,12 @@ enum btree_e btree_node_write(
 	void* data,
 	u32 data_size);
 
+enum writer_ex_mode_e
+{
+	WRITER_EX_MODE_RAW,
+	WRITER_EX_MODE_CELL_MOVE,
+};
+
 /**
  * @brief Writes data to a node. Use overflow page if needed.
  *

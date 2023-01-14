@@ -57,6 +57,15 @@ btree_node_write_ex(
 	char found;
 	enum btree_e result = BTREE_OK;
 
+	// if( mode == WRITER_EX_MODE_CELL_MOVE )
+	// {
+	// 	// TODO: Could probably implement all inserts in terms of,
+	// 	// 1. Write payload to empty page,
+	// 	// 2. Move cell.
+
+	// 	return btree_node_move()
+	// }
+
 	// This is max size including key!
 	// I.e. key+payload_size must fit within this.
 	u32 max_data_size = btree_node_max_cell_size(node);
