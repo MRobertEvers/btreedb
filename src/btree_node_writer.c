@@ -31,7 +31,14 @@ btree_node_write(
 		&insertion_index, node, insertion_index_number);
 
 	return btree_node_write_ex(
-		node, pager, &insertion_index, key, data, data_size);
+		node,
+		pager,
+		&insertion_index,
+		key,
+		0,
+		data,
+		data_size,
+		WRITER_EX_MODE_RAW);
 }
 
 // enum btree_e
@@ -51,20 +58,23 @@ btree_node_write_ex(
 	struct Pager* pager,
 	struct InsertionIndex* insertion_index,
 	u32 key,
+	u32 flags,
 	void* data,
-	u32 data_size)
+	u32 data_size,
+	enum writer_ex_mode_e mode)
 {
 	char found;
 	enum btree_e result = BTREE_OK;
 
-	// if( mode == WRITER_EX_MODE_CELL_MOVE )
-	// {
-	// 	// TODO: Could probably implement all inserts in terms of,
-	// 	// 1. Write payload to empty page,
-	// 	// 2. Move cell.
+	if( mode == WRITER_EX_MODE_CELL_MOVE )
+	{
+		// TODO: Could probably implement all inserts in terms of,
+		// 1. Write payload to empty page,
+		// 2. Move cell.
 
-	// 	return btree_node_move()
-	// }
+		return btree_node_move_from_data(
+			node, key, flags, data, data_size, pager);
+	}
 
 	// This is max size including key!
 	// I.e. key+payload_size must fit within this.

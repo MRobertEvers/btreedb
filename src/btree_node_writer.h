@@ -31,6 +31,8 @@ enum writer_ex_mode_e
 /**
  * @brief Writes data to a node. Use overflow page if needed.
  *
+ * Flags arg is ignored in RAW mode.
+ *
  * @param tree
  * @param node
  * @param key
@@ -43,7 +45,9 @@ enum btree_e btree_node_write_ex(
 	struct Pager* pager,
 	struct InsertionIndex* insertion_index,
 	u32 key,
+	u32 flags,
 	void* data,
-	u32 data_size);
+	u32 data_size,
+	enum writer_ex_mode_e mode);
 
 #endif

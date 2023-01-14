@@ -116,19 +116,34 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 	int page_index_as_key =
 		0; // This is only not zero when there is a page split.
 	struct Page* page = NULL;
-	struct Page* holding_page = NULL;
+	struct Page* holding_page_one = NULL;
+	struct Page* holding_page_two = NULL;
 	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
-	struct BTreeNode holding_node = {0};
+	struct BTreeNode holding_node_one = {0};
+	struct BTreeNode holding_node_two = {0};
+
+	struct BTreeNode* next_holding_node = &holding_node_one;
+
 	struct CursorBreadcrumb crumb = {0};
-	enum cell_type_e cell_type = CELL_TYPE_UNKNOWN;
+	u32 flags = 0; // Only used when writing to parent.
+	enum writer_ex_mode_e writer_mode = WRITER_EX_MODE_RAW;
+
 	struct Cursor* cursor = cursor_create(tree);
 	// Holding page and node is required to move cells up the tree.
-	result = btpage_err(page_create(tree->pager, &holding_page));
+	result = btpage_err(page_create(tree->pager, &holding_page_one));
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_page(&holding_node, holding_page);
+	result = btree_node_init_from_page(&holding_node_one, holding_page_one);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(tree->pager, &holding_page_two));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_page(&holding_node_two, holding_page_two);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -162,8 +177,10 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 			tree->pager,
 			&index,
 			page_index_as_key,
+			flags, // Nonzero only on split.
 			payload,
-			payload_size);
+			payload_size,
+			writer_mode);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			if( node.page->page_id == 1 )
@@ -196,7 +213,14 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 					index.index -= first_half;
 
 				result = btree_node_write_ex(
-					&node, tree->pager, &index, 0, payload, payload_size);
+					&node,
+					tree->pager,
+					&index,
+					page_index_as_key,
+					flags,
+					payload,
+					payload_size,
+					writer_mode);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -209,7 +233,7 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 
 				struct SplitPage split_result;
 				result = ibta_split_node(
-					&node, tree->pager, &holding_node, &split_result);
+					&node, tree->pager, next_holding_node, &split_result);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -223,7 +247,14 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 
 				// Write the input payload to the correct child.
 				result = btree_node_write_ex(
-					&node, tree->pager, &index, 0, payload, payload_size);
+					&node,
+					tree->pager,
+					&index,
+					page_index_as_key,
+					flags,
+					payload,
+					payload_size,
+					writer_mode);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -237,9 +268,15 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 				if( result != BTREE_OK )
 					goto end;
 
+				writer_mode = WRITER_EX_MODE_CELL_MOVE;
+				flags = next_holding_node->keys[0].flags;
 				page_index_as_key = split_result.left_page_id;
-				payload = (void*)&split_result.left_page_id;
-				payload_size = sizeof(split_result.left_page_id);
+				payload = btu_get_cell_buffer(next_holding_node, 0);
+				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
+
+				next_holding_node = next_holding_node == &holding_node_one
+										? &holding_node_two
+										: &holding_node_one;
 			}
 		}
 		else
@@ -253,7 +290,9 @@ end:
 		cursor_destroy(cursor);
 	if( page )
 		page_destroy(tree->pager, page);
-	if( holding_page )
-		page_destroy(tree->pager, holding_page);
+	if( holding_page_one )
+		page_destroy(tree->pager, holding_page_one);
+	if( holding_page_two )
+		page_destroy(tree->pager, holding_page_two);
 	return BTREE_OK;
 }
