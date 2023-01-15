@@ -46,11 +46,9 @@ split_node(
 		{
 			btree_node_move(source_node, holding_node, first_half - 1, pager);
 		}
-		// else
-		// {
-		// 	btree_node_move(source_node, left, first_half - 1, pager);
-		// }
 
+		// The left node's right child becomes the page of the key that gets
+		// promoted to the parent.
 		left->header->right_child = source_node->keys[first_half - 1].key;
 	}
 
