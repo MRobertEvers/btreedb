@@ -293,7 +293,6 @@ ibtree_test_deep_tree(void)
 	for( int i = 0; i < sizeof(records) / sizeof(records[0]); i++ )
 	{
 		struct TestRecord* test = &records[i];
-		printf("Insert i: %i (%d)\r\n", i, test->key);
 		ibtree_insert(tree, test->data, test->size);
 
 		// Always check that 1 is still reachable.

@@ -2,11 +2,9 @@
 
 #include "btree_cell.h"
 #include "btree_node.h"
-#include "btree_node_debug.h"
 #include "btree_utils.h"
 #include "pager.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -163,12 +161,6 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
-		if( page->page_id == 1 )
-		{
-			printf("Root\n");
-			dbg_print_node(&node);
-		}
-
 		result = btree_node_search_keys(
 			cursor->tree, &node, key, key_size, &child_key_index);
 		if( result == BTREE_OK )
@@ -209,8 +201,6 @@ cursor_traverse_to_ex(
 				}
 				else
 				{
-					if( node.keys[child_key_index].key == 32 )
-						printf("Hello");
 					cursor->current_page_id = node.keys[child_key_index].key;
 				}
 			}

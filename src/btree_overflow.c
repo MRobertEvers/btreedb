@@ -77,8 +77,6 @@ btree_overflow_read(
 	if( read_result != BTREE_OK )
 		goto end;
 
-	// dbg_print_buffer(page->page_buffer, page->page_size);
-
 	if( out->payload_bytes > buffer_size )
 	{
 		read_result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;

@@ -87,8 +87,6 @@ ibta_split_node_as_parent(
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
 
-	dbg_print_node(node);
-
 	result = btpage_err(page_create(pager, &parent_page));
 	if( result != BTREE_OK )
 		goto end;
@@ -160,14 +158,6 @@ ibta_split_node_as_parent(
 		split_page->left_child_high_key = split_result.left_child_index;
 	}
 
-	if( left->page_number == 32 )
-		printf("Hello");
-	dbg_print_buffer(left->page->page_buffer, left->page->page_size);
-	dbg_print_buffer(right->page->page_buffer, left->page->page_size);
-	dbg_print_buffer(parent->page->page_buffer, left->page->page_size);
-	dbg_print_node(left);
-	dbg_print_node(right);
-	dbg_print_node(parent);
 end:
 	if( left )
 		btree_node_destroy(left);
@@ -205,8 +195,6 @@ ibta_split_node(
 
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
-
-	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 
 	// We want right page to remain stable since pointers
 	// in parent nodes are already pointing to the high-key of the input
@@ -250,13 +238,6 @@ ibta_split_node(
 		split_page->left_page_id = left_page->page_id;
 		split_page->left_page_high_key = split_result.left_child_index;
 	}
-
-	if( left->page_number == 32 )
-		printf("Hello");
-
-	dbg_print_buffer(holding_node->page->page_buffer, left->page->page_size);
-	dbg_print_buffer(left->page->page_buffer, left->page->page_size);
-	dbg_print_buffer(right->page->page_buffer, left->page->page_size);
 
 end:
 	if( left )

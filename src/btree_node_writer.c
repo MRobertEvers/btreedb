@@ -67,9 +67,6 @@ btree_node_write_ex(
 	char found;
 	enum btree_e result = BTREE_OK;
 
-	if( node->page->page_id == 1 && key == 32 )
-		printf("WOWOW?\n");
-
 	if( mode == WRITER_EX_MODE_CELL_MOVE )
 	{
 		// TODO: Could probably implement all inserts in terms of,
