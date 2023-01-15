@@ -197,14 +197,19 @@ ibta_split_node(
 	// We want right page to remain stable since pointers
 	// in parent nodes are already pointing to the high-key of the input
 	// node which becomes the high key of the right child.
-	page_create(pager, &right_page);
+	result = btpage_err(page_create(pager, &right_page));
+	if( result != BTREE_OK )
+		goto end;
 
 	result =
 		btree_node_create_as_page_number(&right, node->page_number, right_page);
 	if( result != BTREE_OK )
 		goto end;
 
-	page_create(pager, &left_page);
+	result = btpage_err(page_create(pager, &left_page));
+	if( result != BTREE_OK )
+		goto end;
+
 	result = btree_node_create_from_page(&left, left_page);
 	if( result != BTREE_OK )
 		goto end;
