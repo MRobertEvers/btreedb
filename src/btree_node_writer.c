@@ -73,7 +73,7 @@ btree_node_write_ex(
 		// 1. Write payload to empty page,
 		// 2. Move cell.
 
-		result = btree_node_move_from_data(
+		result = btree_node_move_cell_from_data(
 			node, insertion_index, key, flags, data, data_size, pager);
 
 		if( result == BTREE_OK )

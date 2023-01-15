@@ -51,17 +51,17 @@ split_node(
 
 	for( int i = 0; i < first_half - 1; i++ )
 	{
-		btree_node_move(source_node, left, i, pager);
+		btree_node_move_cell(source_node, left, i, pager);
 	}
 
 	if( !source_node->header->is_leaf )
 		read_key_cell(source_node, &left->header->right_child, first_half - 1);
 	else
-		btree_node_move(source_node, left, first_half - 1, pager);
+		btree_node_move_cell(source_node, left, first_half - 1, pager);
 
 	for( int i = first_half; i < source_node->header->num_keys; i++ )
 	{
-		btree_node_move(source_node, right, i, pager);
+		btree_node_move_cell(source_node, right, i, pager);
 	}
 
 	// Non-leaf nodes also have to move right child too.
@@ -287,7 +287,7 @@ bta_merge_nodes(
 	struct InsertionIndex index = {0};
 	for( int i = 0; i < other_node->header->num_keys; i++ )
 	{
-		result = btree_node_move(other_node, stable_node, i, pager);
+		result = btree_node_move_cell(other_node, stable_node, i, pager);
 		if( result != BTREE_OK )
 			break;
 	}

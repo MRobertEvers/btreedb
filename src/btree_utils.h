@@ -24,7 +24,7 @@ void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 
 int btu_get_node_heap_size(struct BTreeNode* node);
 int btu_get_node_size(struct BTreeNode* node);
-char* btu_get_node_buffer(struct BTreeNode* node);
+byte* btu_get_node_buffer(struct BTreeNode* node);
 
 /**
  * @brief Calculates the left edge of a pointer at highwater in the heap.
@@ -33,7 +33,7 @@ char* btu_get_node_buffer(struct BTreeNode* node);
  * @param highwater
  * @return char*
  */
-char* btu_calc_highwater_offset(struct BTreeNode* node, int highwater);
+byte* btu_calc_highwater_offset(struct BTreeNode* node, int highwater);
 
 /**
  * @brief Return a pointer to the cell left edge.
@@ -42,7 +42,7 @@ char* btu_calc_highwater_offset(struct BTreeNode* node, int highwater);
  * @param index
  * @return char*
  */
-char* btu_get_cell_buffer(struct BTreeNode* node, int index);
+byte* btu_get_cell_buffer(struct BTreeNode* node, int index);
 
 /**
  * @brief Peeks at the cell size and returns it.

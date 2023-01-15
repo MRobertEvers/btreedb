@@ -35,7 +35,7 @@ split_node(
 
 	for( int i = 0; i < first_half - 1; i++ )
 	{
-		btree_node_move(source_node, left, i, pager);
+		btree_node_move_cell(source_node, left, i, pager);
 	}
 
 	// The last child on the left node is not included in ibtrees split. That
@@ -44,7 +44,8 @@ split_node(
 	{
 		if( holding_node )
 		{
-			btree_node_move(source_node, holding_node, first_half - 1, pager);
+			btree_node_move_cell(
+				source_node, holding_node, first_half - 1, pager);
 		}
 
 		// The left node's right child becomes the page of the key that gets
@@ -54,7 +55,7 @@ split_node(
 
 	for( int i = first_half; i < source_node->header->num_keys; i++ )
 	{
-		btree_node_move(source_node, right, i, pager);
+		btree_node_move_cell(source_node, right, i, pager);
 	}
 
 	// Non-leaf nodes also have to move right child too.
@@ -126,7 +127,7 @@ ibta_split_node_as_parent(
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_move_ex(
+	result = btree_node_move_cell_ex(
 		node, parent, split_result.left_child_index, left_page->page_id, pager);
 	if( result != BTREE_OK )
 		goto end;
@@ -140,10 +141,9 @@ ibta_split_node_as_parent(
 	parent->header->is_leaf = 0;
 	parent->header->right_child = right_page->page_id;
 
-	memcpy(
-		btu_get_node_buffer(node),
-		btu_get_node_buffer(parent),
-		btu_get_node_size(parent));
+	result = btree_node_copy(node, parent);
+	if( result != BTREE_OK )
+		goto end;
 
 	result = btpage_err(pager_write_page(pager, node->page));
 	if( result != BTREE_OK )
@@ -230,11 +230,9 @@ ibta_split_node(
 	if( result != BTREE_OK )
 		goto end;
 
-	memcpy(
-		btu_get_node_buffer(node),
-		btu_get_node_buffer(right),
-		btu_get_node_size(right));
-	node->page_number = right_page->page_id;
+	result = btree_node_copy(node, right);
+	if( result != BTREE_OK )
+		goto end;
 
 	if( split_page != NULL )
 	{

@@ -172,7 +172,7 @@ insert_page_key(
 	struct BTreePageKey* key,
 	u32 index_number)
 {
-	assert(array_size > index_number);
+	assert(array_size >= index_number);
 	memmove(
 		&array[index_number + 1],
 		&array[index_number],
@@ -241,7 +241,7 @@ btree_node_insert_inline_ex(
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	char* cell_left_edge = btu_calc_highwater_offset(
+	byte* cell_left_edge = btu_calc_highwater_offset(
 		node, node->header->cell_high_water_offset + cell_size);
 
 	result = btree_cell_write_inline(cell, cell_left_edge, cell_size);
@@ -281,7 +281,7 @@ btree_node_insert_overflow(
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	char* cell_left_edge = btu_calc_highwater_offset(
+	byte* cell_left_edge = btu_calc_highwater_offset(
 		node, node->header->cell_high_water_offset + cell_size);
 
 	btree_cell_init_overflow_writer(&writer, cell_left_edge, cell_size);
@@ -303,18 +303,18 @@ btree_node_insert_overflow(
 }
 
 enum btree_e
-btree_node_move(
+btree_node_move_cell(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
 	u32 index,
 	struct Pager* pager)
 {
-	return btree_node_move_ex(
+	return btree_node_move_cell_ex(
 		source_node, other, index, source_node->keys[index].key, pager);
 }
 
 enum btree_e
-btree_node_move_ex(
+btree_node_move_cell_ex(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
 	u32 index,
@@ -324,15 +324,15 @@ btree_node_move_ex(
 	struct InsertionIndex insert_end = {.mode = KLIM_END};
 	u32 flags = source_node->keys[index].flags;
 
-	char* cell_data = btu_get_cell_buffer(source_node, index);
+	byte* cell_data = btu_get_cell_buffer(source_node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
 
-	return btree_node_move_from_data(
+	return btree_node_move_cell_from_data(
 		other, &insert_end, new_key, flags, cell_data, cell_data_size, pager);
 }
 
 enum btree_e
-btree_node_move_from_data(
+btree_node_move_cell_from_data(
 	struct BTreeNode* dest_node,
 	struct InsertionIndex* insert_index,
 	u32 key,
@@ -425,6 +425,17 @@ end:
 	return result;
 }
 
+enum btree_e
+btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node)
+{
+	memcpy(
+		btu_get_node_buffer(dest_node),
+		btu_get_node_buffer(src_node),
+		btu_get_node_size(src_node));
+
+	return btree_node_init_from_page(dest_node, dest_node->page);
+}
+
 // /**
 //  * See header
 //  */
@@ -508,8 +519,8 @@ btree_node_remove(
 	{
 		u32 offset = node->keys[i].cell_offset;
 		btu_read_cell(node, index_number, &cell);
-		char* src = btu_calc_highwater_offset(node, offset);
-		char* dest = btu_calc_highwater_offset(
+		byte* src = btu_calc_highwater_offset(node, offset);
+		byte* dest = btu_calc_highwater_offset(
 			node, offset - (deleted_inline_size + sizeof(u32)));
 		memmove(
 			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));

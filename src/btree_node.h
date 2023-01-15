@@ -109,20 +109,20 @@ enum btree_e btree_node_insert_overflow(
 	u32 key,
 	struct BTreeCellOverflow* cell);
 
-enum btree_e btree_node_move(
+enum btree_e btree_node_move_cell(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
 	u32 index,
 	struct Pager* pager);
 
-enum btree_e btree_node_move_ex(
+enum btree_e btree_node_move_cell_ex(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
 	u32 index,
 	u32 new_key,
 	struct Pager* pager);
 
-enum btree_e btree_node_move_from_data(
+enum btree_e btree_node_move_cell_from_data(
 	struct BTreeNode* dest_node,
 	struct InsertionIndex* insert_index,
 	u32 new_key,
@@ -130,6 +130,16 @@ enum btree_e btree_node_move_from_data(
 	byte* cell_buffer,
 	u32 cell_buffer_size,
 	struct Pager* pager);
+
+/**
+ * @brief Nodes must be same size
+ *
+ * @param dest_node
+ * @param src_node
+ * @return enum btree_e
+ */
+enum btree_e
+btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node);
 
 /**
  * @brief Removes data from a node.
