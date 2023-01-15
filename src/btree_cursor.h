@@ -6,7 +6,6 @@
 
 struct Cursor* cursor_create(struct BTree* tree);
 void cursor_destroy(struct Cursor* cursor);
-enum btree_e cursor_select_parent(struct Cursor* cursor);
 
 /**
  * @brief Pushes the current index head to the crumbs

@@ -27,14 +27,6 @@ cursor_destroy(struct Cursor* cursor)
 }
 
 enum btree_e
-cursor_select_parent(struct Cursor* cursor)
-{
-	struct CursorBreadcrumb crumb = {0};
-
-	return cursor_pop(cursor, &crumb);
-}
-
-enum btree_e
 cursor_push(struct Cursor* cursor)
 {
 	if( cursor->breadcrumbs_size ==
