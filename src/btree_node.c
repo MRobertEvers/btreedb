@@ -172,6 +172,7 @@ insert_page_key(
 	struct BTreePageKey* key,
 	u32 index_number)
 {
+	assert(array_size > index_number);
 	memmove(
 		&array[index_number + 1],
 		&array[index_number],
