@@ -31,6 +31,7 @@ ibtree_init(
 	btree_compare_fn compare)
 {
 	enum btree_e result = btree_init(tree, pager, root_page_id);
+	tree->type = BTREE_INDEX;
 	tree->compare = compare;
 	return result;
 }
@@ -171,7 +172,10 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 			goto end;
 
 		struct InsertionIndex index = from_cli(&cursor->current_key_index);
+		char* ddd = payload;
 
+		if( page_index_as_key == 32 )
+			printf("Hello");
 		result = btree_node_write_ex(
 			&node,
 			tree->pager,
@@ -181,6 +185,7 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 			payload,
 			payload_size,
 			writer_mode);
+		dbg_print_buffer(node.page->page_buffer, node.page->page_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			if( node.page->page_id == 1 )
@@ -212,6 +217,8 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 				if( child_insertion == 1 )
 					index.index -= first_half;
 
+				dbg_print_buffer(node.page->page_buffer, node.page->page_size);
+				char* huuurr = payload;
 				result = btree_node_write_ex(
 					&node,
 					tree->pager,
@@ -221,6 +228,8 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 					payload,
 					payload_size,
 					writer_mode);
+				dbg_print_buffer(node.page->page_buffer, node.page->page_size);
+
 				if( result != BTREE_OK )
 					goto end;
 
@@ -230,6 +239,13 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 			{
 				u32 first_half = (node.header->num_keys + 1) / 2;
 				int child_insertion = left_or_right_insertion(&index, &node);
+
+				memset(
+					next_holding_node->page->page_buffer,
+					0x00,
+					next_holding_node->page->page_size);
+				btree_node_init_from_page(
+					next_holding_node, next_holding_node->page);
 
 				struct SplitPage split_result;
 				result = ibta_split_node(
@@ -245,7 +261,12 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 					btree_node_init_from_page(&node, page);
 				}
 
+				if( child_insertion == 1 )
+					index.index -= first_half;
+
 				// Write the input payload to the correct child.
+				dbg_print_buffer(node.page->page_buffer, node.page->page_size);
+				char* huuurr = payload;
 				result = btree_node_write_ex(
 					&node,
 					tree->pager,
@@ -255,6 +276,7 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 					payload,
 					payload_size,
 					writer_mode);
+				dbg_print_buffer(node.page->page_buffer, node.page->page_size);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -271,8 +293,13 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 				writer_mode = WRITER_EX_MODE_CELL_MOVE;
 				flags = next_holding_node->keys[0].flags;
 				page_index_as_key = split_result.left_page_id;
+
+				if( split_result.left_page_id == 32 )
+					printf("Hello");
 				payload = btu_get_cell_buffer(next_holding_node, 0);
 				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
+
+				printf("To Parent: %.*s\n", payload_size, payload);
 
 				next_holding_node = next_holding_node == &holding_node_one
 										? &holding_node_two

@@ -2,9 +2,11 @@
 
 #include "btree_cell.h"
 #include "btree_node.h"
+#include "btree_node_debug.h"
 #include "btree_utils.h"
 #include "pager.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -142,6 +144,7 @@ cursor_traverse_to_ex(
 	struct BTreeNode node = {0};
 	struct CellData cell = {0};
 	struct CursorBreadcrumb* crumb = NULL;
+	*found = 0;
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
 	if( result != BTREE_OK )
@@ -159,6 +162,12 @@ cursor_traverse_to_ex(
 		result = btree_node_init_from_page(&node, page);
 		if( result != BTREE_OK )
 			goto end;
+
+		if( page->page_id == 1 )
+		{
+			printf("Root\n");
+			dbg_print_node(&node);
+		}
 
 		result = btree_node_search_keys(
 			cursor->tree, &node, key, key_size, &child_key_index);
@@ -186,15 +195,24 @@ cursor_traverse_to_ex(
 			}
 			else
 			{
-				btu_read_cell(&node, child_key_index, &cell);
-				u32 cell_size = btree_cell_get_size(&cell);
-				if( cell_size != sizeof(cursor->current_page_id) )
+				if( cursor->tree->type == BTREE_TBL )
 				{
-					result = BTREE_ERR_CORRUPT_CELL;
-					goto end;
-				}
+					btu_read_cell(&node, child_key_index, &cell);
+					u32 cell_size = btree_cell_get_size(&cell);
+					if( cell_size != sizeof(cursor->current_page_id) )
+					{
+						result = BTREE_ERR_CORRUPT_CELL;
+						goto end;
+					}
 
-				memcpy(&cursor->current_page_id, cell.pointer, cell_size);
+					memcpy(&cursor->current_page_id, cell.pointer, cell_size);
+				}
+				else
+				{
+					if( node.keys[child_key_index].key == 32 )
+						printf("Hello");
+					cursor->current_page_id = node.keys[child_key_index].key;
+				}
 			}
 		}
 	} while( !node.header->is_leaf );

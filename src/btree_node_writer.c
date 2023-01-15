@@ -6,6 +6,7 @@
 #include "btree_utils.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static int
@@ -66,14 +67,22 @@ btree_node_write_ex(
 	char found;
 	enum btree_e result = BTREE_OK;
 
+	if( node->page->page_id == 1 && key == 32 )
+		printf("WOWOW?\n");
+
 	if( mode == WRITER_EX_MODE_CELL_MOVE )
 	{
 		// TODO: Could probably implement all inserts in terms of,
 		// 1. Write payload to empty page,
 		// 2. Move cell.
 
-		return btree_node_move_from_data(
-			node, key, flags, data, data_size, pager);
+		result = btree_node_move_from_data(
+			node, insertion_index, key, flags, data, data_size, pager);
+
+		if( result == BTREE_OK )
+			result = btpage_err(pager_write_page(pager, node->page));
+
+		return result;
 	}
 
 	// This is max size including key!

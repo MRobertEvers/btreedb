@@ -124,6 +124,7 @@ enum btree_e btree_node_move_ex(
 
 enum btree_e btree_node_move_from_data(
 	struct BTreeNode* dest_node,
+	struct InsertionIndex* insert_index,
 	u32 new_key,
 	u32 flags,
 	byte* cell_buffer,

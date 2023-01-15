@@ -83,6 +83,12 @@ typedef int (*btree_compare_fn)(
 	u32 right_offset,
 	u32* out_bytes_compared);
 
+enum btree_type_e
+{
+	BTREE_TBL,
+	BTREE_INDEX
+};
+
 struct BTree
 {
 	struct BTreeHeader header;
@@ -90,6 +96,7 @@ struct BTree
 
 	int root_page_id;
 
+	enum btree_type_e type;
 	btree_compare_fn compare;
 };
 

@@ -108,6 +108,8 @@ btree_init(struct BTree* tree, struct Pager* pager, u32 root_page_id)
 {
 	enum btree_e btree_result = BTREE_OK;
 
+	tree->type = BTREE_TBL;
+
 	// Arbitrary 4*12 is approximately 4 entries that overflow.
 	// 1 int for cell size, 2 more for overflow page meta.
 	if( pager->page_size < btree_min_page_size() )

@@ -320,21 +320,20 @@ btree_node_move_ex(
 	u32 new_key,
 	struct Pager* pager)
 {
-	u32 cell_size = 0;
-	u32 flags = 0;
-
-	flags = source_node->keys[index].flags;
+	struct InsertionIndex insert_end = {.mode = KLIM_END};
+	u32 flags = source_node->keys[index].flags;
 
 	char* cell_data = btu_get_cell_buffer(source_node, index);
 	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
 
 	return btree_node_move_from_data(
-		other, new_key, flags, cell_data, cell_data_size, pager);
+		other, &insert_end, new_key, flags, cell_data, cell_data_size, pager);
 }
 
 enum btree_e
 btree_node_move_from_data(
 	struct BTreeNode* dest_node,
+	struct InsertionIndex* insert_index,
 	u32 key,
 	u32 flags,
 	byte* cell_buffer,
@@ -342,7 +341,7 @@ btree_node_move_from_data(
 	struct Pager* pager)
 {
 	enum btree_e result = BTREE_OK;
-	struct InsertionIndex insert_end = {.mode = KLIM_END};
+
 	struct BTreeCellInline cell = {0};
 	btree_cell_read_inline(cell_buffer, cell_buffer_size, &cell, NULL, 0);
 
@@ -350,7 +349,7 @@ btree_node_move_from_data(
 	if( cell_buffer_size <= dest_max_size )
 	{
 		result = btree_node_insert_inline_ex(
-			dest_node, &insert_end, key, &cell, flags);
+			dest_node, insert_index, key, &cell, flags);
 	}
 	else
 	{
@@ -418,7 +417,7 @@ btree_node_move_from_data(
 		write_cell.total_size = cell.inline_size;
 
 		result = btree_node_insert_overflow(
-			dest_node, &insert_end, key, &write_cell);
+			dest_node, insert_index, key, &write_cell);
 	}
 
 end:
@@ -641,8 +640,8 @@ btree_node_compare_cell(
 	u32 key_size,
 	int* out_result)
 {
-	enum btree_e result = BTREE_OK;
 	u32 bytes_compared = 0;
+	enum btree_e result = BTREE_OK;
 	u32 cmp_total_size = 0;
 	u32 next_page_id = 0;
 	u32 cmp_size = 0;

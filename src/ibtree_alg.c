@@ -7,6 +7,7 @@
 #include "pager.h"
 #include "serialization.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,9 +40,18 @@ split_node(
 
 	// The last child on the left node is not included in ibtrees split. That
 	// must go to the parent.
-	if( holding_node && (first_half > 0) )
+	if( first_half > 0 )
 	{
-		btree_node_move(source_node, holding_node, first_half - 1, pager);
+		if( holding_node )
+		{
+			btree_node_move(source_node, holding_node, first_half - 1, pager);
+		}
+		// else
+		// {
+		// 	btree_node_move(source_node, left, first_half - 1, pager);
+		// }
+
+		left->header->right_child = source_node->keys[first_half - 1].key;
 	}
 
 	for( int i = first_half; i < source_node->header->num_keys; i++ )
@@ -76,6 +86,8 @@ ibta_split_node_as_parent(
 	struct Page* parent_page = NULL;
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
+
+	dbg_print_node(node);
 
 	result = btpage_err(page_create(pager, &parent_page));
 	if( result != BTREE_OK )
@@ -148,6 +160,14 @@ ibta_split_node_as_parent(
 		split_page->left_child_high_key = split_result.left_child_index;
 	}
 
+	if( left->page_number == 32 )
+		printf("Hello");
+	dbg_print_buffer(left->page->page_buffer, left->page->page_size);
+	dbg_print_buffer(right->page->page_buffer, left->page->page_size);
+	dbg_print_buffer(parent->page->page_buffer, left->page->page_size);
+	dbg_print_node(left);
+	dbg_print_node(right);
+	dbg_print_node(parent);
 end:
 	if( left )
 		btree_node_destroy(left);
@@ -185,6 +205,8 @@ ibta_split_node(
 
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
+
+	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 
 	// We want right page to remain stable since pointers
 	// in parent nodes are already pointing to the high-key of the input
@@ -228,6 +250,13 @@ ibta_split_node(
 		split_page->left_page_id = left_page->page_id;
 		split_page->left_page_high_key = split_result.left_child_index;
 	}
+
+	if( left->page_number == 32 )
+		printf("Hello");
+
+	dbg_print_buffer(holding_node->page->page_buffer, left->page->page_size);
+	dbg_print_buffer(left->page->page_buffer, left->page->page_size);
+	dbg_print_buffer(right->page->page_buffer, left->page->page_size);
 
 end:
 	if( left )
