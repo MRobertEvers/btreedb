@@ -381,8 +381,13 @@ ibta_rotate_test(void)
 	btree_node_create_as_page_number(&left_node, 2, left_page);
 	btree_node_create_as_page_number(&right_node, 3, right_page);
 
+	// This test is an impossibility, but it covers what we want.
+	// We've given the cells children but also label them as leaves.
 	right_node->header->is_leaf = 1;
 	left_node->header->is_leaf = 1;
+
+	u32 left_node_right_most_child = 88;
+	left_node->header->right_child = left_node_right_most_child;
 	pager_write_page(pager, parent_page);
 	pager_write_page(pager, left_page);
 	pager_write_page(pager, right_page);
@@ -403,21 +408,23 @@ ibta_rotate_test(void)
 		WRITER_EX_MODE_RAW);
 
 	char leftmost[] = "lkrilly";
+	u32 leftmost_child_page = 13;
 	btree_node_write_ex(
 		left_node,
 		pager,
 		&insert_index,
-		0,
+		leftmost_child_page,
 		0,
 		leftmost,
 		sizeof(leftmost),
 		WRITER_EX_MODE_RAW);
 	char middlemost[] = "mobly";
+	u32 middlemost_child_page = 13;
 	btree_node_write_ex(
 		left_node,
 		pager,
 		&insert_index,
-		0,
+		middlemost_child_page,
 		0,
 		middlemost,
 		sizeof(middlemost),
@@ -429,7 +436,6 @@ ibta_rotate_test(void)
 	cursor_traverse_to_ex(cursor, deadend, sizeof(deadend), &found);
 
 	struct CursorBreadcrumb crumb = {0};
-	cursor_pop(cursor, &crumb);
 
 	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_RIGHT);
 	cursor_destroy(cursor);
@@ -439,11 +445,15 @@ ibta_rotate_test(void)
 
 	if( right_node->header->num_keys != 1 )
 		goto fail;
+	if( right_node->keys[0].key != left_node_right_most_child )
+		goto fail;
 
 	btree_node_init_from_read(
 		left_node, left_node->page, pager, left_node->page_number);
 
 	if( left_node->header->num_keys != 1 )
+		goto fail;
+	if( left_node->header->right_child != middlemost_child_page )
 		goto fail;
 
 	char abuf[sizeof(leftmost)] = {0};
@@ -489,7 +499,6 @@ ibta_rotate_test(void)
 
 	if( !found || cursor->current_page_id != 2 )
 		goto fail;
-	cursor_pop(cursor, &crumb);
 	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_LEFT);
 	cursor_destroy(cursor);
 
@@ -497,6 +506,10 @@ ibta_rotate_test(void)
 		left_node, left_node->page, pager, left_node->page_number);
 
 	if( left_node->header->num_keys != 2 )
+		goto fail;
+	if( left_node->header->right_child != left_node_right_most_child )
+		goto fail;
+	if( left_node->keys[1].key != middlemost_child_page )
 		goto fail;
 
 	btree_node_init_from_read(

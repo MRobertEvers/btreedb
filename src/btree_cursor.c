@@ -52,6 +52,11 @@ cursor_push_crumb(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	cursor->breadcrumbs[cursor->breadcrumbs_size] = *crumb;
 	cursor->breadcrumbs_size++;
 
+	cursor->current_page_id =
+		cursor->breadcrumbs[cursor->breadcrumbs_size - 1].page_id;
+	cursor->current_key_index =
+		cursor->breadcrumbs[cursor->breadcrumbs_size - 1].key_index;
+
 	return BTREE_OK;
 }
 
@@ -62,10 +67,23 @@ cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 		return BTREE_ERR_CURSOR_NO_PARENT;
 
 	*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
-
-	cursor->current_page_id = crumb->page_id;
-	cursor->current_key_index = crumb->key_index;
 	cursor->breadcrumbs_size--;
+
+	if( cursor->breadcrumbs_size == 0 )
+	{
+		cursor->current_page_id = 0;
+		memset(
+			&cursor->current_key_index,
+			0x00,
+			sizeof(cursor->current_key_index));
+	}
+	else
+	{
+		cursor->current_page_id =
+			cursor->breadcrumbs[cursor->breadcrumbs_size - 1].page_id;
+		cursor->current_key_index =
+			cursor->breadcrumbs[cursor->breadcrumbs_size - 1].key_index;
+	}
 
 	return BTREE_OK;
 }
@@ -187,7 +205,7 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node.header->is_leaf )
+		if( !node.header->is_leaf && !(*found) )
 		{
 			result = read_cell_page(cursor, &node, child_key_index);
 			if( result != BTREE_OK )
@@ -266,6 +284,11 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto end;
 
+	// Pop the child.
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
 	// Pop the parent.
 	result = cursor_pop(cursor, &crumb);
 	if( result != BTREE_OK )
@@ -273,11 +296,6 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 
 	result = btree_node_init_from_read(
 		&node, page, cursor->tree->pager, crumb.page_id);
-	if( result != BTREE_OK )
-		goto end;
-
-	// Put the parent back
-	result = cursor_push_crumb(cursor, &crumb);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -290,9 +308,9 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 			goto end;
 		}
 
-		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
-		if( result != BTREE_OK )
-			goto end;
+		cursor->current_key_index.mode = KLIM_INDEX;
+		cursor->current_key_index.index = crumb.key_index.index - 1;
+		cursor->current_page_id = crumb.page_id;
 	}
 	else
 	{
@@ -303,6 +321,28 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 			goto end;
 		}
 
+		cursor->current_key_index.mode =
+			crumb.key_index.index + 1 == node.header->num_keys
+				? KLIM_RIGHT_CHILD
+				: KLIM_INDEX;
+
+		cursor->current_key_index.index = crumb.key_index.index + 1;
+		cursor->current_page_id = crumb.page_id;
+	}
+
+	result = cursor_push(cursor);
+	if( result != BTREE_OK )
+		goto end;
+
+	// Read the page id.
+	if( sibling == CURSOR_SIBLING_LEFT )
+	{
+		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
 		result = read_cell_page(cursor, &node, crumb.key_index.index + 1);
 		if( result != BTREE_OK )
 			goto end;
@@ -311,6 +351,10 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	// Cursor is now point to the child; point to first element of sibling.
 	cursor->current_key_index.index = 0;
 	cursor->current_key_index.mode = KLIM_INDEX;
+
+	result = cursor_push(cursor);
+	if( result != BTREE_OK )
+		goto end;
 
 end:
 	if( page )

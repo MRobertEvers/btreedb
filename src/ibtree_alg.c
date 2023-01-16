@@ -698,22 +698,22 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	}
 	parent_index.mode = KLIM_INDEX;
 
-	struct InsertionIndex insert_index = {0};
+	struct InsertionIndex insert_lowered_index = {0};
 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
 	{
-		insert_index.mode = KLIM_INDEX;
-		insert_index.index = 0;
+		insert_lowered_index.mode = KLIM_INDEX;
+		insert_lowered_index.index = 0;
 	}
 	else
 	{
-		insert_index.mode = KLIM_END;
-		insert_index.index = node.header->num_keys;
+		insert_lowered_index.mode = KLIM_END;
+		insert_lowered_index.index = node.header->num_keys;
 	}
 	result = btree_node_move_cell_ex_to(
 		&parent_node,
 		&node,
 		parent_index.index,
-		&insert_index,
+		&insert_lowered_index,
 		// For rotate right, this will eventually be updated to
 		// point to the prev r-most of the left node.
 		// For rotate left, this will point to the child of the prev
@@ -730,6 +730,8 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
+
+	u32 source_node_page_id = node.page_number;
 
 	// Save on a write here because the parent stays in memory.
 	// result =
@@ -760,16 +762,20 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 		source_index_number = 0;
 	}
 
-	insert_index.index = parent_index.index;
-	insert_index.mode =
+	struct InsertionIndex insert_elevated_index = {0};
+	insert_elevated_index.index = parent_index.index;
+	insert_elevated_index.mode =
 		parent_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
-
+	// We always want to point to the left child.
+	u32 orphaned_page_id = mode == REBALANCE_MODE_ROTATE_RIGHT
+							   ? cursor->current_page_id
+							   : source_node_page_id;
 	result = btree_node_move_cell_ex_to(
 		&node,
 		&parent_node,
 		source_index_number,
-		&insert_index,
-		cursor->current_page_id,
+		&insert_elevated_index,
+		orphaned_page_id,
 		cursor->tree->pager);
 	if( result != BTREE_OK )
 		goto end;
@@ -794,6 +800,8 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 		// Need to update the lowered cell to point to this.
 		orphaned_child_page = prev_rightmost_of_left_node;
 	}
+	else
+	{}
 
 	struct ChildListIndex source_index;
 	source_index.index = source_index_number;
@@ -823,7 +831,7 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		// Need to update the lowered cell to point to
-		node.keys[insert_index.index].key = orphaned_child_page;
+		node.keys[insert_lowered_index.index].key = orphaned_child_page;
 	}
 	else
 	{
@@ -834,7 +842,7 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 		node.header->right_child = orphaned_child_page;
 
 		// Update the
-		node.keys[insert_index.index].key = prev_rightmost_of_left_node;
+		node.keys[insert_lowered_index.index].key = prev_rightmost_of_left_node;
 	}
 
 	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
