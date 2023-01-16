@@ -612,8 +612,10 @@ enum btree_e
 decide_rebalance_mode(struct Cursor* cursor, enum rebalance_mode_e* out_mode)
 {
 	enum btree_e result = BTREE_OK;
+	enum btree_e right_result = BTREE_OK;
 
-	result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	right_result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	result = right_result;
 	if( result == BTREE_OK )
 	{
 		*out_mode = REBALANCE_MODE_ROTATE_LEFT;
@@ -635,7 +637,16 @@ decide_rebalance_mode(struct Cursor* cursor, enum rebalance_mode_e* out_mode)
 		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		goto end;
 
-	*out_mode = REBALANCE_MODE_MERGE;
+	// TODO: Assert that at least one is present?
+	assert(
+		result != BTREE_ERR_CURSOR_NO_SIBLING ||
+		right_result != BTREE_ERR_CURSOR_NO_SIBLING);
+
+	// There is a left sibling; merge with it.
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING )
+		*out_mode = REBALANCE_MODE_MERGE_LEFT;
+	else
+		*out_mode = REBALANCE_MODE_MERGE_RIGHT;
 
 end:
 	return result;
@@ -857,133 +868,207 @@ end:
 	return result;
 }
 
-// enum btree_e
-// ibta_merge(struct Cursor* cursor)
-// {
-// 	// Merge left
-// 	// sandwich left parent.
-// 	// Parent cell points to the right child of the left node.
-// 	struct BTreeNode node = {0};
-// 	struct BTreeNode parent_node = {0};
+enum btree_e
+ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
+{
+	assert(
+		mode == REBALANCE_MODE_MERGE_LEFT ||
+		mode == REBALANCE_MODE_MERGE_RIGHT);
 
-// 	struct Page* page = NULL;
-// 	struct Page* parent_page = NULL;
-// 	struct BTreeNode node = {0};
-// 	struct BTreeNode parent_node = {0};
+	enum btree_e result = BTREE_OK;
 
-// 	result = btpage_err(page_create(cursor->tree->pager, &page));
-// 	if( result != BTREE_OK )
-// 		goto end;
+	// Merge left
+	// sandwich left parent.
+	// Parent cell points to the right child of the left node.
+	struct BTreeNode left_node = {0};
+	struct BTreeNode right_node = {0};
+	struct BTreeNode parent_node = {0};
 
-// 	result = btree_node_init_from_read(
-// 		&node, page, cursor->tree->pager, cursor->current_page_id);
-// 	if( result != BTREE_OK )
-// 		goto end;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* parent_page = NULL;
 
-// 	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
-// 	if( result != BTREE_OK )
-// 		goto end;
+	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+	if( result != BTREE_OK )
+		goto end;
 
-// 	result = btree_node_init_from_page(&parent_node, parent_page);
-// 	if( result != BTREE_OK )
-// 		goto end;
+	result = btree_node_init_from_page(&parent_node, parent_page);
+	if( result != BTREE_OK )
+		goto end;
 
-// 	result = cursor_read_parent(cursor, &parent_node);
-// 	if( result != BTREE_OK )
-// 		goto end;
+	result = cursor_read_parent(cursor, &parent_node);
+	if( result != BTREE_OK )
+		goto end;
 
-// 	struct ChildListIndex parent_index = {0};
-// 	result = cursor_parent_index(cursor, &parent_index);
-// 	if( result != BTREE_OK )
-// 		goto end;
+	result = btpage_err(page_create(cursor->tree->pager, &left_page));
+	if( result != BTREE_OK )
+		goto end;
+	result = btpage_err(page_create(cursor->tree->pager, &right_page));
+	if( result != BTREE_OK )
+		goto end;
 
-// 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
-// 	{
-// 		if( parent_index.mode == KLIM_RIGHT_CHILD )
-// 			parent_index.index = parent_node.header->num_keys - 1;
-// 		else
-// 			parent_index.index -= 1;
-// 	}
-// 	parent_index.mode = KLIM_INDEX;
+	if( mode == REBALANCE_MODE_MERGE_RIGHT )
+	{
+		// The cursor points to the left child.
+		result = btree_node_init_from_read(
+			&left_node,
+			left_page,
+			cursor->tree->pager,
+			cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
 
-// 	struct InsertionIndex insert_index = {0};
-// 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
-// 	{
-// 		insert_index.mode = KLIM_INDEX;
-// 		insert_index.index = 0;
-// 	}
-// 	else
-// 	{
-// 		insert_index.mode = KLIM_END;
-// 		insert_index.index = node.header->num_keys;
-// 	}
-// 	result = btree_node_move_cell_ex_to(
-// 		&parent_node,
-// 		&node,
-// 		parent_index.index,
-// 		&insert_index,
-// 		0,
-// 		cursor->tree->pager);
-// 	if( result != BTREE_OK )
-// 		goto end;
+		result = cursor_sibling(cursor, CURSOR_SIBLING_RIGHT);
+		if( result != BTREE_OK )
+			goto end;
 
-// 	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
-// 	if( result != BTREE_OK )
-// 		goto end;
+		result = btree_node_init_from_read(
+			&right_node,
+			right_page,
+			cursor->tree->pager,
+			cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
+		result = btree_node_init_from_read(
+			&right_node,
+			right_page,
+			cursor->tree->pager,
+			cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
 
-// 	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
-// 	if( result != BTREE_OK )
-// 		goto end;
+		result = cursor_sibling(cursor, CURSOR_SIBLING_LEFT);
+		if( result != BTREE_OK )
+			goto end;
 
-// 	// Save on a write here because the parent stays in memory.
-// 	// result =
-// 	// 	btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
-// 	// if( result != BTREE_OK )
-// 	// 	goto end;
-// }
+		result = btree_node_init_from_read(
+			&left_node,
+			left_page,
+			cursor->tree->pager,
+			cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
+	}
+
+	struct ChildListIndex parent_index = {0};
+	result = cursor_parent_index(cursor, &parent_index);
+	if( result != BTREE_OK )
+		goto end;
+
+	struct InsertionIndex insert_index = {.mode = KLIM_END, .index = 0};
+	result = btree_node_move_cell_ex(
+		&parent_node,
+		&left_node,
+		parent_index.index,
+		left_node.header->right_child,
+		cursor->tree->pager);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(cursor->tree->pager, left_node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	// TODO: Underflow condition.
+	char parent_deficient = parent_node.header->num_keys < 1;
+
+	for( int i = 0; i < right_node.header->num_keys; i++ )
+	{
+		result = btree_node_move_cell(
+			&right_node, &left_node, i, cursor->tree->pager);
+		if( result != BTREE_OK )
+			goto end;
+	}
+
+	left_node.header->right_child = right_node.header->right_child;
+
+	result = btree_node_copy(&right_node, &left_node);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(cursor->tree->pager, right_node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	// TODO: Free list left page.
+
+	// If deficient.
+	if( parent_deficient &&
+		parent_node.page_number == cursor->tree->root_page_id )
+	{
+		// TODO: Assumes that root page is the same size as all other pages.
+		// TODO: Free list right page.
+
+		result = btree_node_copy(&parent_node, &right_node);
+		if( result != BTREE_OK )
+			goto end;
+
+		result =
+			btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+		if( result != BTREE_OK )
+			goto end;
+	}
+
+end:
+	if( parent_page )
+		page_destroy(cursor->tree->pager, parent_page);
+	if( left_page )
+		page_destroy(cursor->tree->pager, left_page);
+	if( right_page )
+		page_destroy(cursor->tree->pager, right_page);
+
+	if( result == BTREE_OK && parent_deficient )
+		result = BTREE_ERR_PARENT_DEFICIENT;
+	return result;
+}
 
 enum btree_e
 ibta_rebalance(struct Cursor* cursor)
 {
 	enum btree_e result = BTREE_OK;
-	struct BTree* tree = cursor->tree;
 	enum rebalance_mode_e mode = REBALANCE_MODE_UNK;
 
-	// result = btpage_err(page_create(tree->pager, &page));
-	// if( result != BTREE_OK )
-	// 	goto end;
-
-	// result = btree_node_init_from_read(
-	// 	&node, page, tree->pager, cursor->current_page_id);
-	// if( result != BTREE_OK )
-	// 	goto end;
-	// // TODO: Assert underflowed?
-
-	result = decide_rebalance_mode(cursor, &mode);
-	if( result == BTREE_ERR_CURSOR_NO_PARENT )
+	do
 	{
-		// Can't rebalance root.
-		result = BTREE_OK;
-		goto end;
-	}
+		result = decide_rebalance_mode(cursor, &mode);
+		if( result == BTREE_ERR_CURSOR_NO_PARENT )
+		{
+			// Can't rebalance root.
+			result = BTREE_OK;
+			goto end;
+		}
 
-	if( result != BTREE_OK )
-		goto end;
+		if( result != BTREE_OK )
+			goto end;
 
-	switch( mode )
-	{
-	case REBALANCE_MODE_ROTATE_LEFT:
-		break;
-	case REBALANCE_MODE_ROTATE_RIGHT:
-		break;
-	case REBALANCE_MODE_MERGE:
-		break;
-	default:
-		result = BTREE_ERR_UNK;
-		break;
-	}
+		switch( mode )
+		{
+		case REBALANCE_MODE_ROTATE_LEFT:
+		case REBALANCE_MODE_ROTATE_RIGHT:
+			result = ibta_rotate(cursor, mode);
+			break;
+		case REBALANCE_MODE_MERGE_LEFT:
+		case REBALANCE_MODE_MERGE_RIGHT:
+			result = ibta_merge(cursor, mode);
+			break;
+		default:
+			result = BTREE_ERR_UNK;
+			break;
+		}
+
+		if( result == BTREE_ERR_PARENT_DEFICIENT )
+			if( cursor_pop(cursor, NULL) != BTREE_OK )
+				goto end;
+
+	} while( result == BTREE_ERR_PARENT_DEFICIENT );
 
 end:
-
 	return result;
 }

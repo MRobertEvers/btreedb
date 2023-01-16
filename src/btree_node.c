@@ -328,12 +328,9 @@ btree_node_move_cell(
 	u32 source_index,
 	struct Pager* pager)
 {
+	u32 key = source_node->keys[source_index].key;
 	return btree_node_move_cell_ex(
-		source_node,
-		other,
-		source_index,
-		source_node->keys[source_index].key,
-		pager);
+		source_node, other, source_index, key, pager);
 }
 
 enum btree_e

@@ -85,7 +85,8 @@ enum rebalance_mode_e
 	REBALANCE_MODE_UNK,
 	REBALANCE_MODE_ROTATE_RIGHT,
 	REBALANCE_MODE_ROTATE_LEFT,
-	REBALANCE_MODE_MERGE,
+	REBALANCE_MODE_MERGE_RIGHT,
+	REBALANCE_MODE_MERGE_LEFT,
 };
 
 enum btree_e ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode);
@@ -104,7 +105,7 @@ enum merge_mode_e
  * @param cursor
  * @return enum btree_e
  */
-enum btree_e ibta_merge(struct Cursor* cursor);
+enum btree_e ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode);
 
 /**
  * @brief Expects the cursor to be at the node that just underflowed.

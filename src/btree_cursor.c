@@ -66,7 +66,8 @@ cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	if( cursor->breadcrumbs_size == 0 )
 		return BTREE_ERR_CURSOR_NO_PARENT;
 
-	*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
+	if( crumb )
+		*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
 	cursor->breadcrumbs_size--;
 
 	if( cursor->breadcrumbs_size == 0 )

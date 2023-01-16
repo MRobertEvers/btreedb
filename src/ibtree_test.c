@@ -528,3 +528,127 @@ fail:
 	result = 0;
 	goto end;
 }
+
+int
+ibta_merge_test(void)
+{
+	char const* db_name = "ibta_merge_test.db";
+	remove(db_name);
+
+	int result = 1;
+	struct BTreeNode* parent_node = NULL;
+	struct BTreeNode* left_node = NULL;
+	struct BTreeNode* right_node = NULL;
+	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* test_page = NULL;
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+
+	page_cache_create(&cache, 11);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, 2, &ibtree_compare) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(pager, &parent_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+
+	btree_node_create_as_page_number(&parent_node, 2, parent_page);
+	btree_node_create_as_page_number(&left_node, 3, left_page);
+	btree_node_create_as_page_number(&right_node, 4, right_page);
+
+	// This test is an impossibility, but it covers what we want.
+	// We've given the cells children but also label them as leaves.
+	right_node->header->is_leaf = 1;
+	left_node->header->is_leaf = 1;
+
+	u32 left_node_right_most_child = 88;
+	left_node->header->right_child = left_node_right_most_child;
+	pager_write_page(pager, parent_page);
+	pager_write_page(pager, left_page);
+	pager_write_page(pager, right_page);
+
+	parent_node->header->right_child = right_node->page_number;
+	struct InsertionIndex insert_index = {0};
+	insert_index.index = 0;
+	insert_index.mode = KLIM_END;
+	char rightmost[] = "xbilly";
+	btree_node_write_ex(
+		parent_node,
+		pager,
+		&insert_index,
+		left_node->page_number,
+		0,
+		rightmost,
+		sizeof(rightmost),
+		WRITER_EX_MODE_RAW);
+
+	char leftmost[] = "lkrilly";
+	u32 leftmost_child_page = 13;
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		leftmost_child_page,
+		0,
+		leftmost,
+		sizeof(leftmost),
+		WRITER_EX_MODE_RAW);
+	char middlemost[] = "mobly";
+	u32 middlemost_child_page = 11;
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		middlemost_child_page,
+		0,
+		middlemost,
+		sizeof(middlemost),
+		WRITER_EX_MODE_RAW);
+	char rightest[] = "zbilly";
+	u32 rightest_child_page = 18;
+	btree_node_write_ex(
+		right_node,
+		pager,
+		&insert_index,
+		rightest_child_page,
+		0,
+		rightest,
+		sizeof(rightest),
+		WRITER_EX_MODE_RAW);
+
+	char deadend[] = "zzbilly";
+	char found;
+	struct Cursor* cursor = cursor_create(tree);
+	cursor_traverse_to_ex(cursor, deadend, sizeof(deadend), &found);
+
+	struct CursorBreadcrumb crumb = {0};
+
+	ibta_merge(cursor, REBALANCE_MODE_MERGE_LEFT);
+	cursor_destroy(cursor);
+
+	btree_node_init_from_read(
+		parent_node, parent_node->page, pager, parent_node->page_number);
+
+	if( parent_node->header->num_keys != 4 )
+		goto fail;
+
+end:
+	if( test_page )
+		page_destroy(pager, test_page);
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
+}
