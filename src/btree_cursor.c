@@ -193,7 +193,8 @@ cursor_traverse_to_ex(
 			if( result != BTREE_OK )
 				goto end;
 		}
-	} while( !node.header->is_leaf );
+		// TODO: Only break if ibtree
+	} while( !node.header->is_leaf && !(*found) );
 
 end:
 	if( page )
