@@ -43,6 +43,19 @@ cursor_push(struct Cursor* cursor)
 }
 
 enum btree_e
+cursor_push_crumb(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
+{
+	if( cursor->breadcrumbs_size ==
+		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[0]) )
+		return BTREE_ERR_CURSOR_DEPTH_EXCEEDED;
+
+	cursor->breadcrumbs[cursor->breadcrumbs_size] = *crumb;
+	cursor->breadcrumbs_size++;
+
+	return BTREE_OK;
+}
+
+enum btree_e
 cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 {
 	if( cursor->breadcrumbs_size == 0 )
@@ -57,16 +70,47 @@ cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
+static enum btree_e
+read_cell_page(
+	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
+{
+	enum btree_e result = BTREE_OK;
+	if( child_key_index == node->header->num_keys )
+	{
+		cursor->current_page_id = node->header->right_child;
+	}
+	else
+	{
+		if( cursor->tree->type == BTREE_TBL )
+		{
+			struct CellData cell = {0};
+			btu_read_cell(node, child_key_index, &cell);
+			u32 cell_size = btree_cell_get_size(&cell);
+			if( cell_size != sizeof(cursor->current_page_id) )
+			{
+				result = BTREE_ERR_CORRUPT_CELL;
+				goto end;
+			}
+
+			memcpy(&cursor->current_page_id, cell.pointer, cell_size);
+		}
+		else
+		{
+			cursor->current_page_id = node->keys[child_key_index].key;
+		}
+	}
+
+end:
+	return result;
+}
+
 enum btree_e
 cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 {
 	int child_key_index = 0;
 	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
-	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
-	struct CellData cell = {0};
-	struct CursorBreadcrumb* crumb = NULL;
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
 	if( result != BTREE_OK )
@@ -74,14 +118,8 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 
 	do
 	{
-		pager_reselect(&selector, cursor->current_page_id);
-
-		result =
-			btpage_err(pager_read_page(cursor->tree->pager, &selector, page));
-		if( result != BTREE_OK )
-			goto end;
-
-		result = btree_node_init_from_page(&node, page);
+		result = btree_node_init_from_read(
+			&node, page, cursor->tree->pager, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -97,22 +135,9 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 
 		if( !node.header->is_leaf )
 		{
-			if( child_key_index == node.header->num_keys )
-			{
-				cursor->current_page_id = node.header->right_child;
-			}
-			else
-			{
-				btu_read_cell(&node, child_key_index, &cell);
-				u32 cell_size = btree_cell_get_size(&cell);
-				if( cell_size != sizeof(cursor->current_page_id) )
-				{
-					result = BTREE_ERR_CORRUPT_CELL;
-					goto end;
-				}
-
-				memcpy(&cursor->current_page_id, cell.pointer, cell_size);
-			}
+			result = read_cell_page(cursor, &node, child_key_index);
+			if( result != BTREE_OK )
+				goto end;
 		}
 	} while( !node.header->is_leaf );
 
@@ -130,10 +155,7 @@ cursor_traverse_to_ex(
 	u32 child_key_index = 0;
 	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
-	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
-	struct CellData cell = {0};
-	struct CursorBreadcrumb* crumb = NULL;
 	*found = 0;
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
@@ -142,14 +164,8 @@ cursor_traverse_to_ex(
 
 	do
 	{
-		pager_reselect(&selector, cursor->current_page_id);
-
-		result =
-			btpage_err(pager_read_page(cursor->tree->pager, &selector, page));
-		if( result != BTREE_OK )
-			goto end;
-
-		result = btree_node_init_from_page(&node, page);
+		result = btree_node_init_from_read(
+			&node, page, cursor->tree->pager, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -173,35 +189,175 @@ cursor_traverse_to_ex(
 
 		if( !node.header->is_leaf )
 		{
-			if( child_key_index == node.header->num_keys )
-			{
-				cursor->current_page_id = node.header->right_child;
-			}
-			else
-			{
-				if( cursor->tree->type == BTREE_TBL )
-				{
-					btu_read_cell(&node, child_key_index, &cell);
-					u32 cell_size = btree_cell_get_size(&cell);
-					if( cell_size != sizeof(cursor->current_page_id) )
-					{
-						result = BTREE_ERR_CORRUPT_CELL;
-						goto end;
-					}
-
-					memcpy(&cursor->current_page_id, cell.pointer, cell_size);
-				}
-				else
-				{
-					cursor->current_page_id = node.keys[child_key_index].key;
-				}
-			}
+			result = read_cell_page(cursor, &node, child_key_index);
+			if( result != BTREE_OK )
+				goto end;
 		}
 	} while( !node.header->is_leaf );
 
 end:
 	if( page )
 		page_destroy(cursor->tree->pager, page);
+
+	return result;
+}
+
+enum btree_e
+cursor_traverse_left_largest(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct Page* page = NULL;
+	struct BTreeNode node = {0};
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end; // TODO: No-mem
+
+	do
+	{
+		result = btree_node_init_from_read(
+			&node, page, cursor->tree->pager, cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
+
+		if( node.header->is_leaf )
+		{
+			cursor->current_key_index.index = node.header->num_keys - 1;
+			cursor->current_key_index.mode = KLIM_END;
+		}
+		else
+		{
+			cursor->current_key_index.index = node.header->num_keys;
+			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
+		}
+
+		result = cursor_push(cursor);
+		if( result != BTREE_OK )
+			goto end;
+
+		if( !node.header->is_leaf )
+		{
+			result = read_cell_page(cursor, &node, node.header->num_keys);
+			if( result != BTREE_OK )
+				goto end;
+		}
+	} while( !node.header->is_leaf );
+
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+
+	return result;
+}
+
+enum btree_e
+cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
+{
+	enum btree_e result = BTREE_OK;
+	struct Page* page = NULL;
+	struct BTreeNode node = {0};
+	struct CursorBreadcrumb crumb = {0};
+
+	if( cursor->breadcrumbs_size < 1 )
+		return BTREE_ERR_CURSOR_NO_PARENT;
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
+
+	// Pop the parent.
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, crumb.page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	// Put the parent back
+	result = cursor_push_crumb(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	u32 sibling_id = 0;
+	if( sibling == CURSOR_SIBLING_LEFT )
+	{
+		if( crumb.key_index.index == 0 )
+		{
+			result = BTREE_ERR_CURSOR_NO_SIBLING;
+			goto end;
+		}
+
+		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
+		if( crumb.key_index.index == node.header->num_keys ||
+			crumb.key_index.mode != KLIM_INDEX )
+		{
+			result = BTREE_ERR_CURSOR_NO_SIBLING;
+			goto end;
+		}
+
+		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
+		if( result != BTREE_OK )
+			goto end;
+	}
+
+	// Cursor is now point to the child; point to first element of sibling.
+	cursor->current_key_index.index = 0;
+	cursor->current_key_index.mode = KLIM_INDEX;
+	result = cursor_push(cursor);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+
+	return result;
+}
+
+enum btree_e
+cursor_read_parent(struct Cursor* cursor, struct BTreeNode* out_node)
+{
+	enum btree_e result = BTREE_OK;
+	struct CursorBreadcrumb crumb = {0};
+
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		return result;
+
+	result = btree_node_init_from_read(
+		out_node, out_node->page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		return result;
+
+	result = cursor_push_crumb(cursor, &crumb);
+	if( result != BTREE_OK )
+		return result;
+
+	return result;
+}
+
+enum btree_e
+cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index)
+{
+	enum btree_e result = BTREE_OK;
+	struct CursorBreadcrumb crumb = {0};
+
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		return result;
+
+	*out_index = cursor->current_key_index;
+
+	result = cursor_push_crumb(cursor, &crumb);
+	if( result != BTREE_OK )
+		return result;
 
 	return result;
 }

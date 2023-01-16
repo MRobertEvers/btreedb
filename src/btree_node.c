@@ -113,6 +113,25 @@ btree_node_init_from_page(struct BTreeNode* node, struct Page* page)
 	return BTREE_OK;
 }
 
+enum btree_e
+btree_node_init_from_read(
+	struct BTreeNode* node, struct Page* page, struct Pager* pager, u32 page_id)
+{
+	enum btree_e result = BTREE_OK;
+	struct PageSelector selector = {0};
+	pager_reselect(&selector, page_id);
+
+	result = btpage_err(pager_read_page(pager, &selector, page));
+	if( result != BTREE_OK )
+		return result;
+
+	result = btree_node_init_from_page(node, page);
+	if( result != BTREE_OK )
+		return result;
+
+	return result;
+}
+
 /**
  * See header for details.
  */
@@ -306,29 +325,53 @@ enum btree_e
 btree_node_move_cell(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
-	u32 index,
+	u32 source_index,
 	struct Pager* pager)
 {
 	return btree_node_move_cell_ex(
-		source_node, other, index, source_node->keys[index].key, pager);
+		source_node,
+		other,
+		source_index,
+		source_node->keys[source_index].key,
+		pager);
 }
 
 enum btree_e
 btree_node_move_cell_ex(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
-	u32 index,
+	u32 source_index,
 	u32 new_key,
 	struct Pager* pager)
 {
 	struct InsertionIndex insert_end = {.mode = KLIM_END};
-	u32 flags = source_node->keys[index].flags;
 
-	byte* cell_data = btu_get_cell_buffer(source_node, index);
-	u32 cell_data_size = btu_get_cell_buffer_size(source_node, index);
+	return btree_node_move_cell_ex_to(
+		source_node, other, source_index, &insert_end, new_key, pager);
+}
+
+enum btree_e
+btree_node_move_cell_ex_to(
+	struct BTreeNode* source_node,
+	struct BTreeNode* dest_node,
+	u32 source_index,
+	struct InsertionIndex* dest_index,
+	u32 new_key,
+	struct Pager* pager)
+{
+	u32 flags = source_node->keys[source_index].flags;
+
+	byte* cell_data = btu_get_cell_buffer(source_node, source_index);
+	u32 cell_data_size = btu_get_cell_buffer_size(source_node, source_index);
 
 	return btree_node_move_cell_from_data(
-		other, &insert_end, new_key, flags, cell_data, cell_data_size, pager);
+		dest_node,
+		dest_index,
+		new_key,
+		flags,
+		cell_data,
+		cell_data_size,
+		pager);
 }
 
 enum btree_e
@@ -436,6 +479,14 @@ btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node)
 	return btree_node_init_from_page(dest_node, dest_node->page);
 }
 
+enum btree_e
+btree_node_reset(struct BTreeNode* node)
+{
+	memset(btu_get_node_buffer(node), 0x00, btu_get_node_size(node));
+
+	return btree_node_init_from_page(node, node->page);
+}
+
 // /**
 //  * See header
 //  */
@@ -503,6 +554,93 @@ btree_node_remove(
 		removed_cell->inline_size = deleted_inline_size;
 		removed_cell->payload = buffer;
 	}
+
+	// Slide keys over.
+	memmove(
+		&node->keys[index_number],
+		&node->keys[index_number + 1],
+		(node->header->num_keys - index_number) *
+			sizeof(node->keys[index_number]));
+	memset(&cell, 0x00, sizeof(cell));
+	node->header->num_keys -= 1;
+
+	// Garbage collection in the heap.
+	// TODO: This is seriously flaky.
+	for( int i = index_number; i < node->header->num_keys; i++ )
+	{
+		u32 offset = node->keys[i].cell_offset;
+		btu_read_cell(node, index_number, &cell);
+		byte* src = btu_calc_highwater_offset(node, offset);
+		byte* dest = btu_calc_highwater_offset(
+			node, offset - (deleted_inline_size + sizeof(u32)));
+		memmove(
+			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
+	}
+
+	node->header->cell_high_water_offset -= deleted_inline_size + sizeof(u32);
+	node->header->free_heap += btree_node_heap_required_for_insertion(
+		deleted_inline_size + sizeof(u32));
+
+	return BTREE_OK;
+}
+
+enum btree_e
+ibtree_node_remove(
+	struct BTreeNode* node,
+	struct ChildListIndex* index,
+	struct BTreeNode* holding_node)
+{
+	enum btree_e result = BTREE_OK;
+	struct CellData cell = {0};
+	u32 index_number = 0;
+
+	assert(index->mode != KLIM_END);
+
+	if( index->mode == KLIM_RIGHT_CHILD )
+	{
+		// Must not be the case for leaf nodes.
+		if( node->header->is_leaf )
+			return BTREE_ERR_KEY_NOT_FOUND;
+
+		// It is up to the btree alg to correctly
+		// remove this node.
+		// TODO: Throw here as we've failed to maintain some invariant?
+		if( node->header->num_keys == 0 )
+		{
+			return BTREE_ERR_UNK;
+		}
+
+		// The rightmost non-right-child key becomes the right-child.
+		struct BTreeCellInline removed_cell = {0};
+		struct BTreePageKey rightmost_key =
+			node->keys[node->header->num_keys - 1];
+		u32 child_value = rightmost_key.key;
+
+		struct ChildListIndex delete_index = {0};
+		delete_index.index = node->header->num_keys - 1;
+		delete_index.mode = KLIM_INDEX;
+		enum btree_e next_right_child_result =
+			ibtree_node_remove(node, &delete_index, holding_node);
+
+		if( next_right_child_result != BTREE_OK )
+			return next_right_child_result;
+
+		node->header->right_child = child_value;
+
+		return BTREE_OK;
+	}
+
+	index_number = index->index;
+
+	if( holding_node )
+	{
+		result = btree_node_move_cell(node, holding_node, index_number, NULL);
+		if( result != BTREE_OK )
+			return result;
+	}
+
+	btu_read_cell(node, index_number, &cell);
+	int deleted_inline_size = btree_cell_get_size(&cell);
 
 	// Slide keys over.
 	memmove(

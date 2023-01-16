@@ -23,6 +23,7 @@
         "btree_node_writer.h": "c",
         "ibtree_test.h": "c",
         "pager_ops_cstd.h": "c",
-        "btree_node_reader.h": "c"
+        "btree_node_reader.h": "c",
+        "ibtree_alg.h": "c"
     },
 }

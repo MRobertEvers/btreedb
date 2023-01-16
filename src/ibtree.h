@@ -50,6 +50,6 @@ int ibtree_compare(
  * @return enum btree_e
  */
 enum btree_e ibtree_insert(struct BTree*, void* data, int data_size);
-enum btree_e ibtree_delete(struct BTree*, void* data, int data_size);
+enum btree_e ibtree_delete(struct BTree*, void* key, int key_size);
 
 #endif

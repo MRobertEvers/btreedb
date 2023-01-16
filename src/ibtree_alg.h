@@ -2,6 +2,7 @@
 #define IBTREE_ALG_H
 
 #include "btree_defs.h"
+#include "btree_node_writer.h"
 
 struct SplitPageAsParent
 {
@@ -57,6 +58,45 @@ enum btree_e ibta_split_node(
 	struct Pager* pager,
 	struct BTreeNode* holding_node,
 	struct SplitPage* split_page);
+
+struct ibta_insert_at
+{
+	void* data;
+	u32 data_size;
+	u32 flags;
+	u32 key;
+	enum writer_ex_mode_e mode;
+};
+void ibta_insert_at_init(
+	struct ibta_insert_at* insert_at, void* data, u32 data_size);
+void ibta_insert_at_init_ex(
+	struct ibta_insert_at* insert_at,
+	void* data,
+	u32 data_size,
+	u32 flags,
+	u32 key,
+	enum writer_ex_mode_e mode);
+
+enum btree_e
+ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at);
+
+enum rebalance_mode_e
+{
+	REBALANCE_MODE_UNK,
+	REBALANCE_MODE_ROTATE_RIGHT,
+	REBALANCE_MODE_ROTATE_LEFT,
+	REBALANCE_MODE_MERGE,
+};
+
+enum btree_e ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode);
+
+/**
+ * @brief Expects the cursor to be at the node that just underflowed.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e ibta_rebalance(struct Cursor* cursor);
 
 struct MergedPage
 {};

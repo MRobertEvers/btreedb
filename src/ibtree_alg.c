@@ -1,12 +1,16 @@
-#include "btree_alg.h"
+#include "ibtree_alg.h"
+
 #include "btree_cell.h"
+#include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
+#include "btree_node_writer.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
 #include "pager.h"
 #include "serialization.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -298,3 +302,531 @@ calc_heap_used(struct BTreeNode* node)
 
 // 	return result;
 // }
+
+static struct InsertionIndex
+from_cli(struct ChildListIndex* cli)
+{
+	struct InsertionIndex result;
+	result.index = cli->index;
+
+	if( cli->mode == KLIM_RIGHT_CHILD )
+	{
+		result.mode = KLIM_END;
+	}
+	else
+	{
+		result.mode = cli->mode;
+	}
+
+	return result;
+}
+
+/**
+ * @brief
+ *
+ * @param index
+ * @param node
+ * @return int 1 for right, -1 for left
+ */
+static int
+left_or_right_insertion(struct InsertionIndex* index, struct BTreeNode* node)
+{
+	if( index->mode != KLIM_INDEX )
+		return 1;
+
+	u32 first_half = (node->header->num_keys + 1) / 2;
+	if( index->index < first_half )
+	{
+		return -1;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+void
+ibta_insert_at_init(struct ibta_insert_at* insert_at, void* data, u32 data_size)
+{
+	ibta_insert_at_init_ex(
+		insert_at, data, data_size, 0, 0, WRITER_EX_MODE_RAW);
+}
+
+void
+ibta_insert_at_init_ex(
+	struct ibta_insert_at* insert_at,
+	void* data,
+	u32 data_size,
+	u32 flags,
+	u32 key,
+	enum writer_ex_mode_e mode)
+{
+	insert_at->data = data;
+	insert_at->data_size = data_size;
+	insert_at->flags = flags;
+	insert_at->key = key;
+	insert_at->mode = mode;
+}
+
+enum btree_e
+ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
+{
+	struct BTree* tree = cursor->tree;
+	assert(tree->compare != NULL);
+
+	enum btree_e result = BTREE_OK;
+	char found = 0;
+	int page_index_as_key =
+		insert_at->key; // This is only not zero when there is a page split.
+	u32 flags = insert_at->flags; // Only used when writing to parent.
+	enum writer_ex_mode_e writer_mode = insert_at->mode;
+	byte* payload = insert_at->data;
+	u32 payload_size = insert_at->data_size;
+	struct Page* page = NULL;
+	struct Page* holding_page_one = NULL;
+	struct Page* holding_page_two = NULL;
+	struct PageSelector selector = {0};
+	struct BTreeNode node = {0};
+	struct BTreeNode holding_node_one = {0};
+	struct BTreeNode holding_node_two = {0};
+
+	struct BTreeNode* next_holding_node = &holding_node_one;
+
+	struct CursorBreadcrumb crumb = {0};
+
+	// Holding page and node is required to move cells up the tree.
+	result = btpage_err(page_create(tree->pager, &holding_page_one));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_page(&holding_node_one, holding_page_one);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(tree->pager, &holding_page_two));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_page(&holding_node_two, holding_page_two);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
+
+	while( 1 )
+	{
+		result = cursor_pop(cursor, &crumb);
+		if( result != BTREE_OK )
+			goto end;
+
+		result =
+			btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+		if( result != BTREE_OK )
+			goto end;
+
+		struct InsertionIndex index = from_cli(&cursor->current_key_index);
+
+		result = btree_node_write_ex(
+			&node,
+			tree->pager,
+			&index,
+			page_index_as_key,
+			flags, // Nonzero only on split.
+			payload,
+			payload_size,
+			writer_mode);
+		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		{
+			if( node.page->page_id == 1 )
+			{
+				// TODO: This first half thing is shaky.
+				u32 first_half = (node.header->num_keys + 1) / 2;
+				int child_insertion = left_or_right_insertion(&index, &node);
+
+				struct SplitPageAsParent split_result;
+				result = ibta_split_node_as_parent(
+					&node, tree->pager, &split_result);
+				if( result != BTREE_OK )
+					goto end;
+
+				pager_reselect(
+					&selector,
+					child_insertion == -1 ? split_result.left_child_page_id
+										  : split_result.right_child_page_id);
+
+				result =
+					btpage_err(pager_read_page(tree->pager, &selector, page));
+				if( result != BTREE_OK )
+					goto end;
+
+				result = btree_node_init_from_page(&node, page);
+				if( result != BTREE_OK )
+					goto end;
+
+				if( child_insertion == 1 )
+					index.index -= first_half;
+
+				result = btree_node_write_ex(
+					&node,
+					tree->pager,
+					&index,
+					page_index_as_key,
+					flags,
+					payload,
+					payload_size,
+					writer_mode);
+
+				if( result != BTREE_OK )
+					goto end;
+
+				goto end;
+			}
+			else
+			{
+				u32 first_half = (node.header->num_keys + 1) / 2;
+				int child_insertion = left_or_right_insertion(&index, &node);
+
+				memset(
+					next_holding_node->page->page_buffer,
+					0x00,
+					next_holding_node->page->page_size);
+				btree_node_init_from_page(
+					next_holding_node, next_holding_node->page);
+
+				struct SplitPage split_result;
+				result = ibta_split_node(
+					&node, tree->pager, next_holding_node, &split_result);
+				if( result != BTREE_OK )
+					goto end;
+
+				// TODO: Key compare function.
+				if( child_insertion == -1 )
+				{
+					pager_reselect(&selector, split_result.left_page_id);
+					pager_read_page(tree->pager, &selector, page);
+					btree_node_init_from_page(&node, page);
+				}
+
+				if( child_insertion == 1 )
+					index.index -= first_half;
+
+				// Write the input payload to the correct child.
+				result = btree_node_write_ex(
+					&node,
+					tree->pager,
+					&index,
+					page_index_as_key,
+					flags,
+					payload,
+					payload_size,
+					writer_mode);
+				if( result != BTREE_OK )
+					goto end;
+
+				// Now we need to write the holding key.
+				result = cursor_pop(cursor, &crumb);
+				if( result != BTREE_OK )
+					goto end;
+
+				cursor->current_key_index.mode = KLIM_INDEX;
+				result = cursor_push(cursor);
+				if( result != BTREE_OK )
+					goto end;
+
+				writer_mode = WRITER_EX_MODE_CELL_MOVE;
+				flags = next_holding_node->keys[0].flags;
+				page_index_as_key = split_result.left_page_id;
+
+				payload = btu_get_cell_buffer(next_holding_node, 0);
+				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
+
+				next_holding_node = next_holding_node == &holding_node_one
+										? &holding_node_two
+										: &holding_node_one;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+end:
+	if( page )
+		page_destroy(tree->pager, page);
+	if( holding_page_one )
+		page_destroy(tree->pager, holding_page_one);
+	if( holding_page_two )
+		page_destroy(tree->pager, holding_page_two);
+	return result;
+}
+
+/**
+ * @brief Checks if right sibling can
+ *
+ * Clobber current cursor index.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+static enum btree_e
+check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
+{
+	enum btree_e result = BTREE_OK;
+	struct Page* page = NULL;
+	struct BTreeNode node = {0};
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_sibling(cursor, sibling);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( node.header->num_keys < 1 )
+		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+
+	result = cursor_sibling(
+		cursor,
+		sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
+									   : CURSOR_SIBLING_LEFT);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+
+	return result;
+}
+
+enum btree_e
+decide_rebalance_mode(struct Cursor* cursor, enum rebalance_mode_e* out_mode)
+{
+	enum btree_e result = BTREE_OK;
+
+	result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	if( result == BTREE_OK )
+	{
+		*out_mode = REBALANCE_MODE_ROTATE_LEFT;
+		goto end;
+	}
+
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING ||
+		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		goto end;
+
+	result = check_sibling(cursor, CURSOR_SIBLING_LEFT);
+	if( result == BTREE_OK )
+	{
+		*out_mode = REBALANCE_MODE_ROTATE_LEFT;
+		goto end;
+	}
+
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING ||
+		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		goto end;
+
+	*out_mode = REBALANCE_MODE_MERGE;
+
+end:
+	return result;
+}
+
+/**
+ * @brief With the cursor pointing at the underflown node, this will rotate
+ * right.
+ *
+ * Put the separator from the parent node into the right node, move a node from
+ * the left node into the parent as the new separator.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e
+ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
+{
+	assert(
+		mode == REBALANCE_MODE_ROTATE_LEFT ||
+		mode == REBALANCE_MODE_ROTATE_RIGHT);
+	enum btree_e result = BTREE_OK;
+	struct Page* page = NULL;
+	struct Page* parent_page = NULL;
+	struct BTreeNode node = {0};
+	struct BTreeNode parent_node = {0};
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_page(&parent_node, parent_page);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_read_parent(cursor, &parent_node);
+	if( result != BTREE_OK )
+		goto end;
+
+	struct ChildListIndex parent_index = {0};
+	result = cursor_parent_index(cursor, &parent_index);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+	{
+		if( parent_index.mode == KLIM_RIGHT_CHILD )
+			parent_index.index = parent_node.header->num_keys - 1;
+		else
+			parent_index.index -= 1;
+	}
+	parent_index.mode = KLIM_INDEX;
+
+	struct InsertionIndex insert_index = {0};
+	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+	{
+		insert_index.mode = KLIM_INDEX;
+		insert_index.index = 0;
+	}
+	else
+	{
+		insert_index.mode = KLIM_END;
+		insert_index.index = node.header->num_keys;
+	}
+	result = btree_node_move_cell_ex_to(
+		&parent_node,
+		&node,
+		parent_index.index,
+		&insert_index,
+		0,
+		cursor->tree->pager);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	// Save on a write here because the parent stays in memory.
+	// result =
+	// 	btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+	// if( result != BTREE_OK )
+	// 	goto end;
+
+	// Now move the highest element from the left child to the parent.
+	result = cursor_sibling(
+		cursor,
+		mode == REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_LEFT
+											: CURSOR_SIBLING_RIGHT);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	u32 source_index = node.header->num_keys - 1;
+
+	insert_index.index = parent_index.index;
+	insert_index.mode =
+		parent_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
+
+	result = btree_node_move_cell_ex_to(
+		&node,
+		&parent_node,
+		source_index,
+		&insert_index,
+		cursor->current_page_id,
+		cursor->tree->pager);
+	if( result != BTREE_OK )
+		goto end;
+
+	result =
+		btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	parent_index.index = source_index;
+	parent_index.mode = KLIM_INDEX;
+	result = btree_node_remove(&node, &parent_index, NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+	if( parent_page )
+		page_destroy(cursor->tree->pager, parent_page);
+	return result;
+}
+
+enum btree_e
+ibta_rebalance(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct BTree* tree = cursor->tree;
+	enum rebalance_mode_e mode = REBALANCE_MODE_UNK;
+
+	// result = btpage_err(page_create(tree->pager, &page));
+	// if( result != BTREE_OK )
+	// 	goto end;
+
+	// result = btree_node_init_from_read(
+	// 	&node, page, tree->pager, cursor->current_page_id);
+	// if( result != BTREE_OK )
+	// 	goto end;
+	// // TODO: Assert underflowed?
+
+	result = decide_rebalance_mode(cursor, &mode);
+	if( result == BTREE_ERR_CURSOR_NO_PARENT )
+	{
+		// Can't rebalance root.
+		result = BTREE_OK;
+		goto end;
+	}
+
+	if( result != BTREE_OK )
+		goto end;
+
+	switch( mode )
+	{
+	case REBALANCE_MODE_ROTATE_LEFT:
+		break;
+	case REBALANCE_MODE_ROTATE_RIGHT:
+		break;
+	case REBALANCE_MODE_MERGE:
+		break;
+	default:
+		result = BTREE_ERR_UNK;
+		break;
+	}
+
+end:
+
+	return result;
+}

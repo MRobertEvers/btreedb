@@ -51,6 +51,12 @@ enum btree_e btree_node_destroy(struct BTreeNode*);
 enum btree_e
 btree_node_init_from_page(struct BTreeNode* node, struct Page* page);
 
+enum btree_e btree_node_init_from_read(
+	struct BTreeNode* node,
+	struct Page* page,
+	struct Pager* pager,
+	u32 page_id);
+
 /**
  * @brief Inserts inline cell into a node.
  *
@@ -109,16 +115,33 @@ enum btree_e btree_node_insert_overflow(
 	u32 key,
 	struct BTreeCellOverflow* cell);
 
+/**
+ * @brief
+ *
+ * @param source_node
+ * @param other
+ * @param index
+ * @param pager May be null if you know the cell will fit.
+ * @return enum btree_e
+ */
 enum btree_e btree_node_move_cell(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
-	u32 index,
+	u32 source_index,
 	struct Pager* pager);
 
 enum btree_e btree_node_move_cell_ex(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
-	u32 index,
+	u32 source_index,
+	u32 new_key,
+	struct Pager* pager);
+
+enum btree_e btree_node_move_cell_ex_to(
+	struct BTreeNode* source_node,
+	struct BTreeNode* dest_node,
+	u32 source_index,
+	struct InsertionIndex* dest_index,
 	u32 new_key,
 	struct Pager* pager);
 
@@ -141,6 +164,8 @@ enum btree_e btree_node_move_cell_from_data(
 enum btree_e
 btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node);
 
+enum btree_e btree_node_reset(struct BTreeNode* node);
+
 /**
  * @brief Removes data from a node.
  *
@@ -159,6 +184,11 @@ enum btree_e btree_node_remove(
 	struct BTreeCellInline* removed_cell,
 	void* buffer,
 	u32 buffer_size);
+
+enum btree_e ibtree_node_remove(
+	struct BTreeNode* node,
+	struct ChildListIndex* index,
+	struct BTreeNode* holding_node);
 
 /**
  * @brief Get the heap required for insertion; Accounts for page key size

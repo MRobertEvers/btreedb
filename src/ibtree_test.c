@@ -5,7 +5,9 @@
 #include "btree_defs.h"
 #include "btree_node.h"
 #include "btree_node_reader.h"
+#include "btree_node_writer.h"
 #include "ibtree.h"
+#include "ibtree_alg.h"
 #include "pager.h"
 #include "pager_ops_cstd.h"
 
@@ -334,6 +336,178 @@ end:
 		page_destroy(pager, page);
 	if( node )
 		btree_node_destroy(node);
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
+}
+
+int
+ibta_rotate_test(void)
+{
+	char const* db_name = "btree_rotate_test.db";
+	remove(db_name);
+
+	int result = 1;
+	struct BTreeNode* parent_node = NULL;
+	struct BTreeNode* left_node = NULL;
+	struct BTreeNode* right_node = NULL;
+	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* test_page = NULL;
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+
+	page_cache_create(&cache, 11);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, 1, &ibtree_compare) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(pager, &parent_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+
+	btree_node_create_as_page_number(&parent_node, 1, parent_page);
+	btree_node_create_as_page_number(&left_node, 2, left_page);
+	btree_node_create_as_page_number(&right_node, 3, right_page);
+
+	right_node->header->is_leaf = 1;
+	left_node->header->is_leaf = 1;
+	pager_write_page(pager, parent_page);
+	pager_write_page(pager, left_page);
+	pager_write_page(pager, right_page);
+
+	parent_node->header->right_child = 3;
+	struct InsertionIndex insert_index = {0};
+	insert_index.index = 0;
+	insert_index.mode = KLIM_END;
+	char rightmost[] = "xbilly";
+	btree_node_write_ex(
+		parent_node,
+		pager,
+		&insert_index,
+		2,
+		0,
+		rightmost,
+		sizeof(rightmost),
+		WRITER_EX_MODE_RAW);
+
+	char leftmost[] = "lkrilly";
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		leftmost,
+		sizeof(leftmost),
+		WRITER_EX_MODE_RAW);
+	char middlemost[] = "mobly";
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		middlemost,
+		sizeof(middlemost),
+		WRITER_EX_MODE_RAW);
+
+	char deadend[] = "zbilly";
+	char found;
+	struct Cursor* cursor = cursor_create(tree);
+	cursor_traverse_to_ex(cursor, deadend, sizeof(deadend), &found);
+
+	struct CursorBreadcrumb crumb = {0};
+	cursor_pop(cursor, &crumb);
+
+	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_RIGHT);
+	cursor_destroy(cursor);
+
+	btree_node_init_from_read(
+		right_node, right_node->page, pager, right_node->page_number);
+
+	if( right_node->header->num_keys != 1 )
+		goto fail;
+
+	btree_node_init_from_read(
+		left_node, left_node->page, pager, left_node->page_number);
+
+	if( left_node->header->num_keys != 1 )
+		goto fail;
+
+	char abuf[sizeof(leftmost)] = {0};
+	btree_node_read_ex(
+		tree,
+		left_node,
+		tree->pager,
+		leftmost,
+		sizeof(leftmost),
+		abuf,
+		sizeof(abuf));
+
+	if( memcmp(leftmost, abuf, sizeof(abuf)) != 0 )
+		goto fail;
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to_ex(cursor, rightmost, sizeof(rightmost), &found);
+
+	if( !found || cursor->current_page_id != 3 )
+		goto fail;
+	cursor_destroy(cursor);
+
+	char buf[sizeof(rightmost)] = {0};
+	btree_node_read_ex(
+		tree,
+		right_node,
+		tree->pager,
+		rightmost,
+		sizeof(rightmost),
+		buf,
+		sizeof(buf));
+
+	if( memcmp(rightmost, buf, sizeof(buf)) != 0 )
+		goto fail;
+
+	/**
+	 * @brief ROTATE BACK
+	 *
+	 */
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to_ex(cursor, leftmost, sizeof(leftmost), &found);
+
+	if( !found || cursor->current_page_id != 2 )
+		goto fail;
+
+	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_LEFT);
+	cursor_destroy(cursor);
+
+	btree_node_init_from_read(
+		left_node, left_node->page, pager, right_node->page_number);
+
+	if( left_node->header->num_keys != 2 )
+		goto fail;
+
+	btree_node_init_from_read(
+		right_node, right_node->page, pager, right_node->page_number);
+
+	if( right_node->header->num_keys != 0 )
+		goto fail;
+
+end:
+	if( test_page )
+		page_destroy(pager, test_page);
 	remove(db_name);
 
 	return result;

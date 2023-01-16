@@ -9,6 +9,7 @@
 #include "ibtree_alg.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,40 +112,48 @@ enum btree_e
 ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 {
 	assert(tree->compare != NULL);
+	enum btree_e result = BTREE_OK;
+	char found;
+	struct Cursor* cursor = cursor_create(tree);
 
+	result = cursor_traverse_to_ex(cursor, payload, payload_size, &found);
+	if( result != BTREE_OK )
+		goto end;
+
+	struct ibta_insert_at insert_at;
+	ibta_insert_at_init(&insert_at, payload, payload_size);
+	result = ibta_insert_at(cursor, &insert_at);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	cursor_destroy(cursor);
+	return result;
+}
+
+enum btree_e
+find_largest_left_child(struct Cursor* cursor)
+{}
+
+enum btree_e
+ibtree_delete(struct BTree* tree, void* key, int key_size)
+{
 	enum btree_e result = BTREE_OK;
 	char found = 0;
-	int page_index_as_key =
-		0; // This is only not zero when there is a page split.
 	struct Page* page = NULL;
-	struct Page* holding_page_one = NULL;
-	struct Page* holding_page_two = NULL;
-	struct PageSelector selector = {0};
-	struct BTreeNode node = {0};
-	struct BTreeNode holding_node_one = {0};
-	struct BTreeNode holding_node_two = {0};
+	struct Page* holding_page = NULL;
 
-	struct BTreeNode* next_holding_node = &holding_node_one;
+	struct BTreeNode node = {0};
+	struct BTreeNode holding_node = {0};
 
 	struct CursorBreadcrumb crumb = {0};
-	u32 flags = 0; // Only used when writing to parent.
-	enum writer_ex_mode_e writer_mode = WRITER_EX_MODE_RAW;
-
 	struct Cursor* cursor = cursor_create(tree);
-	// Holding page and node is required to move cells up the tree.
-	result = btpage_err(page_create(tree->pager, &holding_page_one));
+
+	result = btpage_err(page_create(tree->pager, &holding_page));
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_page(&holding_node_one, holding_page_one);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(tree->pager, &holding_page_two));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_page(&holding_node_two, holding_page_two);
+	result = btree_node_init_from_page(&holding_node, holding_page);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -152,150 +161,90 @@ ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = cursor_traverse_to_ex(cursor, payload, payload_size, &found);
+	result = cursor_traverse_to_ex(cursor, key, key_size, &found);
 	if( result != BTREE_OK )
 		goto end;
 
-	while( 1 )
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = ibtree_node_remove(&node, &crumb.key_index, &holding_node);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(tree->pager, node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	bool underflow = false;
+	// The cell is removed. If it wasn't a leaf node find the largest cell
+	// in the left subtree and promote it to the same location. If it was a
+	// leaf node, do nothing.
+	if( !node.header->is_leaf )
 	{
-		result = cursor_pop(cursor, &crumb);
+		struct BTreeNode replacement_node = {0};
+		struct CursorBreadcrumb replacement_crumb = {0};
+		u32 orphaned_left_child = holding_node.keys[0].key;
+
+		// Look
+		result = cursor_traverse_left_largest(cursor);
 		if( result != BTREE_OK )
 			goto end;
 
-		pager_reselect(&selector, crumb.page_id);
-		result = btpage_err(pager_read_page(tree->pager, &selector, page));
+		result = cursor_pop(cursor, &replacement_crumb);
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_page(&node, page);
+		result = btree_node_init_from_read(
+			&replacement_node, page, tree->pager, replacement_crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
-		struct InsertionIndex index = from_cli(&cursor->current_key_index);
+		result = btree_node_reset(&holding_node);
+		if( result != BTREE_OK )
+			goto end;
 
+		result = ibtree_node_remove(
+			&replacement_node, &replacement_crumb.key_index, &holding_node);
+		if( result != BTREE_OK )
+			goto end;
+
+		struct InsertionIndex insert = {0};
+		insert.index = crumb.key_index.index;
+		insert.mode =
+			crumb.key_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
 		result = btree_node_write_ex(
 			&node,
 			tree->pager,
-			&index,
-			page_index_as_key,
-			flags, // Nonzero only on split.
-			payload,
-			payload_size,
-			writer_mode);
-		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
-		{
-			if( node.page->page_id == 1 )
-			{
-				// TODO: This first half thing is shaky.
-				u32 first_half = (node.header->num_keys + 1) / 2;
-				int child_insertion = left_or_right_insertion(&index, &node);
+			&insert,
+			orphaned_left_child,
+			holding_node.keys[0].flags,
+			btu_get_cell_buffer(&holding_node, 0),
+			btu_get_cell_buffer_size(&holding_node, 0),
+			WRITER_EX_MODE_CELL_MOVE);
+		if( result != BTREE_OK )
+			goto end;
 
-				struct SplitPageAsParent split_result;
-				result = ibta_split_node_as_parent(
-					&node, tree->pager, &split_result);
-				if( result != BTREE_OK )
-					goto end;
+		underflow = replacement_node.header->num_keys < 1;
+	}
+	else
+	{
+		// Do nothing, detect underflow.
+		underflow = node.header->num_keys < 1;
+	}
 
-				pager_reselect(
-					&selector,
-					child_insertion == -1 ? split_result.left_child_page_id
-										  : split_result.right_child_page_id);
+	// If the leaf node underflows, then we need to rebalance.
 
-				result =
-					btpage_err(pager_read_page(tree->pager, &selector, page));
-				if( result != BTREE_OK )
-					goto end;
-
-				result = btree_node_init_from_page(&node, page);
-				if( result != BTREE_OK )
-					goto end;
-
-				if( child_insertion == 1 )
-					index.index -= first_half;
-
-				result = btree_node_write_ex(
-					&node,
-					tree->pager,
-					&index,
-					page_index_as_key,
-					flags,
-					payload,
-					payload_size,
-					writer_mode);
-
-				if( result != BTREE_OK )
-					goto end;
-
-				goto end;
-			}
-			else
-			{
-				u32 first_half = (node.header->num_keys + 1) / 2;
-				int child_insertion = left_or_right_insertion(&index, &node);
-
-				memset(
-					next_holding_node->page->page_buffer,
-					0x00,
-					next_holding_node->page->page_size);
-				btree_node_init_from_page(
-					next_holding_node, next_holding_node->page);
-
-				struct SplitPage split_result;
-				result = ibta_split_node(
-					&node, tree->pager, next_holding_node, &split_result);
-				if( result != BTREE_OK )
-					goto end;
-
-				// TODO: Key compare function.
-				if( child_insertion == -1 )
-				{
-					pager_reselect(&selector, split_result.left_page_id);
-					pager_read_page(tree->pager, &selector, page);
-					btree_node_init_from_page(&node, page);
-				}
-
-				if( child_insertion == 1 )
-					index.index -= first_half;
-
-				// Write the input payload to the correct child.
-				result = btree_node_write_ex(
-					&node,
-					tree->pager,
-					&index,
-					page_index_as_key,
-					flags,
-					payload,
-					payload_size,
-					writer_mode);
-				if( result != BTREE_OK )
-					goto end;
-
-				// Now we need to write the holding key.
-				result = cursor_pop(cursor, &crumb);
-				if( result != BTREE_OK )
-					goto end;
-
-				cursor->current_key_index.mode = KLIM_INDEX;
-				result = cursor_push(cursor);
-				if( result != BTREE_OK )
-					goto end;
-
-				writer_mode = WRITER_EX_MODE_CELL_MOVE;
-				flags = next_holding_node->keys[0].flags;
-				page_index_as_key = split_result.left_page_id;
-
-				payload = btu_get_cell_buffer(next_holding_node, 0);
-				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
-
-				next_holding_node = next_holding_node == &holding_node_one
-										? &holding_node_two
-										: &holding_node_one;
-			}
-		}
-		else
-		{
-			break;
-		}
+	// TODO: Assumes min# elements is < 1/2 of the max # elements.
+	// TODO: Small size threshold.
+	if( underflow )
+	{
+		result = ibta_rebalance(cursor);
 	}
 
 end:
@@ -303,9 +252,8 @@ end:
 		cursor_destroy(cursor);
 	if( page )
 		page_destroy(tree->pager, page);
-	if( holding_page_one )
-		page_destroy(tree->pager, holding_page_one);
-	if( holding_page_two )
-		page_destroy(tree->pager, holding_page_two);
-	return BTREE_OK;
+
+	if( holding_page )
+		page_destroy(tree->pager, holding_page);
+	return result;
 }
