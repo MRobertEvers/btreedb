@@ -90,6 +90,22 @@ enum rebalance_mode_e
 
 enum btree_e ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode);
 
+enum merge_mode_e
+{
+	MERGE_MODE_LEFT,
+	MERGE_MODE_RIGHT
+};
+/**
+ * @brief Merges right unless it's the last sibling, then it merges left.
+ *
+ * Assumes the cursor is pointing to the left child; special logic if rightmost
+ * child
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e ibta_merge(struct Cursor* cursor);
+
 /**
  * @brief Expects the cursor to be at the node that just underflowed.
  *

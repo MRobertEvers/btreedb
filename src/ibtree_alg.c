@@ -714,6 +714,10 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 		&node,
 		parent_index.index,
 		&insert_index,
+		// For rotate right, this will eventually be updated to
+		// point to the prev r-most of the left node.
+		// For rotate left, this will point to the child of the prev
+		// leftmost node.
 		0,
 		cursor->tree->pager);
 	if( result != BTREE_OK )
@@ -746,7 +750,15 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	u32 source_index = node.header->num_keys - 1;
+	u32 source_index_number = 0;
+	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+	{
+		source_index_number = node.header->num_keys - 1;
+	}
+	else
+	{
+		source_index_number = 0;
+	}
 
 	insert_index.index = parent_index.index;
 	insert_index.mode =
@@ -755,7 +767,7 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	result = btree_node_move_cell_ex_to(
 		&node,
 		&parent_node,
-		source_index,
+		source_index_number,
 		&insert_index,
 		cursor->current_page_id,
 		cursor->tree->pager);
@@ -767,11 +779,63 @@ ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	parent_index.index = source_index;
-	parent_index.mode = KLIM_INDEX;
-	result = btree_node_remove(&node, &parent_index, NULL, NULL, 0);
+	// Keep track of the child that was previously pointed to by the elevated
+	// cell.
+	// On rotate right, node points to left sibling. (Elevated cell side.)
+	// On rotate left, node points to right sibling.
+	u32 orphaned_child_page = node.keys[source_index_number].key;
+
+	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+	{
+		u32 prev_rightmost_of_left_node = node.header->right_child;
+
+		node.header->right_child = orphaned_child_page;
+
+		// Need to update the lowered cell to point to this.
+		orphaned_child_page = prev_rightmost_of_left_node;
+	}
+
+	struct ChildListIndex source_index;
+	source_index.index = source_index_number;
+	source_index.mode = KLIM_INDEX;
+	result = btree_node_remove(&node, &source_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
+
+	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	// Now we go back to the previously deficient page and update it to point to
+	// the correct children.
+	result = cursor_sibling(
+		cursor,
+		mode == REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_RIGHT
+											: CURSOR_SIBLING_LEFT);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+	{
+		// Need to update the lowered cell to point to
+		node.keys[insert_index.index].key = orphaned_child_page;
+	}
+	else
+	{
+		u32 prev_rightmost_of_left_node = node.header->right_child;
+
+		// Update the lowered cell in the left node to point to
+		// child of elevated cell.
+		node.header->right_child = orphaned_child_page;
+
+		// Update the
+		node.keys[insert_index.index].key = prev_rightmost_of_left_node;
+	}
 
 	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
 	if( result != BTREE_OK )
@@ -784,6 +848,91 @@ end:
 		page_destroy(cursor->tree->pager, parent_page);
 	return result;
 }
+
+// enum btree_e
+// ibta_merge(struct Cursor* cursor)
+// {
+// 	// Merge left
+// 	// sandwich left parent.
+// 	// Parent cell points to the right child of the left node.
+// 	struct BTreeNode node = {0};
+// 	struct BTreeNode parent_node = {0};
+
+// 	struct Page* page = NULL;
+// 	struct Page* parent_page = NULL;
+// 	struct BTreeNode node = {0};
+// 	struct BTreeNode parent_node = {0};
+
+// 	result = btpage_err(page_create(cursor->tree->pager, &page));
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = btree_node_init_from_read(
+// 		&node, page, cursor->tree->pager, cursor->current_page_id);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = btree_node_init_from_page(&parent_node, parent_page);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = cursor_read_parent(cursor, &parent_node);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	struct ChildListIndex parent_index = {0};
+// 	result = cursor_parent_index(cursor, &parent_index);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+// 	{
+// 		if( parent_index.mode == KLIM_RIGHT_CHILD )
+// 			parent_index.index = parent_node.header->num_keys - 1;
+// 		else
+// 			parent_index.index -= 1;
+// 	}
+// 	parent_index.mode = KLIM_INDEX;
+
+// 	struct InsertionIndex insert_index = {0};
+// 	if( mode == REBALANCE_MODE_ROTATE_RIGHT )
+// 	{
+// 		insert_index.mode = KLIM_INDEX;
+// 		insert_index.index = 0;
+// 	}
+// 	else
+// 	{
+// 		insert_index.mode = KLIM_END;
+// 		insert_index.index = node.header->num_keys;
+// 	}
+// 	result = btree_node_move_cell_ex_to(
+// 		&parent_node,
+// 		&node,
+// 		parent_index.index,
+// 		&insert_index,
+// 		0,
+// 		cursor->tree->pager);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = btpage_err(pager_write_page(cursor->tree->pager, node.page));
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+// 	if( result != BTREE_OK )
+// 		goto end;
+
+// 	// Save on a write here because the parent stays in memory.
+// 	// result =
+// 	// 	btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+// 	// if( result != BTREE_OK )
+// 	// 	goto end;
+// }
 
 enum btree_e
 ibta_rebalance(struct Cursor* cursor)

@@ -310,9 +310,6 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	// Cursor is now point to the child; point to first element of sibling.
 	cursor->current_key_index.index = 0;
 	cursor->current_key_index.mode = KLIM_INDEX;
-	result = cursor_push(cursor);
-	if( result != BTREE_OK )
-		goto end;
 
 end:
 	if( page )
