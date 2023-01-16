@@ -58,7 +58,7 @@ main()
 	// result = ibtree_test_deep_tree();
 	// printf("ibtree deep test: %d\n", result);
 	result = ibta_rotate_test();
-	printf("rotate_right: %d\n", result);
+	printf("rotate: %d\n", result);
 
 	return 0;
 }

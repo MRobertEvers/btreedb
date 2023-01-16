@@ -302,7 +302,7 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 			goto end;
 		}
 
-		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
+		result = read_cell_page(cursor, &node, crumb.key_index.index + 1);
 		if( result != BTREE_OK )
 			goto end;
 	}

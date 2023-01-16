@@ -489,12 +489,12 @@ ibta_rotate_test(void)
 
 	if( !found || cursor->current_page_id != 2 )
 		goto fail;
-
+	cursor_pop(cursor, &crumb);
 	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_LEFT);
 	cursor_destroy(cursor);
 
 	btree_node_init_from_read(
-		left_node, left_node->page, pager, right_node->page_number);
+		left_node, left_node->page, pager, left_node->page_number);
 
 	if( left_node->header->num_keys != 2 )
 		goto fail;
