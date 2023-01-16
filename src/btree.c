@@ -233,8 +233,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 				// is the num keys on that page.
 				// cursor->current_key_index.index;
 
-				cursor->current_key_index.mode = KLIM_INDEX;
-				result = cursor_push(cursor);
+				crumb.key_index.mode = KLIM_INDEX;
+				result = cursor_push_crumb(cursor, &crumb);
 				if( result != BTREE_OK )
 					goto end;
 

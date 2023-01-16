@@ -426,7 +426,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 		if( result != BTREE_OK )
 			goto end;
 
-		struct InsertionIndex index = from_cli(&cursor->current_key_index);
+		struct InsertionIndex index = from_cli(&crumb.key_index);
 
 		result = btree_node_write_ex(
 			&node,
@@ -530,8 +530,8 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 				if( result != BTREE_OK )
 					goto end;
 
-				cursor->current_key_index.mode = KLIM_INDEX;
-				result = cursor_push(cursor);
+				crumb.key_index.mode = KLIM_INDEX;
+				result = cursor_push_crumb(cursor, &crumb);
 				if( result != BTREE_OK )
 					goto end;
 
