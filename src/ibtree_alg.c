@@ -575,6 +575,7 @@ static enum btree_e
 check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 {
 	enum btree_e result = BTREE_OK;
+	enum btree_e check_result = BTREE_OK;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
 
@@ -591,8 +592,8 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto end;
 
-	if( node.header->num_keys < 1 )
-		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+	if( node.header->num_keys <= 1 )
+		check_result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 	result = cursor_sibling(
 		cursor,
@@ -604,7 +605,8 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 end:
 	if( page )
 		page_destroy(cursor->tree->pager, page);
-
+	if( result == BTREE_OK )
+		result = check_result;
 	return result;
 }
 
@@ -622,18 +624,18 @@ decide_rebalance_mode(struct Cursor* cursor, enum rebalance_mode_e* out_mode)
 		goto end;
 	}
 
-	if( result != BTREE_ERR_CURSOR_NO_SIBLING ||
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
 		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		goto end;
 
 	result = check_sibling(cursor, CURSOR_SIBLING_LEFT);
 	if( result == BTREE_OK )
 	{
-		*out_mode = REBALANCE_MODE_ROTATE_LEFT;
+		*out_mode = REBALANCE_MODE_ROTATE_RIGHT;
 		goto end;
 	}
 
-	if( result != BTREE_ERR_CURSOR_NO_SIBLING ||
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
 		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		goto end;
 
@@ -907,6 +909,7 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
+	struct ChildListIndex parent_index = {0};
 	if( mode == REBALANCE_MODE_MERGE_RIGHT )
 	{
 		// The cursor points to the left child.
@@ -915,6 +918,10 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 			left_page,
 			cursor->tree->pager,
 			cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
+
+		result = cursor_parent_index(cursor, &parent_index);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -951,14 +958,12 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 			cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
+
+		result = cursor_parent_index(cursor, &parent_index);
+		if( result != BTREE_OK )
+			goto end;
 	}
 
-	struct ChildListIndex parent_index = {0};
-	result = cursor_parent_index(cursor, &parent_index);
-	if( result != BTREE_OK )
-		goto end;
-
-	struct InsertionIndex insert_index = {.mode = KLIM_END, .index = 0};
 	result = btree_node_move_cell_ex(
 		&parent_node,
 		&left_node,
@@ -973,6 +978,11 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 		goto end;
 
 	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	result =
+		btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
 	if( result != BTREE_OK )
 		goto end;
 
@@ -1044,9 +1054,6 @@ ibta_rebalance(struct Cursor* cursor)
 			result = BTREE_OK;
 			goto end;
 		}
-
-		if( result != BTREE_OK )
-			goto end;
 
 		switch( mode )
 		{

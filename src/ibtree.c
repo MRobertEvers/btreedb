@@ -165,7 +165,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = cursor_pop(cursor, &crumb);
+	result = cursor_peek(cursor, &crumb);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -205,28 +205,27 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_reset(&holding_node);
-		if( result != BTREE_OK )
-			goto end;
-
-		result = ibtree_node_remove(
-			&replacement_node, &replacement_crumb.key_index, &holding_node);
-		if( result != BTREE_OK )
-			goto end;
-
 		struct InsertionIndex insert = {0};
 		insert.index = crumb.key_index.index;
 		insert.mode =
 			crumb.key_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
-		result = btree_node_write_ex(
+		result = btree_node_move_cell_ex_to(
+			&replacement_node,
 			&node,
-			tree->pager,
+			replacement_node.header->num_keys - 1,
 			&insert,
 			orphaned_left_child,
-			holding_node.keys[0].flags,
-			btu_get_cell_buffer(&holding_node, 0),
-			btu_get_cell_buffer_size(&holding_node, 0),
-			WRITER_EX_MODE_CELL_MOVE);
+			tree->pager);
+		if( result != BTREE_OK )
+			goto end;
+
+		result = btree_node_reset(&holding_node);
+		if( result != BTREE_OK )
+			goto end;
+
+		struct ChildListIndex remove_index = {.mode = KLIM_END};
+		result =
+			ibtree_node_remove(&replacement_node, &remove_index, &holding_node);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -244,7 +243,11 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	// TODO: Small size threshold.
 	if( underflow )
 	{
+		// TODO: Break the rest of this function into another to spare stack
+		// usage.
 		result = ibta_rebalance(cursor);
+		if( result != BTREE_OK )
+			goto end;
 	}
 
 end:
@@ -252,7 +255,6 @@ end:
 		cursor_destroy(cursor);
 	if( page )
 		page_destroy(tree->pager, page);
-
 	if( holding_page )
 		page_destroy(tree->pager, holding_page);
 	return result;

@@ -652,3 +652,188 @@ fail:
 	result = 0;
 	goto end;
 }
+
+int
+ibta_rebalance_test(void)
+{
+	char const* db_name = "ibta_rebalance_test.db";
+	remove(db_name);
+
+	int result = 1;
+	struct BTreeNode test_node = {0};
+	struct BTreeNode* parent_node = NULL;
+	struct BTreeNode* left_node = NULL;
+	struct BTreeNode* right_node = NULL;
+	struct BTreeNode* l1_node = NULL;
+	struct BTreeNode* l2_node = NULL;
+	struct BTreeNode* l3_node = NULL;
+	struct BTreeNode* l4_node = NULL;
+	struct BTreeNode* l5_node = NULL;
+	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* l1_page = NULL;
+	struct Page* l2_page = NULL;
+	struct Page* l3_page = NULL;
+	struct Page* l4_page = NULL;
+	struct Page* l5_page = NULL;
+	struct Page* test_page = NULL;
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+
+	page_cache_create(&cache, 11);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
+
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, 2, &ibtree_compare) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(pager, &test_page);
+	page_create(pager, &parent_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+	page_create(pager, &l1_page);
+	page_create(pager, &l2_page);
+	page_create(pager, &l3_page);
+	page_create(pager, &l4_page);
+	page_create(pager, &l5_page);
+
+	btree_node_create_as_page_number(&parent_node, 2, parent_page);
+	btree_node_create_as_page_number(&left_node, 3, left_page);
+	btree_node_create_as_page_number(&right_node, 4, right_page);
+	btree_node_create_as_page_number(&l1_node, 5, l1_page);
+	btree_node_create_as_page_number(&l2_node, 6, l2_page);
+	btree_node_create_as_page_number(&l3_node, 7, l3_page);
+	btree_node_create_as_page_number(&l4_node, 8, l4_page);
+	btree_node_create_as_page_number(&l5_node, 9, l5_page);
+
+	// This test is an impossibility, but it covers what we want.
+	// We've given the cells children but also label them as leaves.
+	l1_node->header->is_leaf = 1;
+	l2_node->header->is_leaf = 1;
+	l3_node->header->is_leaf = 1;
+	l4_node->header->is_leaf = 1;
+	l5_node->header->is_leaf = 1;
+
+	u32 left_node_right_most_child = l3_node->page_number;
+	u32 right_node_right_most_child = l5_node->page_number;
+	left_node->header->right_child = left_node_right_most_child;
+	right_node->header->right_child = right_node_right_most_child;
+
+	parent_node->header->right_child = right_node->page_number;
+
+	pager_write_page(pager, parent_page);
+	pager_write_page(pager, left_page);
+	pager_write_page(pager, right_page);
+	char A[] = "A";
+	char B[] = "B";
+	char C[] = "C";
+	char D[] = "D";
+	char E[] = "E";
+	char F[] = "F";
+	char G[] = "G";
+	char H[] = "H";
+	char I[] = "I";
+
+	struct InsertionIndex insert_index = {0};
+	insert_index.index = 0;
+	insert_index.mode = KLIM_END;
+	btree_node_write_ex(
+		parent_node,
+		pager,
+		&insert_index,
+		left_node->page_number,
+		0,
+		F,
+		sizeof(F),
+		WRITER_EX_MODE_RAW);
+
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		l1_node->page_number,
+		0,
+		B,
+		sizeof(B),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		l2_node->page_number,
+		0,
+		D,
+		sizeof(D),
+		WRITER_EX_MODE_RAW);
+	left_node->header->right_child = l3_node->page_number;
+	btree_node_write_ex(
+		l1_node, pager, &insert_index, 0, 0, A, sizeof(A), WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		l2_node, pager, &insert_index, 0, 0, C, sizeof(C), WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		l3_node, pager, &insert_index, 0, 0, E, sizeof(E), WRITER_EX_MODE_RAW);
+
+	btree_node_write_ex(
+		right_node,
+		pager,
+		&insert_index,
+		l4_node->page_number,
+		0,
+		H,
+		sizeof(H),
+		WRITER_EX_MODE_RAW);
+	right_node->header->right_child = l5_node->page_number;
+	btree_node_write_ex(
+		l4_node, pager, &insert_index, 0, 0, G, sizeof(G), WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		l5_node, pager, &insert_index, 0, 0, H, sizeof(H), WRITER_EX_MODE_RAW);
+
+	ibtree_delete(tree, G, sizeof(G));
+
+	struct Cursor* cursor;
+	char found;
+	char* tests[] = {A, B, C, D, E, F, H, I};
+	char buf[100] = {0};
+	for( int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++ )
+	{
+		char* testi = tests[i];
+		memset(buf, 0x00, sizeof(buf));
+		cursor = cursor_create(tree);
+		cursor_traverse_to_ex(cursor, testi, strlen(testi) + 1, &found);
+
+		if( !found )
+			goto fail;
+
+		btree_node_init_from_read(
+			&test_node, test_page, pager, cursor->current_page_id);
+		cursor_destroy(cursor);
+
+		btree_node_read_ex(
+			tree,
+			&test_node,
+			tree->pager,
+			testi,
+			strlen(testi) + 1,
+			buf,
+			sizeof(buf));
+
+		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
+			goto fail;
+	}
+
+end:
+	if( test_page )
+		page_destroy(pager, test_page);
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
+}

@@ -802,6 +802,9 @@ btree_node_compare_cell(
 		cmp, cmp_size, key, key_size, bytes_compared, &comparison_bytes_count);
 	bytes_compared += comparison_bytes_count;
 
+	if( comparison_bytes_count == 0 )
+		return BTREE_ERR_UNK;
+
 	if( *out_result != 0 )
 	{
 		return BTREE_OK;

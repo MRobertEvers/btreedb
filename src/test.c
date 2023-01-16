@@ -59,8 +59,10 @@ main()
 	// printf("ibtree deep test: %d\n", result);
 	// result = ibta_rotate_test();
 	// printf("rotate: %d\n", result);
-	result = ibta_merge_test();
-	printf("merge: %d\n", result);
+	// result = ibta_merge_test();
+	// printf("merge: %d\n", result);
+	result = ibta_rebalance_test();
+	printf("rebalance: %d\n", result);
 
 	return 0;
 }

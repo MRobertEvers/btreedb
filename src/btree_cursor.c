@@ -89,6 +89,17 @@ cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
+enum btree_e
+cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
+{
+	if( cursor->breadcrumbs_size == 0 )
+		return BTREE_ERR_CURSOR_NO_PARENT;
+
+	if( crumb )
+		*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
+	return BTREE_OK;
+}
+
 static enum btree_e
 read_cell_page(
 	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
@@ -274,9 +285,11 @@ enum btree_e
 cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 {
 	enum btree_e result = BTREE_OK;
+	enum btree_e restore_result = BTREE_OK;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
 	struct CursorBreadcrumb crumb = {0};
+	struct CursorBreadcrumb restore_crumb = {0};
 
 	if( cursor->breadcrumbs_size < 1 )
 		return BTREE_ERR_CURSOR_NO_PARENT;
@@ -286,7 +299,7 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 		goto end;
 
 	// Pop the child.
-	result = cursor_pop(cursor, &crumb);
+	result = cursor_pop(cursor, &restore_crumb);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -306,7 +319,7 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 		if( crumb.key_index.index == 0 )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
-			goto end;
+			goto undo;
 		}
 
 		cursor->current_key_index.mode = KLIM_INDEX;
@@ -319,7 +332,7 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 			crumb.key_index.mode != KLIM_INDEX )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
-			goto end;
+			goto undo;
 		}
 
 		cursor->current_key_index.mode =
@@ -362,6 +375,17 @@ end:
 		page_destroy(cursor->tree->pager, page);
 
 	return result;
+
+undo:
+	restore_result = result;
+	result = cursor_push_crumb(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &restore_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = restore_result;
+	goto end;
 }
 
 enum btree_e

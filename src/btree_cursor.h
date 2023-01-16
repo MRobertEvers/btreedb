@@ -17,6 +17,7 @@ enum btree_e cursor_push(struct Cursor* cursor);
 enum btree_e
 cursor_push_crumb(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 enum btree_e cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
+enum btree_e cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 
 enum btree_e cursor_traverse_to(struct Cursor* cursor, int key, char* found);
 enum btree_e cursor_traverse_to_ex(
