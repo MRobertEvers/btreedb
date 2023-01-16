@@ -792,7 +792,7 @@ ibta_rebalance_test(void)
 	btree_node_write_ex(
 		l4_node, pager, &insert_index, 0, 0, G, sizeof(G), WRITER_EX_MODE_RAW);
 	btree_node_write_ex(
-		l5_node, pager, &insert_index, 0, 0, H, sizeof(H), WRITER_EX_MODE_RAW);
+		l5_node, pager, &insert_index, 0, 0, I, sizeof(I), WRITER_EX_MODE_RAW);
 
 	ibtree_delete(tree, G, sizeof(G));
 

@@ -988,7 +988,6 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 
 	// TODO: Underflow condition.
 	char parent_deficient = parent_node.header->num_keys < 1;
-
 	for( int i = 0; i < right_node.header->num_keys; i++ )
 	{
 		result = btree_node_move_cell(
@@ -996,7 +995,6 @@ ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode)
 		if( result != BTREE_OK )
 			goto end;
 	}
-
 	left_node.header->right_child = right_node.header->right_child;
 
 	result = btree_node_copy(&right_node, &left_node);

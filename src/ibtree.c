@@ -180,7 +180,6 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	result = btpage_err(pager_write_page(tree->pager, node.page));
 	if( result != BTREE_OK )
 		goto end;
-
 	bool underflow = false;
 	// The cell is removed. If it wasn't a leaf node find the largest cell
 	// in the left subtree and promote it to the same location. If it was a
