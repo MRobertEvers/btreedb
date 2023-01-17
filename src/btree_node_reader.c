@@ -90,13 +90,13 @@ enum btree_e
 btree_node_read_ex(
 	struct BTree* tree,
 	struct BTreeNode* node,
-	struct Pager* pager,
 	void* key,
 	u32 key_size,
 	void* buffer,
 	u32 buffer_size)
 {
 	enum btree_e result = BTREE_OK;
+	struct Pager* pager = tree->pager;
 	char found;
 	u32 key_index = 0;
 	result = btree_node_search_keys(tree, node, key, key_size, &key_index);

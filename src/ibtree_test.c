@@ -57,13 +57,7 @@ ibtree_test_insert_shallow(void)
 	char alpha_buf[sizeof(flurb)] = {0};
 
 	btree_node_read_ex(
-		tree,
-		test_node,
-		tree->pager,
-		flurb,
-		sizeof(flurb),
-		alpha_buf,
-		sizeof(alpha_buf));
+		tree, test_node, flurb, sizeof(flurb), alpha_buf, sizeof(alpha_buf));
 
 	if( memcmp(flurb, alpha_buf, sizeof(flurb)) != 0 )
 	{
@@ -162,13 +156,7 @@ ibtree_test_insert_split_root(void)
 	char alpha_buf[sizeof(splurb)] = {0};
 
 	btree_node_read_ex(
-		tree,
-		test_node,
-		tree->pager,
-		splurb,
-		sizeof(splurb),
-		alpha_buf,
-		sizeof(alpha_buf));
+		tree, test_node, splurb, sizeof(splurb), alpha_buf, sizeof(alpha_buf));
 
 	if( memcmp(splurb, alpha_buf, sizeof(splurb)) != 0 )
 		goto fail;
@@ -326,8 +314,7 @@ ibtree_test_deep_tree(void)
 	btree_node_create_from_page(&node, page);
 
 	char buf[sizeof(hoosin)] = {0};
-	btree_node_read_ex(
-		tree, node, tree->pager, hoosin, sizeof(hoosin), buf, sizeof(buf));
+	btree_node_read_ex(tree, node, hoosin, sizeof(hoosin), buf, sizeof(buf));
 
 	if( memcmp(hoosin, buf, sizeof(buf)) != 0 )
 		goto fail;
@@ -458,13 +445,7 @@ ibta_rotate_test(void)
 
 	char abuf[sizeof(leftmost)] = {0};
 	btree_node_read_ex(
-		tree,
-		left_node,
-		tree->pager,
-		leftmost,
-		sizeof(leftmost),
-		abuf,
-		sizeof(abuf));
+		tree, left_node, leftmost, sizeof(leftmost), abuf, sizeof(abuf));
 
 	if( memcmp(leftmost, abuf, sizeof(abuf)) != 0 )
 		goto fail;
@@ -478,13 +459,7 @@ ibta_rotate_test(void)
 
 	char buf[sizeof(rightmost)] = {0};
 	btree_node_read_ex(
-		tree,
-		right_node,
-		tree->pager,
-		rightmost,
-		sizeof(rightmost),
-		buf,
-		sizeof(buf));
+		tree, right_node, rightmost, sizeof(rightmost), buf, sizeof(buf));
 
 	if( memcmp(rightmost, buf, sizeof(buf)) != 0 )
 		goto fail;
@@ -815,13 +790,7 @@ ibta_rebalance_test(void)
 		cursor_destroy(cursor);
 
 		btree_node_read_ex(
-			tree,
-			&test_node,
-			tree->pager,
-			testi,
-			strlen(testi) + 1,
-			buf,
-			sizeof(buf));
+			tree, &test_node, testi, strlen(testi) + 1, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1000,13 +969,7 @@ ibta_rebalance_nonleaf_test(void)
 		cursor_destroy(cursor);
 
 		btree_node_read_ex(
-			tree,
-			&test_node,
-			tree->pager,
-			testi,
-			strlen(testi) + 1,
-			buf,
-			sizeof(buf));
+			tree, &test_node, testi, strlen(testi) + 1, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;

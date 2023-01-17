@@ -17,7 +17,7 @@
  */
 enum btree_e btree_node_write(
 	struct BTreeNode* node,
-	struct Pager* tree,
+	struct Pager* pager,
 	u32 key,
 	void* data,
 	u32 data_size);
