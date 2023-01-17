@@ -9,6 +9,7 @@
 #include "btree_node_reader.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
+#include "noderc.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
 #include "serialization.h"
@@ -22,16 +23,19 @@ btree_test_insert()
 {
 	int result = 1;
 	struct Pager* pager;
+	struct BTreeNodeRC rcer;
 	char const* db_name = "btree_test_insert2.db";
 	struct PageCache* cache = NULL;
+
 	remove(db_name);
 
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
 
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager, 1);
+	btree_init(tree, pager, &rcer, 1);
 
 	char billy[0x1000 - 200] = "billy";
 	billy[3600] = 'q';
@@ -70,16 +74,17 @@ btree_test_insert_root_with_space()
 {
 	int result = 1;
 	struct Pager* pager;
+	struct BTreeNodeRC rcer;
 
 	struct PageCache* cache = NULL;
 	remove("test_.db");
 
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, "test_.db", 0x1000);
-
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager, 1);
+	btree_init(tree, pager, &rcer, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -123,16 +128,17 @@ btree_test_split_root_node()
 {
 	int result = 1;
 	struct BTreeNode* node = 0;
+	struct BTreeNodeRC rcer;
 
 	struct Pager* pager;
 	struct PageCache* cache = NULL;
 	remove("split_root_node.db");
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, "split_root_node.db", 0x1000);
-
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager, 1);
+	btree_init(tree, pager, &rcer, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -206,16 +212,17 @@ btree_test_delete(void)
 	char const* db_name = "delete_key.db";
 	int result = 1;
 	struct BTreeNode* node = 0;
+	struct BTreeNodeRC rcer;
 
 	struct Pager* pager;
 	struct PageCache* cache = NULL;
 	remove(db_name);
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager, 1);
+	btree_init(tree, pager, &rcer, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -314,10 +321,11 @@ btree_test_free_heap_calcs()
 
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, "test_free_heap.db", 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	btree_init(tree, pager, 1);
+	btree_init(tree, pager, &rcer, 1);
 
 	char billy[] = "billy";
 	char ruth[] = "ruth";
@@ -401,10 +409,11 @@ btree_test_deep_tree(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 220);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager, 1);
+	enum btree_e btresult = btree_init(tree, pager, &rcer, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -541,10 +550,11 @@ btree_test_delete_last(void)
 	remove(db_name);
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager, 1);
+	enum btree_e btresult = btree_init(tree, pager, &rcer, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -661,10 +671,11 @@ btree_test_delete_merge_root(void)
 	// 1 byte of payload can fit on the first page.
 	u32 page_size = btree_min_page_size() + 1 * 4;
 	pager_cstd_create(&pager, cache, db_name, page_size);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = btree_init(tree, pager, 1);
+	enum btree_e btresult = btree_init(tree, pager, &rcer, 1);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;

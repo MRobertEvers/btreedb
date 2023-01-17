@@ -607,6 +607,7 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto restore;
 
+	// TODO: Underflow condition.
 	if( node.header->num_keys <= 1 )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
@@ -642,7 +643,7 @@ end:
 	return result;
 }
 
-enum btree_e
+static enum btree_e
 decide_rebalance_mode(
 	struct Cursor* cursor, enum ibta_rebalance_mode_e* out_mode)
 {

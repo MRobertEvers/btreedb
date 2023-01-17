@@ -8,6 +8,7 @@
 #include "btree_node_writer.h"
 #include "ibtree.h"
 #include "ibtree_alg.h"
+#include "noderc.h"
 #include "pager.h"
 #include "pager_ops_cstd.h"
 
@@ -33,10 +34,11 @@ ibtree_test_insert_shallow(void)
 	// 1 byte of payload can fit on the first page.
 	u32 page_size = btree_min_page_size() + 1 * 4;
 	pager_cstd_create(&pager, cache, db_name, page_size);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -101,10 +103,11 @@ ibtree_test_insert_split_root(void)
 	// 1 byte of payload can fit on the first page.
 	u32 page_size = btree_min_page_size() + 6 * 4;
 	pager_cstd_create(&pager, cache, db_name, page_size);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -206,10 +209,11 @@ ibtree_test_deep_tree(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 220);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -351,10 +355,11 @@ ibta_rotate_test(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, 1, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -524,10 +529,11 @@ ibta_merge_test(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -659,10 +665,11 @@ ibta_rebalance_test(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -838,10 +845,11 @@ ibta_rebalance_nonleaf_test(void)
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
-
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
 	{
 		result = 0;
 		goto end;

@@ -1,13 +1,17 @@
 #include "btree_alg.h"
 
 #include "btree_cell.h"
+#include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
+#include "btree_node_writer.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
+#include "noderc.h"
 #include "pager.h"
 #include "serialization.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -295,5 +299,329 @@ bta_merge_nodes(
 	if( result == BTREE_OK )
 		result = btpage_err(pager_write_page(pager, stable_node->page));
 
+	return result;
+}
+
+/**
+ * @brief With the cursor pointing at the underflown node, this will rotate
+ * right.
+ *
+ * Put the separator from the parent node into the right node, move a node from
+ * the left node into the parent as the new separator.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e
+bta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
+{
+	assert(
+		mode == BTA_REBALANCE_MODE_ROTATE_LEFT ||
+		mode == BTA_REBALANCE_MODE_ROTATE_RIGHT);
+	enum btree_e result = BTREE_OK;
+	struct Page* source_page = NULL;
+	struct Page* dest_page = NULL;
+	struct Page* parent_page = NULL;
+	struct BTreeNode nodes[3] = {0};
+	// 	noderc_
+
+	// 		result = btpage_err(page_create(cursor->tree->pager, &source_page));
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = btree_node_init_from_page(&source_node, source_page);
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = btpage_err(page_create(cursor->tree->pager, &dest_page));
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = btree_node_init_from_page(&dest_node, dest_page);
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = btree_node_init_from_page(&parent_node, parent_page);
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	result = cursor_read_parent(cursor, &parent_node);
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// 	struct ChildListIndex parent_index = {0};
+	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_LEFT )
+	// 	{
+	// 		// The cursor points to the left child.
+	// 		result = btree_node_init_from_read(
+	// 			&dest_node,
+	// 			dest_page,
+	// 			cursor->tree->pager,
+	// 			cursor->current_page_id);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = cursor_parent_index(cursor, &parent_index);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = cursor_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = btree_node_init_from_read(
+	// 			&source_node,
+	// 			source_page,
+	// 			cursor->tree->pager,
+	// 			cursor->current_page_id);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+	// 	}
+	// 	else
+	// 	{
+	// 		result = btree_node_init_from_read(
+	// 			&dest_node,
+	// 			dest_page,
+	// 			cursor->tree->pager,
+	// 			cursor->current_page_id);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = cursor_sibling(cursor, CURSOR_SIBLING_LEFT);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = btree_node_init_from_read(
+	// 			&source_node,
+	// 			source_page,
+	// 			cursor->tree->pager,
+	// 			cursor->current_page_id);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+
+	// 		result = cursor_parent_index(cursor, &parent_index);
+	// 		if( result != BTREE_OK )
+	// 			goto end;
+	// 	}
+
+	// 	// This  becomes the moved key.
+	// 	u32 parent_key = parent_node.keys[parent_index.index].key;
+
+	// 	struct InsertionIndex insert_index = {0};
+	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
+	// 	{
+	// 		insert_index.mode = KLIM_INDEX;
+	// 		insert_index.index = 0;
+	// 	}
+	// 	else
+	// 	{
+	// 		insert_index.mode = KLIM_END;
+	// 		insert_index.index = dest_node.header->num_keys;
+	// 	}
+
+	// 	u32 source_index = 0;
+	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
+	// 	{
+	// 		source_index = source_node.header->num_keys;
+	// 	}
+	// 	else
+	// 	{
+	// 		source_index = 0;
+	// 	}
+
+	// 	result = btree_node_write_ex(
+	// 		&dest_node, cursor->tree->pager, &insert_index, parent_key, );
+	// 	result = btree_node_move_cell_ex_to(
+	// 		&source_node,
+	// 		&dest_node,
+	// 		source_index,
+	// 		&parent_key,
+	// 		// For rotate right, this will eventually be updated to
+	// 		// point to the prev r-most of the left node.
+	// 		// For rotate left, this will point to the child of the prev
+	// 		// leftmost node.
+	// 		parent_key,
+	// 		cursor->tree->pager);
+
+	// 	if( result != BTREE_OK )
+	// 		goto end;
+
+	// end:
+	// 	if( left_page )
+	// 		page_destroy(cursor->tree->pager, left_page);
+	// 	if( right_page )
+	// 		page_destroy(cursor->tree->pager, right_page);
+	// 	if( parent_page )
+	// 		page_destroy(cursor->tree->pager, parent_page);
+	return result;
+}
+
+/**
+ * @brief Checks if right sibling can
+ *
+ * Clobber current cursor index.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+static enum btree_e
+check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
+{
+	enum btree_e result = BTREE_OK;
+	enum btree_e check_result = BTREE_OK;
+	struct Page* page = NULL;
+	struct BTreeNode node = {0};
+	struct CursorBreadcrumb base_crumb = {0};
+	struct CursorBreadcrumb parent_crumb = {0};
+
+	result = cursor_pop(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_pop(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(page_create(cursor->tree->pager, &page));
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_sibling(cursor, sibling);
+	if( result != BTREE_OK )
+		goto restore;
+
+	result = btree_node_init_from_read(
+		&node, page, cursor->tree->pager, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto restore;
+
+	// TODO: Underflow condition.
+	if( node.header->num_keys <= 1 )
+		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+
+	// If we've been passed a deficient node. This will fail.
+	// So we allow this to pass if there is no sibling.
+	// result = cursor_sibling(
+	// 	cursor,
+	// 	sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
+	// 								   : CURSOR_SIBLING_LEFT);
+	// if( result != BTREE_OK || result != BTREE_ERR_CURSOR_NO_SIBLING )
+	// 	goto end;
+
+restore:
+	check_result = result;
+	result = cursor_pop(cursor, NULL);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_pop(cursor, NULL);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = check_result;
+end:
+	if( page )
+		page_destroy(cursor->tree->pager, page);
+	if( result == BTREE_OK || result == BTREE_ERR_CURSOR_NO_SIBLING )
+		result = check_result;
+	return result;
+}
+
+static enum btree_e
+decide_rebalance_mode(
+	struct Cursor* cursor, enum bta_rebalance_mode_e* out_mode)
+{
+	enum btree_e result = BTREE_OK;
+	enum btree_e right_result = BTREE_OK;
+
+	right_result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	result = right_result;
+	if( result == BTREE_OK )
+	{
+		*out_mode = BTA_REBALANCE_MODE_ROTATE_LEFT;
+		goto end;
+	}
+
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
+		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		goto end;
+
+	result = check_sibling(cursor, CURSOR_SIBLING_LEFT);
+	if( result == BTREE_OK )
+	{
+		*out_mode = BTA_REBALANCE_MODE_ROTATE_RIGHT;
+		goto end;
+	}
+
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
+		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
+		goto end;
+
+	// TODO: Assert that at least one is present?
+	assert(
+		result != BTREE_ERR_CURSOR_NO_SIBLING ||
+		right_result != BTREE_ERR_CURSOR_NO_SIBLING);
+
+	// There is a left sibling; merge with it.
+	if( result != BTREE_ERR_CURSOR_NO_SIBLING )
+		*out_mode = BTA_REBALANCE_MODE_MERGE_LEFT;
+	else
+		*out_mode = BTA_REBALANCE_MODE_MERGE_RIGHT;
+
+end:
+	return result;
+}
+
+enum btree_e
+bta_rebalance(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	enum bta_rebalance_mode_e mode = BTA_REBALANCE_MODE_UNK;
+
+	do
+	{
+		result = decide_rebalance_mode(cursor, &mode);
+		if( result == BTREE_ERR_CURSOR_NO_PARENT )
+		{
+			// Can't rebalance root.
+			result = BTREE_OK;
+			goto end;
+		}
+
+		switch( mode )
+		{
+		case BTA_REBALANCE_MODE_ROTATE_LEFT:
+		case BTA_REBALANCE_MODE_ROTATE_RIGHT:
+			// result = bta_rotate(cursor, mode);
+			break;
+		case BTA_REBALANCE_MODE_MERGE_LEFT:
+		case BTA_REBALANCE_MODE_MERGE_RIGHT:
+			// result = bta_merge(cursor, mode);
+			break;
+		default:
+			result = BTREE_ERR_UNK;
+			break;
+		}
+
+		if( result == BTREE_ERR_PARENT_DEFICIENT )
+			if( cursor_pop(cursor, NULL) != BTREE_OK )
+				goto end;
+
+	} while( result == BTREE_ERR_PARENT_DEFICIENT );
+
+end:
 	return result;
 }

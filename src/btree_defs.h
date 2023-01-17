@@ -71,6 +71,19 @@ struct BTreeHeader
 	enum btree_type type;
 };
 
+struct BTreeNodeRC
+{
+	struct Pager* pager;
+};
+
+struct NodeView
+{
+	struct BTreeNode node;
+	struct Page* page;
+
+	struct Pager* pager;
+};
+
 /**
  * @brief Return -1 if left is less than right, 1 if right is; 0 if equal.
  *
@@ -95,6 +108,7 @@ struct BTree
 {
 	struct BTreeHeader header;
 	struct Pager* pager;
+	struct BTreeNodeRC* rcer;
 
 	int root_page_id;
 

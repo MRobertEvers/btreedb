@@ -9,18 +9,13 @@
  *
  */
 
-struct BTreeNodeRC
-{
-	struct Pager* pager;
-};
+void noderc_init(struct BTreeNodeRC* rcer, struct Pager* pager);
 
-struct NodeView
-{
-	struct BTreeNode node;
-	struct Page* page;
+enum btree_e
+noderc_acquire(struct BTreeNodeRC* rcer, struct NodeView* out_view);
 
-	struct Pager* pager;
-};
+enum btree_e
+noderc_acquire_n(struct BTreeNodeRC* rcer, struct NodeView* out_view, u32 num);
 
 /**
  * @brief Initialize a nodeview with a page loaded.

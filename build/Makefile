@@ -637,6 +637,33 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/main.c.s
 .PHONY : src/main.c.s
 
+src/noderc.o: src/noderc.c.o
+.PHONY : src/noderc.o
+
+# target to build an object file
+src/noderc.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/noderc.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/noderc.c.o
+.PHONY : src/noderc.c.o
+
+src/noderc.i: src/noderc.c.i
+.PHONY : src/noderc.i
+
+# target to preprocess a source file
+src/noderc.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/noderc.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/noderc.c.i
+.PHONY : src/noderc.c.i
+
+src/noderc.s: src/noderc.c.s
+.PHONY : src/noderc.s
+
+# target to generate assembly for a file
+src/noderc.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/noderc.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/noderc.c.s
+.PHONY : src/noderc.c.s
+
 src/page_cache.o: src/page_cache.c.o
 .PHONY : src/page_cache.o
 
@@ -884,6 +911,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/noderc.o"
+	@echo "... src/noderc.i"
+	@echo "... src/noderc.s"
 	@echo "... src/page_cache.o"
 	@echo "... src/page_cache.i"
 	@echo "... src/page_cache.s"

@@ -104,7 +104,11 @@ btree_min_page_size(void)
  * @return enum btree_e
  */
 enum btree_e
-btree_init(struct BTree* tree, struct Pager* pager, u32 root_page_id)
+btree_init(
+	struct BTree* tree,
+	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
+	u32 root_page_id)
 {
 	enum btree_e btree_result = BTREE_OK;
 
@@ -117,6 +121,7 @@ btree_init(struct BTree* tree, struct Pager* pager, u32 root_page_id)
 
 	tree->root_page_id = root_page_id;
 	tree->pager = pager;
+	tree->rcer = rcer;
 
 	struct Page* page = NULL;
 	page_create(tree->pager, &page);

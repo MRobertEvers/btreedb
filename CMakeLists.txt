@@ -23,6 +23,7 @@ add_executable(db
     src/btree_node_reader.c
     src/btree_overflow.c
     src/serialization.c
+    src/noderc.c
     src/buffer_writer.c
 )
 
@@ -35,6 +36,7 @@ add_executable(test
     src/btree_alg_test.c
     src/btree_overflow_test.c
     src/serialization_test.c
+    src/noderc.c
     src/pager.c
     src/btree.c
     src/ibtree.c

@@ -28,10 +28,11 @@ enum btree_e
 ibtree_init(
 	struct BTree* tree,
 	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
 	u32 root_page_id,
 	btree_compare_fn compare)
 {
-	enum btree_e result = btree_init(tree, pager, root_page_id);
+	enum btree_e result = btree_init(tree, pager, rcer, root_page_id);
 	tree->type = BTREE_INDEX;
 	tree->compare = compare;
 	return result;

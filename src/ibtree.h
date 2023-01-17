@@ -18,6 +18,7 @@ int ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer);
 enum btree_e ibtree_init(
 	struct BTree* tree,
 	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
 	u32 root_page_id,
 	btree_compare_fn compare);
 

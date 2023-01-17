@@ -29,6 +29,16 @@ enum cursor_sibling_e
 	CURSOR_SIBLING_LEFT,
 	CURSOR_SIBLING_RIGHT,
 };
+
+/**
+ * @brief Moves the cursor to the input sibling.
+ *
+ * To restore
+ *
+ * @param cursor
+ * @param sibling
+ * @return enum btree_e
+ */
 enum btree_e
 cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
 

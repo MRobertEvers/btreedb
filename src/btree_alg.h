@@ -74,5 +74,16 @@ enum btree_e bta_merge_nodes(
 	struct BTreeNode* other_node,
 	struct Pager* pager,
 	struct MergedPage* merged_page);
+enum bta_rebalance_mode_e
+{
+	BTA_REBALANCE_MODE_UNK,
+	BTA_REBALANCE_MODE_ROTATE_RIGHT,
+	BTA_REBALANCE_MODE_ROTATE_LEFT,
+	BTA_REBALANCE_MODE_MERGE_RIGHT,
+	BTA_REBALANCE_MODE_MERGE_LEFT,
+};
+enum btree_e bta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
+
+enum btree_e bta_rebalance(struct Cursor* cursor);
 
 #endif
