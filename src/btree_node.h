@@ -182,6 +182,7 @@ enum btree_e btree_node_remove(
 	struct BTreeNode* node,
 	struct ChildListIndex* index,
 	struct BTreeCellInline* removed_cell,
+	// TODO: Holding node.
 	void* buffer,
 	u32 buffer_size);
 
