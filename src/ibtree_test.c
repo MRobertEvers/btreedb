@@ -424,7 +424,7 @@ ibta_rotate_test(void)
 
 	struct CursorBreadcrumb crumb = {0};
 
-	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_RIGHT);
+	ibta_rotate(cursor, IBTA_REBALANCE_MODE_ROTATE_RIGHT);
 	cursor_destroy(cursor);
 
 	btree_node_init_from_read(
@@ -474,7 +474,7 @@ ibta_rotate_test(void)
 
 	if( !found || cursor->current_page_id != 2 )
 		goto fail;
-	ibta_rotate(cursor, REBALANCE_MODE_ROTATE_LEFT);
+	ibta_rotate(cursor, IBTA_REBALANCE_MODE_ROTATE_LEFT);
 	cursor_destroy(cursor);
 
 	btree_node_init_from_read(
@@ -608,7 +608,7 @@ ibta_merge_test(void)
 
 	struct CursorBreadcrumb crumb = {0};
 
-	ibta_merge(cursor, REBALANCE_MODE_MERGE_LEFT);
+	ibta_merge(cursor, IBTA_REBALANCE_MODE_MERGE_LEFT);
 	cursor_destroy(cursor);
 
 	btree_node_init_from_read(

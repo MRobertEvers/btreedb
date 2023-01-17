@@ -80,16 +80,17 @@ void ibta_insert_at_init_ex(
 enum btree_e
 ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at);
 
-enum rebalance_mode_e
+enum ibta_rebalance_mode_e
 {
-	REBALANCE_MODE_UNK,
-	REBALANCE_MODE_ROTATE_RIGHT,
-	REBALANCE_MODE_ROTATE_LEFT,
-	REBALANCE_MODE_MERGE_RIGHT,
-	REBALANCE_MODE_MERGE_LEFT,
+	IBTA_REBALANCE_MODE_UNK,
+	IBTA_REBALANCE_MODE_ROTATE_RIGHT,
+	IBTA_REBALANCE_MODE_ROTATE_LEFT,
+	IBTA_REBALANCE_MODE_MERGE_RIGHT,
+	IBTA_REBALANCE_MODE_MERGE_LEFT,
 };
 
-enum btree_e ibta_rotate(struct Cursor* cursor, enum rebalance_mode_e mode);
+enum btree_e
+ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode);
 
 enum merge_mode_e
 {
@@ -105,7 +106,7 @@ enum merge_mode_e
  * @param cursor
  * @return enum btree_e
  */
-enum btree_e ibta_merge(struct Cursor* cursor, enum rebalance_mode_e mode);
+enum btree_e ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode);
 
 /**
  * @brief Expects the cursor to be at the node that just underflowed.
