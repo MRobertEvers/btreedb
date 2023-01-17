@@ -8,6 +8,8 @@
 /**
  * @brief Writes data to a node. Use overflow page if needed.
  *
+ * Writes to disk!
+ *
  * @param tree
  * @param node
  * @param key
@@ -32,6 +34,8 @@ enum writer_ex_mode_e
  * @brief Writes data to a node. Use overflow page if needed.
  *
  * Flags arg is ignored in RAW mode.
+ *
+ * Writes to disk!
  *
  * @param tree
  * @param node

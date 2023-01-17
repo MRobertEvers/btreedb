@@ -101,6 +101,14 @@ cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
+/**
+ * @brief Gets the child page id from the cell.
+ *
+ * @param cursor
+ * @param node
+ * @param child_key_index
+ * @return enum btree_e
+ */
 static enum btree_e
 read_cell_page(
 	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
@@ -408,6 +416,8 @@ cursor_read_parent(struct Cursor* cursor, struct BTreeNode* out_node)
 {
 	enum btree_e result = BTREE_OK;
 	struct CursorBreadcrumb crumb = {0};
+
+	assert(out_node->page != NULL);
 
 	result = cursor_pop(cursor, &crumb);
 	if( result != BTREE_OK )

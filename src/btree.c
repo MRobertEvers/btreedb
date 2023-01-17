@@ -309,11 +309,12 @@ btree_delete(struct BTree* tree, int key)
 	enum btree_e result = BTREE_OK;
 	char found = 0;
 	struct Page* page = NULL;
-	struct PageSelector selector = {0};
 	struct BTreeNode node = {0};
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
-	page_create(tree->pager, &page);
+	result = page_create(tree->pager, &page);
+	if( result != BTREE_OK )
+		goto end;
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
@@ -325,12 +326,10 @@ btree_delete(struct BTree* tree, int key)
 		if( result != BTREE_OK )
 			goto end;
 
-		pager_reselect(&selector, crumb.page_id);
-		result = btpage_err(pager_read_page(tree->pager, &selector, page));
+		result =
+			btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
-
-		btree_node_init_from_page(&node, page);
 
 		result = btree_node_remove(&node, &crumb.key_index, NULL, NULL, 0);
 		if( result != BTREE_OK )
