@@ -142,12 +142,17 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	char found = 0;
 	struct Page* page = NULL;
 	struct Page* holding_page = NULL;
+	struct Page* replacement_page = NULL;
 
 	struct BTreeNode node = {0};
 	struct BTreeNode holding_node = {0};
 
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
+
+	result = btpage_err(page_create(tree->pager, &replacement_page));
+	if( result != BTREE_OK )
+		goto end;
 
 	result = btpage_err(page_create(tree->pager, &holding_page));
 	if( result != BTREE_OK )
@@ -190,8 +195,17 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		struct CursorBreadcrumb replacement_crumb = {0};
 		u32 orphaned_left_child = holding_node.keys[0].key;
 
+		replacement_crumb.key_index.mode = KLIM_INDEX;
+		replacement_crumb.key_index.index = 0;
+		replacement_crumb.page_id = orphaned_left_child;
+
+		// Push left child to cursor then find largest in tree.
+		result = cursor_push_crumb(cursor, &replacement_crumb);
+		if( result != BTREE_OK )
+			goto end;
+
 		// Look
-		result = cursor_traverse_left_largest(cursor);
+		result = cursor_traverse_largest(cursor);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -200,7 +214,10 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 			goto end;
 
 		result = btree_node_init_from_read(
-			&replacement_node, page, tree->pager, replacement_crumb.page_id);
+			&replacement_node,
+			replacement_page,
+			tree->pager,
+			replacement_crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -218,16 +235,29 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		if( result != BTREE_OK )
 			goto end;
 
+		result = btpage_err(pager_write_page(tree->pager, node.page));
+		if( result != BTREE_OK )
+			goto end;
+
 		result = btree_node_reset(&holding_node);
 		if( result != BTREE_OK )
 			goto end;
 
-		struct ChildListIndex remove_index = {.mode = KLIM_END};
+		struct ChildListIndex remove_index = {
+			.mode = KLIM_INDEX, .index = replacement_node.header->num_keys - 1};
 		result =
 			ibtree_node_remove(&replacement_node, &remove_index, &holding_node);
 		if( result != BTREE_OK )
 			goto end;
 
+		result =
+			btpage_err(pager_write_page(tree->pager, replacement_node.page));
+		if( result != BTREE_OK )
+			goto end;
+
+		result = cursor_push_crumb(cursor, &replacement_crumb);
+		if( result != BTREE_OK )
+			goto end;
 		underflow = replacement_node.header->num_keys < 1;
 	}
 	else
@@ -256,5 +286,7 @@ end:
 		page_destroy(tree->pager, page);
 	if( holding_page )
 		page_destroy(tree->pager, holding_page);
+	if( replacement_page )
+		page_destroy(tree->pager, replacement_page);
 	return result;
 }

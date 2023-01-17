@@ -578,6 +578,21 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	enum btree_e check_result = BTREE_OK;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
+	struct CursorBreadcrumb base_crumb = {0};
+	struct CursorBreadcrumb parent_crumb = {0};
+
+	result = cursor_pop(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_pop(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
 	if( result != BTREE_OK )
@@ -585,27 +600,44 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 
 	result = cursor_sibling(cursor, sibling);
 	if( result != BTREE_OK )
-		goto end;
+		goto restore;
 
 	result = btree_node_init_from_read(
 		&node, page, cursor->tree->pager, cursor->current_page_id);
 	if( result != BTREE_OK )
-		goto end;
+		goto restore;
 
 	if( node.header->num_keys <= 1 )
-		check_result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
+		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	result = cursor_sibling(
-		cursor,
-		sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
-									   : CURSOR_SIBLING_LEFT);
+	// If we've been passed a deficient node. This will fail.
+	// So we allow this to pass if there is no sibling.
+	// result = cursor_sibling(
+	// 	cursor,
+	// 	sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
+	// 								   : CURSOR_SIBLING_LEFT);
+	// if( result != BTREE_OK || result != BTREE_ERR_CURSOR_NO_SIBLING )
+	// 	goto end;
+
+restore:
+	check_result = result;
+	result = cursor_pop(cursor, NULL);
 	if( result != BTREE_OK )
 		goto end;
-
+	result = cursor_pop(cursor, NULL);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &parent_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = cursor_push_crumb(cursor, &base_crumb);
+	if( result != BTREE_OK )
+		goto end;
+	result = check_result;
 end:
 	if( page )
 		page_destroy(cursor->tree->pager, page);
-	if( result == BTREE_OK )
+	if( result == BTREE_OK || result == BTREE_ERR_CURSOR_NO_SIBLING )
 		result = check_result;
 	return result;
 }

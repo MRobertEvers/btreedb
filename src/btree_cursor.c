@@ -5,6 +5,7 @@
 #include "btree_utils.h"
 #include "pager.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,7 +106,7 @@ read_cell_page(
 	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
 {
 	enum btree_e result = BTREE_OK;
-	if( child_key_index == node->header->num_keys )
+	if( child_key_index >= node->header->num_keys )
 	{
 		cursor->current_page_id = node->header->right_child;
 	}
@@ -234,11 +235,12 @@ end:
 }
 
 enum btree_e
-cursor_traverse_left_largest(struct Cursor* cursor)
+cursor_traverse_largest(struct Cursor* cursor)
 {
 	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
+	struct CursorBreadcrumb crumb = {0};
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
 	if( result != BTREE_OK )
@@ -246,20 +248,26 @@ cursor_traverse_left_largest(struct Cursor* cursor)
 
 	do
 	{
+		result = cursor_pop(cursor, &crumb);
+		if( result != BTREE_OK )
+			goto end;
+
 		result = btree_node_init_from_read(
-			&node, page, cursor->tree->pager, cursor->current_page_id);
+			&node, page, cursor->tree->pager, crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
 		if( node.header->is_leaf )
 		{
 			cursor->current_key_index.index = node.header->num_keys - 1;
-			cursor->current_key_index.mode = KLIM_END;
+			cursor->current_key_index.mode = KLIM_INDEX;
+			cursor->current_page_id = crumb.page_id;
 		}
 		else
 		{
 			cursor->current_key_index.index = node.header->num_keys;
 			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
+			cursor->current_page_id = crumb.page_id;
 		}
 
 		result = cursor_push(cursor);
@@ -268,7 +276,8 @@ cursor_traverse_left_largest(struct Cursor* cursor)
 
 		if( !node.header->is_leaf )
 		{
-			result = read_cell_page(cursor, &node, node.header->num_keys);
+			result =
+				read_cell_page(cursor, &node, cursor->current_key_index.index);
 			if( result != BTREE_OK )
 				goto end;
 		}
@@ -328,19 +337,25 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	}
 	else
 	{
-		if( crumb.key_index.index == node.header->num_keys ||
-			crumb.key_index.mode != KLIM_INDEX )
+		if( (crumb.key_index.index == node.header->num_keys ||
+			 crumb.key_index.mode != KLIM_INDEX) &&
+			node.header->right_child == 0 )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
 			goto undo;
 		}
 
-		cursor->current_key_index.mode =
-			crumb.key_index.index + 1 == node.header->num_keys
-				? KLIM_RIGHT_CHILD
-				: KLIM_INDEX;
+		if( crumb.key_index.index == node.header->num_keys )
+		{
+			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
+			cursor->current_key_index.index = node.header->num_keys;
+		}
+		else
+		{
+			cursor->current_key_index.mode = KLIM_INDEX;
+			cursor->current_key_index.index = crumb.key_index.index + 1;
+		}
 
-		cursor->current_key_index.index = crumb.key_index.index + 1;
 		cursor->current_page_id = crumb.page_id;
 	}
 

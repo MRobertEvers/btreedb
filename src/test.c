@@ -61,8 +61,10 @@ main()
 	// printf("rotate: %d\n", result);
 	// result = ibta_merge_test();
 	// printf("merge: %d\n", result);
-	result = ibta_rebalance_test();
-	printf("rebalance: %d\n", result);
+	// result = ibta_rebalance_test();
+	// printf("rebalance: %d\n", result);
+	result = ibta_rebalance_nonleaf_test();
+	printf("rebalance nonleaf: %d\n", result);
 
 	return 0;
 }
