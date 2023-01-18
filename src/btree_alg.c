@@ -458,6 +458,35 @@ end:
 	return result;
 }
 
+enum btree_e
+bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
+{
+	assert(
+		mode == BTA_REBALANCE_MODE_MERGE_LEFT ||
+		mode == BTA_REBALANCE_MODE_MERGE_RIGHT);
+
+	enum btree_e result = BTREE_OK;
+	struct NodeView source_nv = {0};
+	struct NodeView dest_nv = {0};
+	struct NodeView parent_nv = {0};
+	result = noderc_acquire_load_n(
+		cursor_rcer(cursor), 3, &source_nv, 0, &dest_nv, 0, &parent_nv, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_read_parent(cursor, &parent_nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = noderc_reinit_read(
+		cursor_rcer(cursor), &dest_nv, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	return result;
+}
+
 /**
  * @brief Checks if right sibling can
  *

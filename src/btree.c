@@ -317,7 +317,7 @@ btree_delete(struct BTree* tree, int key)
 	struct BTreeNode node = {0};
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
-	result = page_create(tree->pager, &page);
+	result = btpage_err(page_create(tree->pager, &page));
 	if( result != BTREE_OK )
 		goto end;
 

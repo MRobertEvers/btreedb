@@ -7,6 +7,7 @@
 #include "btree_node_writer.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
+#include "noderc.h"
 #include "pager.h"
 #include "serialization.h"
 
@@ -706,9 +707,8 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 		mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT);
 	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
-	struct Page* parent_page = NULL;
 	struct BTreeNode node = {0};
-	struct BTreeNode parent_node = {0};
+	struct NodeView parent_nv = {0};
 
 	result = btpage_err(page_create(cursor->tree->pager, &page));
 	if( result != BTREE_OK )
@@ -719,15 +719,11 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+	result = noderc_acquire(cursor_rcer(cursor), &parent_nv);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_page(&parent_node, parent_page);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = cursor_read_parent(cursor, &parent_node);
+	result = cursor_read_parent(cursor, &parent_nv);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -739,7 +735,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		if( parent_index.mode == KLIM_RIGHT_CHILD )
-			parent_index.index = parent_node.header->num_keys - 1;
+			parent_index.index = node_num_keys(nv_node(&parent_nv)) - 1;
 		else
 			parent_index.index -= 1;
 	}
@@ -757,7 +753,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 		insert_lowered_index.index = node.header->num_keys;
 	}
 	result = btree_node_move_cell_ex_to(
-		&parent_node,
+		nv_node(&parent_nv),
 		&node,
 		parent_index.index,
 		&insert_lowered_index,
@@ -774,7 +770,8 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+	result =
+		btree_node_remove(nv_node(&parent_nv), &parent_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -819,7 +816,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 							   : source_node_page_id;
 	result = btree_node_move_cell_ex_to(
 		&node,
-		&parent_node,
+		nv_node(&parent_nv),
 		source_index_number,
 		&insert_elevated_index,
 		orphaned_page_id,
@@ -828,7 +825,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 		goto end;
 
 	result =
-		btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+		btpage_err(pager_write_page(cursor->tree->pager, nv_page(&parent_nv)));
 	if( result != BTREE_OK )
 		goto end;
 
@@ -899,8 +896,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 end:
 	if( page )
 		page_destroy(cursor->tree->pager, page);
-	if( parent_page )
-		page_destroy(cursor->tree->pager, parent_page);
+	noderc_release(cursor_rcer(cursor), &parent_nv);
 	return result;
 }
 
@@ -918,21 +914,16 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	// Parent cell points to the right child of the left node.
 	struct BTreeNode left_node = {0};
 	struct BTreeNode right_node = {0};
-	struct BTreeNode parent_node = {0};
+	struct NodeView parent_nv = {0};
 
 	struct Page* left_page = NULL;
 	struct Page* right_page = NULL;
-	struct Page* parent_page = NULL;
 
-	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
+	result = noderc_acquire(cursor_rcer(cursor), &parent_nv);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_page(&parent_node, parent_page);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = cursor_read_parent(cursor, &parent_node);
+	result = cursor_read_parent(cursor, &parent_nv);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -999,7 +990,7 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	}
 
 	result = btree_node_move_cell_ex(
-		&parent_node,
+		nv_node(&parent_nv),
 		&left_node,
 		parent_index.index,
 		left_node.header->right_child,
@@ -1011,17 +1002,18 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_remove(&parent_node, &parent_index, NULL, NULL, 0);
+	result =
+		btree_node_remove(nv_node(&parent_nv), &parent_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
 
 	result =
-		btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+		btpage_err(pager_write_page(cursor->tree->pager, nv_page(&parent_nv)));
 	if( result != BTREE_OK )
 		goto end;
 
 	// TODO: Underflow condition.
-	char parent_deficient = parent_node.header->num_keys < 1;
+	char parent_deficient = node_num_keys(nv_node(&parent_nv)) < 1;
 	for( int i = 0; i < right_node.header->num_keys; i++ )
 	{
 		result = btree_node_move_cell(
@@ -1043,28 +1035,29 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 
 	// If deficient.
 	if( parent_deficient &&
-		parent_node.page_number == cursor->tree->root_page_id )
+		nv_node(&parent_nv)->page_number == cursor->tree->root_page_id )
 	{
 		// TODO: Assumes that root page is the same size as all other pages.
 		// TODO: Free list right page.
 
-		result = btree_node_copy(&parent_node, &right_node);
+		result = btree_node_copy(nv_node(&parent_nv), &right_node);
 		if( result != BTREE_OK )
 			goto end;
 
-		result =
-			btpage_err(pager_write_page(cursor->tree->pager, parent_node.page));
+		result = btpage_err(
+			pager_write_page(cursor->tree->pager, nv_page(&parent_nv)));
 		if( result != BTREE_OK )
 			goto end;
 	}
 
 end:
-	if( parent_page )
-		page_destroy(cursor->tree->pager, parent_page);
+
 	if( left_page )
 		page_destroy(cursor->tree->pager, left_page);
 	if( right_page )
 		page_destroy(cursor->tree->pager, right_page);
+
+	noderc_release(cursor_rcer(cursor), &parent_nv);
 
 	if( result == BTREE_OK && parent_deficient )
 		result = BTREE_ERR_PARENT_DEFICIENT;

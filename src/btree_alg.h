@@ -83,6 +83,7 @@ enum bta_rebalance_mode_e
 	BTA_REBALANCE_MODE_MERGE_LEFT,
 };
 enum btree_e bta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
+enum btree_e bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
 
 enum btree_e bta_rebalance(struct Cursor* cursor);
 
