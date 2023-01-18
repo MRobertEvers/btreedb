@@ -499,6 +499,7 @@ end:
 enum btree_e
 btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node)
 {
+	assert(btu_get_node_size(src_node) == btu_get_node_size(dest_node));
 	memcpy(
 		btu_get_node_buffer(dest_node),
 		btu_get_node_buffer(src_node),
@@ -713,48 +714,6 @@ btree_node_calc_heap_capacity(struct BTreeNode* node)
 {
 	u32 offset = node->page->page_id == 1 ? BTREE_HEADER_SIZE : 0;
 	return node->page->page_size - sizeof(struct BTreePageHeader) - offset;
-}
-
-/**
- * See header for details.
- */
-int
-btu_binary_search_node_keys(
-	struct BTreeNode* node,
-	struct BTreePageKey* arr,
-	unsigned char num_keys,
-	int key,
-	char* found)
-{
-	int left = 0;
-	int right = num_keys - 1;
-	int mid = 0;
-	u32 mid_key = 0;
-	*found = 0;
-
-	while( left <= right )
-	{
-		mid = (right - left) / 2 + left;
-		mid_key = arr[mid].key;
-
-		// TODO: Key compare function.
-		if( mid_key == key )
-		{
-			if( found )
-				*found = 1;
-			return mid;
-		}
-		else if( mid_key < key )
-		{
-			left = mid + 1;
-		}
-		else
-		{
-			right = mid - 1;
-		}
-	}
-
-	return left;
 }
 
 // TODO: Return error
