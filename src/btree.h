@@ -35,4 +35,6 @@ enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
  */
 enum btree_e btree_delete(struct BTree*, int key);
 
+u32 btree_underflow_lim(struct BTree*);
+
 #endif

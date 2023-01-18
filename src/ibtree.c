@@ -263,12 +263,13 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		result = cursor_push_crumb(cursor, &replacement_crumb);
 		if( result != BTREE_OK )
 			goto end;
-		underflow = replacement_node.header->num_keys < 1;
+		underflow =
+			replacement_node.header->num_keys < cursor->tree->header.underflow;
 	}
 	else
 	{
 		// Do nothing, detect underflow.
-		underflow = node.header->num_keys < 1;
+		underflow = node.header->num_keys < cursor->tree->header.underflow;
 	}
 
 	// If the leaf node underflows, then we need to rebalance.

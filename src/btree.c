@@ -364,3 +364,9 @@ end:
 	page_destroy(tree->pager, page);
 	return result;
 }
+
+u32
+btree_underflow_lim(struct BTree* tree)
+{
+	return tree->header.underflow;
+}

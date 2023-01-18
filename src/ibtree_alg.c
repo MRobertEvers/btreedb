@@ -608,7 +608,6 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto restore;
 
-	// TODO: Underflow condition.
 	if( node.header->num_keys <= cursor->tree->header.underflow )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
@@ -1012,8 +1011,8 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	// TODO: Underflow condition.
-	char parent_deficient = node_num_keys(nv_node(&parent_nv)) < 1;
+	char parent_deficient =
+		node_num_keys(nv_node(&parent_nv)) < cursor->tree->header.underflow;
 	for( int i = 0; i < right_node.header->num_keys; i++ )
 	{
 		result = btree_node_move_cell(
