@@ -7,6 +7,7 @@
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "ibtree_alg.h"
+#include "noderc.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -19,10 +20,6 @@ min(int left, int right)
 {
 	return left < right ? left : right;
 }
-
-int
-ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer)
-{}
 
 enum btree_e
 ibtree_init(
@@ -92,7 +89,7 @@ from_cli(struct ChildListIndex* cli)
  * @param node
  * @return int 1 for right, -1 for left
  */
-int
+static int
 left_or_right_insertion(struct InsertionIndex* index, struct BTreeNode* node)
 {
 	if( index->mode != KLIM_INDEX )
@@ -133,76 +130,55 @@ end:
 }
 
 enum btree_e
-find_largest_left_child(struct Cursor* cursor)
-{}
-
-enum btree_e
 ibtree_delete(struct BTree* tree, void* key, int key_size)
 {
 	enum btree_e result = BTREE_OK;
 	char found = 0;
-	struct Page* page = NULL;
-	struct Page* holding_page = NULL;
-	struct Page* replacement_page = NULL;
-
-	struct BTreeNode node = {0};
-	struct BTreeNode holding_node = {0};
+	struct NodeView nv = {0};
+	struct NodeView holding_nv = {0};
 
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
 
-	result = btpage_err(page_create(tree->pager, &replacement_page));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(tree->pager, &holding_page));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_page(&holding_node, holding_page);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(tree->pager, &page));
+	result = noderc_acquire_load_n(tree->rcer, 2, &nv, 0, &holding_nv, 0);
 	if( result != BTREE_OK )
 		goto end;
 
 	result = cursor_traverse_to_ex(cursor, key, key_size, &found);
-	if( result != BTREE_OK )
-		goto end;
-
-	// TODO: Error?
-	if( !found )
+	if( result != BTREE_OK || !found )
 		goto end;
 
 	result = cursor_peek(cursor, &crumb);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+	result = noderc_reinit_read(tree->rcer, &nv, crumb.page_id);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = ibtree_node_remove(&node, &crumb.key_index, &holding_node);
+	result = ibtree_node_remove(
+		nv_node(&nv), &crumb.key_index, nv_node(&holding_nv));
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btpage_err(pager_write_page(tree->pager, node.page));
+	result = noderc_persist_n(tree->rcer, 1, &nv);
 	if( result != BTREE_OK )
 		goto end;
+
 	bool underflow = false;
 	// The cell is removed. If it wasn't a leaf node find the largest cell
 	// in the left subtree and promote it to the same location. If it was a
 	// leaf node, do nothing.
-	if( !node.header->is_leaf )
+	if( !node_is_leaf(nv_node(&nv)) )
 	{
-		struct BTreeNode replacement_node = {0};
-		struct CursorBreadcrumb replacement_crumb = {0};
-		u32 orphaned_left_child = holding_node.keys[0].key;
-
-		replacement_crumb.key_index.mode = KLIM_INDEX;
-		replacement_crumb.key_index.index = 0;
-		replacement_crumb.page_id = orphaned_left_child;
+		u32 orphaned_left_child = node_key_at(nv_node(&holding_nv), 0);
+		struct CursorBreadcrumb replacement_crumb = {
+			.key_index =
+				{
+					.mode = KLIM_INDEX,
+					.index = 0,
+				},
+			.page_id = orphaned_left_child};
 
 		// Push left child to cursor then find largest in tree.
 		result = cursor_push_crumb(cursor, &replacement_crumb);
@@ -214,62 +190,49 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = cursor_pop(cursor, &replacement_crumb);
+		result = cursor_peek(cursor, &replacement_crumb);
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_read(
-			&replacement_node,
-			replacement_page,
-			tree->pager,
-			replacement_crumb.page_id);
+		result = noderc_reinit_read(
+			tree->rcer, &holding_nv, replacement_crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
-		struct InsertionIndex insert = {0};
-		insert.index = crumb.key_index.index;
-		insert.mode =
-			crumb.key_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
+		struct InsertionIndex insert = {
+			.index = crumb.key_index.index,
+			.mode = crumb.key_index.mode == KLIM_RIGHT_CHILD ? KLIM_END
+															 : KLIM_INDEX};
+		struct ChildListIndex remove_index = {
+			.mode = KLIM_INDEX,
+			.index = node_num_keys(nv_node(&holding_nv)) - 1};
+
 		result = btree_node_move_cell_ex_to(
-			&replacement_node,
-			&node,
-			replacement_node.header->num_keys - 1,
+			nv_node(&holding_nv),
+			nv_node(&nv),
+			remove_index.index,
 			&insert,
 			orphaned_left_child,
 			tree->pager);
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btpage_err(pager_write_page(tree->pager, node.page));
+		result = ibtree_node_remove(nv_node(&holding_nv), &remove_index, NULL);
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_reset(&holding_node);
+		result = noderc_persist_n(tree->rcer, 2, &nv, &holding_nv);
 		if( result != BTREE_OK )
 			goto end;
 
-		struct ChildListIndex remove_index = {
-			.mode = KLIM_INDEX, .index = replacement_node.header->num_keys - 1};
-		result =
-			ibtree_node_remove(&replacement_node, &remove_index, &holding_node);
-		if( result != BTREE_OK )
-			goto end;
-
-		result =
-			btpage_err(pager_write_page(tree->pager, replacement_node.page));
-		if( result != BTREE_OK )
-			goto end;
-
-		result = cursor_push_crumb(cursor, &replacement_crumb);
-		if( result != BTREE_OK )
-			goto end;
-		underflow =
-			replacement_node.header->num_keys < cursor->tree->header.underflow;
+		underflow = node_num_keys(nv_node(&holding_nv)) <
+					cursor->tree->header.underflow;
 	}
 	else
 	{
 		// Do nothing, detect underflow.
-		underflow = node.header->num_keys < cursor->tree->header.underflow;
+		underflow =
+			node_num_keys(nv_node(&nv)) < cursor->tree->header.underflow;
 	}
 
 	// If the leaf node underflows, then we need to rebalance.
@@ -288,11 +251,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 end:
 	if( cursor )
 		cursor_destroy(cursor);
-	if( page )
-		page_destroy(tree->pager, page);
-	if( holding_page )
-		page_destroy(tree->pager, holding_page);
-	if( replacement_page )
-		page_destroy(tree->pager, replacement_page);
+	noderc_release_n(tree->rcer, 2, &nv, &holding_nv);
+
 	return result;
 }
