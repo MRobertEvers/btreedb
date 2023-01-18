@@ -227,7 +227,7 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node.header->is_leaf && !(*found) )
+		if( !node_is_leaf(&node) && !(*found) )
 		{
 			result = read_cell_page(cursor, &node, child_key_index);
 			if( result != BTREE_OK )

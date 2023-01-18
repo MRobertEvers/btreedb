@@ -609,7 +609,7 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 		goto restore;
 
 	// TODO: Underflow condition.
-	if( node.header->num_keys <= 1 )
+	if( node.header->num_keys <= 7 )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 	// If we've been passed a deficient node. This will fail.
@@ -1033,23 +1033,6 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 
 	// TODO: Free list left page.
 
-	// If deficient.
-	if( parent_deficient &&
-		nv_node(&parent_nv)->page_number == cursor->tree->root_page_id )
-	{
-		// TODO: Assumes that root page is the same size as all other pages.
-		// TODO: Free list right page.
-
-		result = btree_node_copy(nv_node(&parent_nv), &right_node);
-		if( result != BTREE_OK )
-			goto end;
-
-		result = btpage_err(
-			pager_write_page(cursor->tree->pager, nv_page(&parent_nv)));
-		if( result != BTREE_OK )
-			goto end;
-	}
-
 end:
 
 	if( left_page )
@@ -1077,7 +1060,7 @@ ibta_rebalance(struct Cursor* cursor)
 		{
 			// Can't rebalance root.
 			// TODO: Split child and populate root.
-			result = BTREE_OK;
+			result = ibta_rebalance_root(cursor);
 			goto end;
 		}
 
@@ -1103,5 +1086,99 @@ ibta_rebalance(struct Cursor* cursor)
 	} while( result == BTREE_ERR_PARENT_DEFICIENT );
 
 end:
+	return result;
+}
+
+enum btree_e
+ibta_rebalance_root(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView root_nv = {0};
+	struct NodeView right_nv = {0};
+	struct NodeView empty_nv = {0};
+
+	result = noderc_acquire_load(
+		cursor_rcer(cursor), &root_nv, cursor->tree->root_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(!node_is_leaf(nv_node(&root_nv)));
+
+	if( node_num_keys(nv_node(&root_nv)) > 0 )
+		goto end;
+
+	result = noderc_acquire_load(
+		cursor_rcer(cursor), &right_nv, node_right_child(nv_node(&root_nv)));
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(node_is_leaf(nv_node(&right_nv)));
+
+	// If there is enough room on the root to fit all the children,
+	// then move all the data to the root.
+	// Otherwise, we create an empty right child.
+	u32 heap_used = calc_heap_used(nv_node(&right_nv));
+	u32 heap_cap = btree_node_calc_heap_capacity(nv_node(&root_nv));
+	if( heap_used > heap_cap )
+	{
+		// Create empty right child.
+		result = noderc_acquire(cursor_rcer(cursor), &empty_nv);
+		if( result != BTREE_OK )
+			goto end;
+
+		node_is_leaf_set(nv_node(&empty_nv), true);
+
+		result = noderc_persist_n(cursor_rcer(cursor), 1, &empty_nv);
+		if( result != BTREE_OK )
+			goto end;
+
+		assert(nv_page(&empty_nv)->page_id != 0);
+		node_right_child_set(nv_node(&root_nv), nv_page(&empty_nv)->page_id);
+
+		// Take the highest key of the child and use that as the new key for
+		// the root
+		u32 right_page = nv_node(&right_nv)->page_number;
+		struct ChildListIndex remove_index = {
+			.mode = KLIM_INDEX, .index = node_num_keys(nv_node(&right_nv)) - 1};
+		result = btree_node_move_cell_ex(
+			nv_node(&right_nv),
+			nv_node(&root_nv),
+			remove_index.index,
+			right_page,
+			cursor_pager(cursor));
+		if( result != BTREE_OK )
+			goto end;
+
+		result =
+			btree_node_remove(nv_node(&right_nv), &remove_index, NULL, NULL, 0);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
+		// Shrink the tree.
+
+		result = btree_node_reset(nv_node(&root_nv));
+		if( result != BTREE_OK )
+			goto end;
+
+		node_is_leaf_set(nv_node(&root_nv), true);
+
+		for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
+		{
+			result = btree_node_move_cell(
+				nv_node(&right_nv), nv_node(&root_nv), i, cursor_pager(cursor));
+			if( result != BTREE_OK )
+				goto end;
+		}
+
+		// TODO: free list.
+	}
+
+	result = noderc_persist_n(cursor_rcer(cursor), 2, &root_nv, &right_nv);
+	if( result != BTREE_OK )
+		goto end;
+end:
+	noderc_release_n(cursor_rcer(cursor), 3, &root_nv, &right_nv, &empty_nv);
 	return result;
 }

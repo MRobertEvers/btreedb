@@ -87,4 +87,6 @@ enum btree_e bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
 
 enum btree_e bta_rebalance(struct Cursor* cursor);
 
+enum btree_e bta_rebalance_root(struct Cursor* cursor);
+
 #endif

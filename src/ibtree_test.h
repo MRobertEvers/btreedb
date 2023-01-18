@@ -9,4 +9,6 @@ int ibta_rotate_test(void);
 int ibta_merge_test(void);
 int ibta_rebalance_test(void);
 int ibta_rebalance_nonleaf_test(void);
+int ibta_rebalance_root_fit(void);
+int ibta_rebalance_root_nofit(void);
 #endif

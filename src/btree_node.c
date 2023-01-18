@@ -960,6 +960,12 @@ node_is_leaf(struct BTreeNode* node)
 	return node->header->is_leaf != 0;
 }
 
+bool
+node_is_leaf_set(struct BTreeNode* node, bool is_leaf)
+{
+	return node->header->is_leaf = is_leaf;
+}
+
 u32
 node_num_keys(struct BTreeNode* node)
 {

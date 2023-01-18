@@ -116,6 +116,19 @@ enum btree_e ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode);
  */
 enum btree_e ibta_rebalance(struct Cursor* cursor);
 
+/**
+ * @brief Rebalance root is called when the root is underflown;
+ *
+ * The root only underflows when there is only one child. I.e.
+ * regardless of any other underflow condition.
+ *
+ * If the root has any children more than 1, then this returns BTREE_OK.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e ibta_rebalance_root(struct Cursor* cursor);
+
 struct MergedPage
 {};
 

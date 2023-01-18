@@ -171,6 +171,10 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	if( result != BTREE_OK )
 		goto end;
 
+	// TODO: Error?
+	if( !found )
+		goto end;
+
 	result = cursor_peek(cursor, &crumb);
 	if( result != BTREE_OK )
 		goto end;

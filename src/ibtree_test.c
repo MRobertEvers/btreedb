@@ -993,3 +993,288 @@ fail:
 	result = 0;
 	goto end;
 }
+
+int
+ibta_rebalance_root_fit(void)
+{
+	char const* db_name = "ibta_rebalance_root_fit.db";
+	remove(db_name);
+
+	int result = 1;
+	struct BTreeNode test_node = {0};
+	struct BTreeNode* parent_node = NULL;
+	struct BTreeNode* left_node = NULL;
+	struct BTreeNode* right_node = NULL;
+	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* test_page = NULL;
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+
+	page_cache_create(&cache, 11);
+	pager_cstd_create(&pager, cache, db_name, 0x1000);
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(pager, &test_page);
+	page_create(pager, &parent_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+	btree_node_create_as_page_number(&parent_node, 1, parent_page);
+	btree_node_create_as_page_number(&left_node, 2, left_page);
+	btree_node_create_as_page_number(&right_node, 3, right_page);
+
+	parent_node->header->right_child = right_node->page_number;
+	node_is_leaf_set(left_node, true);
+	node_is_leaf_set(right_node, true);
+
+	pager_write_page(pager, parent_page);
+	pager_write_page(pager, left_page);
+	pager_write_page(pager, right_page);
+	char A[] = "A";
+	char B[] = "B";
+	char C[] = "C";
+
+	struct InsertionIndex insert_index = {0};
+	insert_index.index = 0;
+	insert_index.mode = KLIM_END;
+	btree_node_write_ex(
+		parent_node,
+		pager,
+		&insert_index,
+		left_node->page_number,
+		0,
+		B,
+		sizeof(B),
+		WRITER_EX_MODE_RAW);
+
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		A,
+		sizeof(A),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		right_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		C,
+		sizeof(C),
+		WRITER_EX_MODE_RAW);
+
+	ibtree_delete(tree, C, sizeof(C));
+
+	struct Cursor* cursor;
+	char found;
+	char* tests[] = {A, B};
+	char buf[100] = {0};
+	for( int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++ )
+	{
+		char* testi = tests[i];
+		memset(buf, 0x00, sizeof(buf));
+		cursor = cursor_create(tree);
+		cursor_traverse_to_ex(cursor, testi, strlen(testi) + 1, &found);
+
+		if( !found )
+			goto fail;
+
+		btree_node_init_from_read(
+			&test_node, test_page, pager, cursor->current_page_id);
+		cursor_destroy(cursor);
+
+		btree_node_read_ex(
+			tree, &test_node, testi, strlen(testi) + 1, buf, sizeof(buf));
+
+		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
+			goto fail;
+	}
+
+end:
+	if( test_page )
+		page_destroy(pager, test_page);
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
+}
+
+int
+ibta_rebalance_root_nofit(void)
+{
+	char const* db_name = "ibta_rebalance_root_nofit.db";
+	remove(db_name);
+
+	int result = 1;
+	struct BTreeNode test_node = {0};
+	struct BTreeNode* parent_node = NULL;
+	struct BTreeNode* left_node = NULL;
+	struct BTreeNode* right_node = NULL;
+	struct Page* parent_page = NULL;
+	struct Page* left_page = NULL;
+	struct Page* right_page = NULL;
+	struct Page* test_page = NULL;
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+
+	// 1 byte of payload can fit on the first page.
+	u32 page_size = btree_min_page_size() + 1 * 4;
+	page_cache_create(&cache, 11);
+	pager_cstd_create(&pager, cache, db_name, page_size);
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	page_create(pager, &test_page);
+	page_create(pager, &parent_page);
+	page_create(pager, &left_page);
+	page_create(pager, &right_page);
+	btree_node_create_as_page_number(&parent_node, 1, parent_page);
+	btree_node_create_as_page_number(&left_node, 2, left_page);
+	btree_node_create_as_page_number(&right_node, 3, right_page);
+
+	parent_node->header->right_child = right_node->page_number;
+	node_is_leaf_set(left_node, true);
+	node_is_leaf_set(right_node, true);
+
+	pager_write_page(pager, parent_page);
+	pager_write_page(pager, left_page);
+	pager_write_page(pager, right_page);
+	char A[] = "AAAAAAAA";
+	char B[] = "BBBBBBBB";
+	char C[] = "CCCCCCCC";
+	char D[] = "DDDDDDDD";
+	char E[] = "EEEEEEEE";
+	char F[] = "FFFFFFFF";
+	char G[] = "GGGGGGGG";
+	char H[] = "HHHHHHHH";
+
+	struct InsertionIndex insert_index = {0};
+	insert_index.index = 0;
+	insert_index.mode = KLIM_END;
+	btree_node_write_ex(
+		parent_node,
+		pager,
+		&insert_index,
+		left_node->page_number,
+		0,
+		F,
+		sizeof(F),
+		WRITER_EX_MODE_RAW);
+
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		A,
+		sizeof(A),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		B,
+		sizeof(B),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		C,
+		sizeof(C),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		D,
+		sizeof(D),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		left_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		E,
+		sizeof(E),
+		WRITER_EX_MODE_RAW);
+	btree_node_write_ex(
+		right_node,
+		pager,
+		&insert_index,
+		0,
+		0,
+		G,
+		sizeof(G),
+		WRITER_EX_MODE_RAW);
+
+	ibtree_delete(tree, G, sizeof(G));
+
+	ibtree_insert(tree, H, sizeof(H));
+
+	struct Cursor* cursor;
+	char found;
+	char* tests[] = {A, B, C, D, E, F, H};
+	char buf[100] = {0};
+	for( int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++ )
+	{
+		char* testi = tests[i];
+		memset(buf, 0x00, sizeof(buf));
+		cursor = cursor_create(tree);
+		cursor_traverse_to_ex(cursor, testi, strlen(testi) + 1, &found);
+
+		if( !found )
+			goto fail;
+
+		btree_node_init_from_read(
+			&test_node, test_page, pager, cursor->current_page_id);
+		cursor_destroy(cursor);
+
+		btree_node_read_ex(
+			tree, &test_node, testi, strlen(testi) + 1, buf, sizeof(buf));
+
+		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
+			goto fail;
+	}
+
+end:
+	if( test_page )
+		page_destroy(pager, test_page);
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
+}

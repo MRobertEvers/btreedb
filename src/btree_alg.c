@@ -721,9 +721,7 @@ bta_rebalance(struct Cursor* cursor)
 		result = decide_rebalance_mode(cursor, &mode);
 		if( result == BTREE_ERR_CURSOR_NO_PARENT )
 		{
-			// Can't rebalance root.
-			// TODO: Split child and populate root.
-			result = BTREE_OK;
+			result = bta_rebalance_root(cursor);
 			goto end;
 		}
 
@@ -749,5 +747,104 @@ bta_rebalance(struct Cursor* cursor)
 	} while( result == BTREE_ERR_PARENT_DEFICIENT );
 
 end:
+	return result;
+}
+
+/**
+ * @brief Rebalance root is called when the root is underflown;
+ *
+ * The root only underflows when there is only one child. I.e.
+ * regardless of any other underflow condition.
+ *
+ * If the root has any children more than 1, then this returns BTREE_OK.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e
+bta_rebalance_root(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView root_nv = {0};
+	struct NodeView right_nv = {0};
+	struct NodeView empty_nv = {0};
+
+	result = noderc_acquire_load(
+		cursor_rcer(cursor), &root_nv, cursor->tree->root_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(!node_is_leaf(nv_node(&root_nv)));
+
+	if( node_num_keys(nv_node(&root_nv)) > 0 )
+		goto end;
+
+	result = noderc_acquire_load(
+		cursor_rcer(cursor), &right_nv, node_right_child(nv_node(&root_nv)));
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(node_is_leaf(nv_node(&right_nv)));
+
+	// If there is enough room on the root to fit all the children,
+	// then move all the data to the root.
+	// Otherwise, we create an empty right child.
+	if( calc_heap_used(nv_node(&right_nv)) >
+		btree_node_calc_heap_capacity(nv_node(&root_nv)) )
+	{
+		// Create empty right child.
+		result = noderc_acquire(cursor_rcer(cursor), &empty_nv);
+		if( result != BTREE_OK )
+			goto end;
+
+		node_is_leaf_set(nv_node(&empty_nv), true);
+
+		result = noderc_persist_n(cursor_rcer(cursor), 1, &empty_nv);
+		if( result != BTREE_OK )
+			goto end;
+
+		assert(nv_page(&empty_nv)->page_id != 0);
+		node_right_child_set(nv_node(&root_nv), nv_page(&empty_nv)->page_id);
+
+		// Take the highest key of the child and use that as the new key for the
+		// root
+		u32 high_key = node_key_at(
+			nv_node(&right_nv), node_num_keys(nv_node(&right_nv)) - 1);
+		u32 right_page = nv_node(&right_nv)->page_number;
+		struct InsertionIndex insert_end = {.mode = KLIM_END};
+		result = btree_node_write_ex(
+			nv_node(&root_nv),
+			nv_pager(&root_nv),
+			&insert_end,
+			high_key,
+			0,
+			&right_page,
+			sizeof(right_page),
+			WRITER_EX_MODE_RAW);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
+		// Shrink the tree.
+		node_is_leaf_set(nv_node(&root_nv), true);
+
+		result = btree_node_reset(nv_node(&root_nv));
+		if( result != BTREE_OK )
+			goto end;
+
+		for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
+		{
+			result = btree_node_move_cell(
+				nv_node(&right_nv), nv_node(&root_nv), i, cursor_pager(cursor));
+			if( result != BTREE_OK )
+				goto end;
+		}
+
+		// TODO: free list.
+	}
+
+end:
+	noderc_release_n(cursor_rcer(cursor), 3, &root_nv, &right_nv, &empty_nv);
 	return result;
 }

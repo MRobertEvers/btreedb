@@ -269,7 +269,7 @@ end:
 	return BTREE_OK;
 }
 
-enum btree_e
+static enum btree_e
 swap_root_page(struct BTree* tree, u32 other_page_id)
 {
 	enum btree_e result = BTREE_OK;
@@ -325,6 +325,10 @@ btree_delete(struct BTree* tree, int key)
 	if( result != BTREE_OK )
 		goto end;
 
+	// TODO: Error?
+	if( !found )
+		goto end;
+
 	result = cursor_peek(cursor, &crumb);
 	if( result != BTREE_OK )
 		goto end;
@@ -342,7 +346,7 @@ btree_delete(struct BTree* tree, int key)
 		goto end;
 
 	// TODO: Small size threshold.
-	if( node.header->num_keys == 0 )
+	if( node_num_keys(&node) == 0 )
 	{
 		// Keep deleting.
 		// TODO: Add empty page to free list if it's not the highwater page.
