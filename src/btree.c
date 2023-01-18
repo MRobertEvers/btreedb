@@ -186,7 +186,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			if( node.page->page_id == tree->root_page_id )
 			{
 				struct SplitPageAsParent split_result;
-				bta_split_node_as_parent(&node, tree->pager, &split_result);
+				bta_split_node_as_parent(&node, tree->rcer, &split_result);
 
 				// TODO: Key compare function.
 				if( key <= split_result.left_child_high_key )

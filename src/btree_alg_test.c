@@ -196,17 +196,20 @@ btree_alg_test_split_as_parent_nonleaf(void)
 
 	remove(db_name);
 
+	struct BTreeNodeRC rcer = {0};
+
 	page_cache_create(&cache, 5);
 	pager_cstd_create(&pager, cache, db_name, 0x1000);
+	noderc_init(&rcer, pager);
 
-	struct BTreeNode* node = {0};
-	struct Page* page = NULL;
+	struct NodeView nv = {0};
 	struct InsertionIndex inserter = {.mode = KLIM_END};
 
-	page_create(pager, &page);
+	noderc_acquire(&rcer, &nv);
+	noderc_reinit_as(&rcer, &nv, 1);
+	nv.node.header->is_leaf = 0;
 
-	btree_node_create_as_page_number(&node, 1, page);
-	node->header->is_leaf = 0;
+	struct BTreeNode* node = nv_node(&nv);
 
 	unsigned int fake_child_page_id_as_key;
 
@@ -228,7 +231,8 @@ btree_alg_test_split_as_parent_nonleaf(void)
 	pager_write_page(pager, node->page);
 
 	struct SplitPageAsParent split_result = {0};
-	bta_split_node_as_parent(node, pager, &split_result);
+
+	bta_split_node_as_parent(&nv, &rcer, &split_result);
 
 	struct BTreeNode* left_node = {0};
 	struct BTreeNode* right_node = {0};
@@ -267,10 +271,8 @@ btree_alg_test_split_as_parent_nonleaf(void)
 	}
 
 end:
-	btree_node_destroy(node);
 	btree_node_destroy(left_node);
 	btree_node_destroy(right_node);
-	page_destroy(pager, page);
 	page_destroy(pager, left_page);
 	page_destroy(pager, right_page);
 	page_cache_destroy(cache);
@@ -299,7 +301,8 @@ btree_alg_test_split_as_parent_leaf(void)
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
 	struct InsertionIndex inserter = {.mode = KLIM_END};
-
+	struct BTreeNodeRC rcer = {0};
+	noderc_init(&rcer, pager);
 	page_create(pager, &page);
 
 	btree_node_create_as_page_number(&node, 1, page);
@@ -321,7 +324,7 @@ btree_alg_test_split_as_parent_leaf(void)
 	pager_write_page(pager, node->page);
 
 	struct SplitPageAsParent split_result = {0};
-	bta_split_node_as_parent(node, pager, &split_result);
+	bta_split_node_as_parent(node, &rcer, &split_result);
 
 	struct BTreeNode* left_node = {0};
 	struct BTreeNode* right_node = {0};

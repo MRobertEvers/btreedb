@@ -156,7 +156,8 @@ btree_test_split_root_node()
 
 	struct BTreeNode* raw_root_node;
 	btree_node_create_from_page(&raw_root_node, raw_page);
-	bta_split_node_as_parent(raw_root_node, tree->pager, NULL);
+
+	bta_split_node_as_parent(raw_root_node, &rcer, NULL);
 
 	struct Cursor* cursor = cursor_create(tree);
 
@@ -242,7 +243,8 @@ btree_test_delete(void)
 
 	struct BTreeNode* raw_root_node;
 	btree_node_create_from_page(&raw_root_node, raw_page);
-	bta_split_node_as_parent(raw_root_node, tree->pager, NULL);
+
+	bta_split_node_as_parent(raw_root_node, &rcer, NULL);
 
 	struct Cursor* cursor = cursor_create(tree);
 

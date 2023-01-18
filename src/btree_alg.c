@@ -83,50 +83,41 @@ split_node(
 enum btree_e
 bta_split_node_as_parent(
 	struct BTreeNode* node,
-	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
 	struct SplitPageAsParent* split_page)
 {
 	enum btree_e result = BTREE_OK;
 	struct InsertionIndex insert_end = {.mode = KLIM_END};
 	struct BTreeCellInline write_cell = {0};
 
-	struct BTreeNode* parent = NULL;
-	struct BTreeNode* left = NULL;
-	struct BTreeNode* right = NULL;
+	struct NodeView parent_nv = {0};
+	struct NodeView left_nv = {0};
+	struct NodeView right_nv = {0};
 
-	struct Page* parent_page = NULL;
-	struct Page* left_page = NULL;
-	struct Page* right_page = NULL;
-
-	page_create(pager, &parent_page);
-	result = btree_node_create_as_page_number(
-		&parent, node->page_number, parent_page);
+	result = noderc_acquire_load_n(
+		rcer, 3, &parent_nv, 0, &left_nv, 0, &right_nv, 0);
 	if( result != BTREE_OK )
 		goto end;
 
-	page_create(pager, &left_page);
-	result = btree_node_create_from_page(&left, left_page);
-	if( result != BTREE_OK )
-		goto end;
-
-	page_create(pager, &right_page);
-	result = btree_node_create_from_page(&right, right_page);
+	result = noderc_reinit_as(rcer, &parent_nv, node->page_number);
 	if( result != BTREE_OK )
 		goto end;
 
 	struct split_node_t split_result = {0};
-	result = split_node(node, pager, left, right, &split_result);
+	result = split_node(
+		node,
+		nv_pager(&parent_nv),
+		nv_node(&left_nv),
+		nv_node(&right_nv),
+		&split_result);
 	if( result != BTREE_OK )
 		goto end;
 
 	// We need to write the pages out to get the page ids.
-	left->header->is_leaf = node->header->is_leaf;
-	result = btpage_err(pager_write_page(pager, left_page));
-	if( result != BTREE_OK )
-		goto end;
-
-	right->header->is_leaf = node->header->is_leaf;
-	result = btpage_err(pager_write_page(pager, right_page));
+	bool is_leaf = node_is_leaf(node);
+	node_is_leaf_set(nv_node(&left_nv), is_leaf);
+	node_is_leaf_set(nv_node(&right_nv), is_leaf);
+	result = noderc_persist_n(rcer, 2, &left_nv, &right_nv);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -136,50 +127,38 @@ bta_split_node_as_parent(
 	// The right_child pointer becomes the right_page id
 	// and the old right_child pointer becomes the right_child pointer
 	// of the right page.
-	parent->header->is_leaf = 0;
-
-	parent->header->right_child = right_page->page_id;
+	node_is_leaf_set(nv_node(&parent_nv), false);
+	node_right_child_set(nv_node(&parent_nv), nv_page(&right_nv)->page_id);
 
 	// Add the middle point between the left and right pages as a key to the
 	// parent.
-	write_cell.inline_size = sizeof(unsigned int);
-	write_cell.payload = &left_page->page_id;
+	write_cell.inline_size = sizeof(nv_page(&left_nv)->page_id);
+	write_cell.payload = &nv_page(&left_nv)->page_id;
 	result = btree_node_insert_inline(
-		parent, &insert_end, split_result.left_child_high_key, &write_cell);
+		nv_node(&parent_nv),
+		&insert_end,
+		split_result.left_child_high_key,
+		&write_cell);
 	if( result != BTREE_OK )
 		goto end;
 
-	memcpy(
-		btu_get_node_buffer(node),
-		btu_get_node_buffer(parent),
-		btu_get_node_size(parent));
+	result = btree_node_copy(node, nv_node(&parent_nv));
+	if( result != BTREE_OK )
+		goto end;
 
-	result = btpage_err(pager_write_page(pager, node->page));
+	result = btpage_err(pager_write_page(nv_pager(&parent_nv), node->page));
 	if( result != BTREE_OK )
 		goto end;
 
 	if( split_page != NULL )
 	{
-		split_page->left_child_page_id = left_page->page_id;
-		split_page->right_child_page_id = right_page->page_id;
+		split_page->left_child_page_id = nv_page(&left_nv)->page_id;
+		split_page->right_child_page_id = nv_page(&right_nv)->page_id;
 		split_page->left_child_high_key = split_result.left_child_high_key;
 	}
 
 end:
-	if( left )
-		btree_node_destroy(left);
-	if( left_page )
-		page_destroy(pager, left_page);
-
-	if( right )
-		btree_node_destroy(right);
-	if( right_page )
-		page_destroy(pager, right_page);
-
-	if( parent )
-		btree_node_destroy(parent);
-	if( parent_page )
-		page_destroy(pager, parent_page);
+	noderc_release_n(rcer, 3, &parent_nv, &left_nv, &right_nv);
 
 	return BTREE_OK;
 }
