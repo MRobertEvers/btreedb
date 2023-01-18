@@ -440,7 +440,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 			writer_mode);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
-			if( node.page->page_id == 1 )
+			if( node.page->page_id == tree->root_page_id )
 			{
 				// TODO: This first half thing is shaky.
 				u32 first_half = (node.header->num_keys + 1) / 2;

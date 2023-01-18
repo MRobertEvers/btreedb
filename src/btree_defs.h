@@ -32,7 +32,7 @@ enum btree_e
 struct BTreePageHeader
 {
 	char is_leaf;
-	char persisted;
+	char is_root;
 	u32 free_heap;
 	u32 num_keys;
 	u32 right_child;
@@ -51,6 +51,8 @@ struct BTreePageKey
 struct BTreeNode
 {
 	int page_number;
+	// Required to know because the root page may be different.
+	u32 root_page_id;
 
 	struct BTreePageHeader* header;
 	// Start of the keys area; this area is contiguous and sorted

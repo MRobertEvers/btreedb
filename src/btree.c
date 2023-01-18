@@ -183,7 +183,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			// So if the first page is to be split, then split
 			// the data in this page between two children nodes.
 			// This node becomes the new parent of those nodes.
-			if( node.page->page_id == 1 )
+			if( node.page->page_id == tree->root_page_id )
 			{
 				struct SplitPageAsParent split_result;
 				bta_split_node_as_parent(&node, tree->pager, &split_result);

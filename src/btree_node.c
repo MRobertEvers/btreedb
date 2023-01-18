@@ -914,6 +914,12 @@ err:
 }
 
 bool
+node_is_root(struct BTreeNode* node)
+{
+	return node->header->is_root;
+}
+
+bool
 node_is_leaf(struct BTreeNode* node)
 {
 	return node->header->is_leaf != 0;
