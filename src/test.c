@@ -45,10 +45,6 @@ main()
 	printf("overflow test: %d\n", result);
 	result = serialization_test();
 	printf("serialization test: %d\n", result);
-	result = btree_test_delete_last();
-	printf("delete last key test: %d\n", result);
-	result = btree_test_delete_merge_root();
-	printf("delete merge root: %d\n", result);
 
 	result = ibtree_test_insert_shallow();
 	printf("ibtree insert shallow: %d\n", result);

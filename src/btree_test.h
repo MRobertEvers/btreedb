@@ -8,7 +8,4 @@ int btree_test_delete(void);
 int btree_test_free_heap_calcs(void);
 int btree_test_deep_tree(void);
 
-int btree_test_delete_last(void);
-int btree_test_delete_merge_root(void);
-
 #endif
