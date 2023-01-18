@@ -34,6 +34,8 @@ btree_alg_test_split_nonleaf(void)
 	struct BTreeNode* node = {0};
 	struct Page* page = NULL;
 	struct InsertionIndex inserter = {.mode = KLIM_END};
+	struct BTreeNodeRC rcer = {0};
+	noderc_init(&rcer, pager);
 
 	page_create(pager, &page);
 
@@ -58,7 +60,7 @@ btree_alg_test_split_nonleaf(void)
 	node->header->right_child = fake_child_page_id_as_key;
 
 	struct SplitPage split_result = {0};
-	bta_split_node(node, pager, &split_result);
+	bta_split_node(node, &rcer, &split_result);
 
 	struct BTreeNode* other_node = {0};
 	struct Page* other_page = NULL;
@@ -142,7 +144,9 @@ btree_alg_test_split_leaf(void)
 		node, &inserter, fake_child_page_id_as_key, (void*)&cell);
 
 	struct SplitPage split_result = {0};
-	bta_split_node(node, pager, &split_result);
+	struct BTreeNodeRC rcer = {0};
+	noderc_init(&rcer, pager);
+	bta_split_node(node, &rcer, &split_result);
 
 	struct BTreeNode* other_node = {0};
 	struct Page* other_page = NULL;

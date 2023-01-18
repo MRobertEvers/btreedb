@@ -52,7 +52,9 @@ struct SplitPage
  * @return enum btree_e
  */
 enum btree_e bta_split_node(
-	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page);
+	struct BTreeNode* node,
+	struct BTreeNodeRC* rcer,
+	struct SplitPage* split_page);
 
 enum bta_rebalance_mode_e
 {
