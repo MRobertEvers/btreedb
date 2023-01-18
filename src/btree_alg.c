@@ -319,144 +319,142 @@ bta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		mode == BTA_REBALANCE_MODE_ROTATE_LEFT ||
 		mode == BTA_REBALANCE_MODE_ROTATE_RIGHT);
 	enum btree_e result = BTREE_OK;
-	struct Page* source_page = NULL;
-	struct Page* dest_page = NULL;
-	struct Page* parent_page = NULL;
-	struct BTreeNode nodes[3] = {0};
-	// 	noderc_
+	struct NodeView source_nv = {0};
+	struct NodeView dest_nv = {0};
+	struct NodeView parent_nv = {0};
+	result = noderc_acquire_load_n(
+		cursor_rcer(cursor), 3, &source_nv, 0, &dest_nv, 0, &parent_nv, 0);
+	if( result != BTREE_OK )
+		goto end;
 
-	// 		result = btpage_err(page_create(cursor->tree->pager, &source_page));
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+	result = cursor_read_parent(cursor, &parent_nv);
+	if( result != BTREE_OK )
+		goto end;
 
-	// 	result = btree_node_init_from_page(&source_node, source_page);
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+	result = noderc_reinit_read(
+		cursor_rcer(cursor), &dest_nv, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
 
-	// 	result = btpage_err(page_create(cursor->tree->pager, &dest_page));
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+	struct ChildListIndex parent_index = {0};
+	if( mode == BTA_REBALANCE_MODE_ROTATE_LEFT )
+	{
+		// The cursor points to the left child.
+		result = cursor_parent_index(cursor, &parent_index);
+		if( result != BTREE_OK )
+			goto end;
 
-	// 	result = btree_node_init_from_page(&dest_node, dest_page);
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+		result = cursor_sibling(cursor, CURSOR_SIBLING_RIGHT);
+		if( result != BTREE_OK )
+			goto end;
+	}
+	else
+	{
+		result = cursor_sibling(cursor, CURSOR_SIBLING_LEFT);
+		if( result != BTREE_OK )
+			goto end;
 
-	// 	result = btpage_err(page_create(cursor->tree->pager, &parent_page));
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+		result = cursor_parent_index(cursor, &parent_index);
+		if( result != BTREE_OK )
+			goto end;
+	}
 
-	// 	result = btree_node_init_from_page(&parent_node, parent_page);
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+	result = noderc_reinit_read(
+		cursor_rcer(cursor), &source_nv, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
 
-	// 	result = cursor_read_parent(cursor, &parent_node);
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+	u32 parent_key = node_key_at(nv_node(&parent_nv), parent_index.index);
 
-	// 	struct ChildListIndex parent_index = {0};
-	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_LEFT )
-	// 	{
-	// 		// The cursor points to the left child.
-	// 		result = btree_node_init_from_read(
-	// 			&dest_node,
-	// 			dest_page,
-	// 			cursor->tree->pager,
-	// 			cursor->current_page_id);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+	struct InsertionIndex dest_index;
+	dest_index.index = mode == BTA_REBALANCE_MODE_ROTATE_RIGHT
+						   ? 0
+						   : node_num_keys(nv_node(&dest_nv));
+	dest_index.mode = KLIM_INDEX;
 
-	// 		result = cursor_parent_index(cursor, &parent_index);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+	struct ChildListIndex source_index;
+	source_index.index = mode == BTA_REBALANCE_MODE_ROTATE_RIGHT
+							 ? node_num_keys(nv_node(&source_nv)) - 1
+							 : 0;
+	source_index.mode = KLIM_INDEX;
 
-	// 		result = cursor_sibling(cursor, CURSOR_SIBLING_RIGHT);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+	struct BTreeNode* left_node = NULL;
+	left_node = mode == BTA_REBALANCE_MODE_ROTATE_RIGHT ? nv_node(&source_nv)
+														: nv_node(&dest_nv);
 
-	// 		result = btree_node_init_from_read(
-	// 			&source_node,
-	// 			source_page,
-	// 			cursor->tree->pager,
-	// 			cursor->current_page_id);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
-	// 	}
-	// 	else
-	// 	{
-	// 		result = btree_node_init_from_read(
-	// 			&dest_node,
-	// 			dest_page,
-	// 			cursor->tree->pager,
-	// 			cursor->current_page_id);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+	if( node_is_leaf(nv_node(&dest_nv)) )
+	{
+		result = btree_node_move_cell_ex_to(
+			nv_node(&source_nv),
+			nv_node(&dest_nv),
+			source_index.index,
+			&dest_index, // Dest index
+			// For leaf nodes, key remains the same.
+			node_key_at(nv_node(&source_nv), source_index.index),
+			cursor_pager(cursor));
+		if( result != BTREE_OK )
+			goto end;
 
-	// 		result = cursor_sibling(cursor, CURSOR_SIBLING_LEFT);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+		result = btree_node_remove(
+			nv_node(&source_nv), &source_index, NULL, NULL, 0);
+		if( result != BTREE_OK )
+			goto end;
 
-	// 		result = btree_node_init_from_read(
-	// 			&source_node,
-	// 			source_page,
-	// 			cursor->tree->pager,
-	// 			cursor->current_page_id);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
+		// For leaf nodes, the parent key is always the last key of the left
+		// child.
+		u32 new_last_child_index = node_num_keys(left_node) - 1;
+		u32 new_last_child_key = node_key_at(left_node, new_last_child_index);
+		node_key_at_set(
+			nv_node(&parent_nv), parent_index.index, new_last_child_key);
+	}
+	else
+	{
+		// If the dest node is not a leaf node, then the cell is guaranteed to
+		// be inline containing the page id.
+		u32 page_id_of_source_cell_child = 0;
+		result = btree_node_read_inline_as_page(
+			nv_node(&source_nv), &source_index, &page_id_of_source_cell_child);
+		if( result != BTREE_OK )
+			goto end;
 
-	// 		result = cursor_parent_index(cursor, &parent_index);
-	// 		if( result != BTREE_OK )
-	// 			goto end;
-	// 	}
+		u32 prev_right_child_of_left_node = 0;
 
-	// 	// This  becomes the moved key.
-	// 	u32 parent_key = parent_node.keys[parent_index.index].key;
+		prev_right_child_of_left_node = node_right_child(left_node);
+		// Write the right child of the left node.
+		node_right_child_set(left_node, page_id_of_source_cell_child);
 
-	// 	struct InsertionIndex insert_index = {0};
-	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
-	// 	{
-	// 		insert_index.mode = KLIM_INDEX;
-	// 		insert_index.index = 0;
-	// 	}
-	// 	else
-	// 	{
-	// 		insert_index.mode = KLIM_END;
-	// 		insert_index.index = dest_node.header->num_keys;
-	// 	}
+		// Write the new cell pointing to the previous right child of the left
+		// node.
+		result = btree_node_write_ex(
+			nv_node(&dest_nv),
+			nv_pager(&dest_nv),
+			&dest_index,
+			parent_key,
+			0, // ignored
+			&prev_right_child_of_left_node,
+			sizeof(prev_right_child_of_left_node),
+			WRITER_EX_MODE_RAW);
+		if( result != BTREE_OK )
+			goto end;
 
-	// 	u32 source_index = 0;
-	// 	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
-	// 	{
-	// 		source_index = source_node.header->num_keys;
-	// 	}
-	// 	else
-	// 	{
-	// 		source_index = 0;
-	// 	}
+		u32 source_key = node_key_at(nv_node(&source_nv), source_index.index);
 
-	// 	result = btree_node_write_ex(
-	// 		&dest_node, cursor->tree->pager, &insert_index, parent_key, );
-	// 	result = btree_node_move_cell_ex_to(
-	// 		&source_node,
-	// 		&dest_node,
-	// 		source_index,
-	// 		&parent_key,
-	// 		// For rotate right, this will eventually be updated to
-	// 		// point to the prev r-most of the left node.
-	// 		// For rotate left, this will point to the child of the prev
-	// 		// leftmost node.
-	// 		parent_key,
-	// 		cursor->tree->pager);
+		// The parent key becomes the key of the donated cell.
+		node_key_at_set(nv_node(&parent_nv), parent_index.index, source_key);
 
-	// 	if( result != BTREE_OK )
-	// 		goto end;
+		result = btree_node_remove(
+			nv_node(&source_nv), &source_index, NULL, NULL, 0);
+		if( result != BTREE_OK )
+			goto end;
+	}
 
-	// end:
-	// 	if( left_page )
-	// 		page_destroy(cursor->tree->pager, left_page);
-	// 	if( right_page )
-	// 		page_destroy(cursor->tree->pager, right_page);
-	// 	if( parent_page )
-	// 		page_destroy(cursor->tree->pager, parent_page);
+	result = noderc_persist_n(
+		cursor_rcer(cursor), 3, &source_nv, &dest_nv, &parent_nv);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release_n(cursor_rcer(cursor), 3, &source_nv, &dest_nv, &parent_nv);
 	return result;
 }
 

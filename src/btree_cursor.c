@@ -412,21 +412,23 @@ undo:
 	goto end;
 }
 
-// TODO: Should be nodeview
 enum btree_e
-cursor_read_parent(struct Cursor* cursor, struct BTreeNode* out_node)
+cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view)
 {
 	enum btree_e result = BTREE_OK;
 	struct CursorBreadcrumb crumb = {0};
 
-	assert(out_node->page != NULL);
+	assert(out_view->page != NULL);
 
 	result = cursor_pop(cursor, &crumb);
 	if( result != BTREE_OK )
 		return result;
 
 	result = btree_node_init_from_read(
-		out_node, out_node->page, cursor->tree->pager, cursor->current_page_id);
+		&out_view->node,
+		out_view->page,
+		cursor->tree->pager,
+		cursor->current_page_id);
 	if( result != BTREE_OK )
 		return result;
 
@@ -454,4 +456,16 @@ cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index)
 		return result;
 
 	return result;
+}
+
+struct BTreeNodeRC*
+cursor_rcer(struct Cursor* cursor)
+{
+	return cursor->tree->rcer;
+}
+
+struct Pager*
+cursor_pager(struct Cursor* cursor)
+{
+	return cursor->tree->pager;
 }

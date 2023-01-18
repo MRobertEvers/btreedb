@@ -6,6 +6,8 @@
 #include "btree_defs.h"
 #include "page.h"
 
+#include <stdbool.h>
+
 u32 btree_node_max_cell_size(struct BTreeNode* node);
 
 enum btree_page_key_flags_e
@@ -99,6 +101,22 @@ enum btree_e btree_node_insert_inline_ex(
 	u32 key,
 	struct BTreeCellInline* cell,
 	u32 flags);
+
+/**
+ * @brief Reads the page id payload from an internal node.
+ *
+ * TODO: This is confusing.
+ *
+ * @param node
+ * @param index
+ * @param key
+ * @param cell
+ * @return enum btree_e
+ */
+enum btree_e btree_node_read_inline_as_page(
+	struct BTreeNode* internal_node,
+	struct ChildListIndex* index,
+	u32* out_page_id);
 
 /**
  * @brief Inserts overflow cell into a node. Inline payload capped at
@@ -224,5 +242,12 @@ enum btree_e btree_node_search_keys(
 	void* key,
 	u32 key_size,
 	u32* out_index);
+
+bool node_is_leaf(struct BTreeNode* node);
+u32 node_num_keys(struct BTreeNode* node);
+u32 node_right_child(struct BTreeNode* node);
+u32 node_right_child_set(struct BTreeNode* node, u32 right_child);
+u32 node_key_at(struct BTreeNode* node, u32 index);
+u32 node_key_at_set(struct BTreeNode* node, u32 index, u32 key);
 
 #endif

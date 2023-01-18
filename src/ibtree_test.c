@@ -338,7 +338,7 @@ fail:
 int
 ibta_rotate_test(void)
 {
-	char const* db_name = "btree_rotate_test.db";
+	char const* db_name = "ibtree_rotate_test.db";
 	remove(db_name);
 
 	int result = 1;

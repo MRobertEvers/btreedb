@@ -50,7 +50,7 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
  * @return enum btree_e
  */
 enum btree_e
-cursor_read_parent(struct Cursor* cursor, struct BTreeNode* out_node);
+cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view);
 
 /**
  * @brief Returns the index of the parent cell in the parent node.
@@ -58,5 +58,8 @@ cursor_read_parent(struct Cursor* cursor, struct BTreeNode* out_node);
  */
 enum btree_e
 cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index);
+
+struct BTreeNodeRC* cursor_rcer(struct Cursor* cursor);
+struct Pager* cursor_pager(struct Cursor* cursor);
 
 #endif

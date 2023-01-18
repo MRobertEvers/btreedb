@@ -322,6 +322,37 @@ btree_node_insert_overflow(
 }
 
 enum btree_e
+btree_node_read_inline_as_page(
+	struct BTreeNode* internal_node,
+	struct ChildListIndex* index,
+	u32* out_page_id)
+{
+	assert(!node_is_leaf(internal_node));
+
+	struct BTreeCellInline cell = {0};
+
+	if( index->index == node_num_keys(internal_node) ||
+		index->mode != KLIM_INDEX )
+	{
+		*out_page_id = internal_node->header->right_child;
+		return BTREE_OK;
+	}
+
+	byte* cell_buffer = btu_get_cell_buffer(internal_node, index->index);
+	// TODO: Not this
+	u32 cell_buffer_size =
+		btu_calc_highwater_offset(internal_node, 0) - cell_buffer;
+
+	byte read_buf[sizeof(u32)];
+	btree_cell_read_inline(
+		cell_buffer, cell_buffer_size, &cell, read_buf, sizeof(read_buf));
+
+	ser_read_32bit_le(out_page_id, read_buf);
+
+	return BTREE_OK;
+}
+
+enum btree_e
 btree_node_move_cell(
 	struct BTreeNode* source_node,
 	struct BTreeNode* other,
@@ -921,4 +952,41 @@ btree_node_search_keys(
 
 err:
 	return result;
+}
+
+bool
+node_is_leaf(struct BTreeNode* node)
+{
+	return node->header->is_leaf != 0;
+}
+
+u32
+node_num_keys(struct BTreeNode* node)
+{
+	return node->header->num_keys;
+}
+
+u32
+node_right_child(struct BTreeNode* node)
+{
+	return node->header->right_child;
+}
+
+u32
+node_right_child_set(struct BTreeNode* node, u32 right_child)
+{
+	node->header->right_child = right_child;
+	return right_child;
+}
+
+u32
+node_key_at(struct BTreeNode* node, u32 index)
+{
+	return node->keys[index].key;
+}
+u32
+node_key_at_set(struct BTreeNode* node, u32 index, u32 key)
+{
+	node->keys[index].key = key;
+	return key;
 }
