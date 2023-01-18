@@ -609,7 +609,7 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 		goto restore;
 
 	// TODO: Underflow condition.
-	if( node.header->num_keys <= 7 )
+	if( node.header->num_keys <= cursor->tree->header.underflow )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 	// If we've been passed a deficient node. This will fail.

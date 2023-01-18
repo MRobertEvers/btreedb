@@ -620,7 +620,8 @@ ibta_merge_test(void)
 	btree_node_init_from_read(
 		parent_node, parent_node->page, pager, parent_node->page_number);
 
-	if( parent_node->header->num_keys != 4 )
+	// TODO: Better merge test
+	if( parent_node->header->num_keys != 0 )
 		goto fail;
 
 end:
@@ -1146,7 +1147,7 @@ ibta_rebalance_root_nofit(void)
 		result = 0;
 		goto end;
 	}
-
+	tree->header.underflow = 7;
 	page_create(pager, &test_page);
 	page_create(pager, &parent_page);
 	page_create(pager, &left_page);

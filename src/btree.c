@@ -37,6 +37,7 @@ init_new_root_page(struct BTree* tree, struct Page* page, u32 page_id)
 	temp_node.header->is_leaf = 1;
 
 	temp_btree_header->page_high_water = 2;
+	temp_btree_header->underflow = 1;
 
 	return BTREE_OK;
 }
@@ -353,26 +354,9 @@ btree_delete(struct BTree* tree, int key)
 
 		// TODO: Deleting the last key from the root_node should just result
 		// in a swap with the last remaining page. page.
-		if( node.page->page_id == tree->root_page_id )
-		{
-			if( !node.header->is_leaf )
-			{
-				result = swap_root_page(tree, node.header->right_child);
-				if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
-				{
-					// TODO: What do when 1 remaining child cant fit in
-					// root?
-					assert(0);
-				}
-			}
-			// If the root page is a leaf, then there is nothing more to do.
-		}
-		else
-		{
-			result = bta_rebalance(cursor);
-			if( result != BTREE_OK )
-				goto end;
-		}
+		result = bta_rebalance(cursor);
+		if( result != BTREE_OK )
+			goto end;
 	}
 
 end:

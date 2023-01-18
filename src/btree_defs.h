@@ -68,6 +68,7 @@ enum btree_type
 struct BTreeHeader
 {
 	int page_high_water;
+	int underflow;
 	enum btree_type type;
 };
 
