@@ -466,24 +466,115 @@ bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		mode == BTA_REBALANCE_MODE_MERGE_RIGHT);
 
 	enum btree_e result = BTREE_OK;
-	struct NodeView source_nv = {0};
-	struct NodeView dest_nv = {0};
+	struct NodeView left_nv = {0};
+	struct NodeView right_nv = {0};
 	struct NodeView parent_nv = {0};
+
+	u32 left_page_id;
+	u32 right_page_id;
+	struct CursorBreadcrumb lparent_crumb = {0};
+	// struct BTreeNode right_node = mode == BTA_REBALANCE_MODE_MERGE_RIGHT ?
+	if( mode == BTA_REBALANCE_MODE_MERGE_RIGHT )
+	{
+		// The cursor points to the left child.
+		left_page_id = cursor->current_page_id;
+
+		result = cursor_parent_crumb(cursor, &lparent_crumb);
+		if( result != BTREE_OK )
+			goto end;
+
+		result = cursor_sibling(cursor, CURSOR_SIBLING_RIGHT);
+		if( result != BTREE_OK )
+			goto end;
+
+		right_page_id = cursor->current_page_id;
+	}
+	else
+	{
+		right_page_id = cursor->current_page_id;
+
+		result = cursor_sibling(cursor, CURSOR_SIBLING_LEFT);
+		if( result != BTREE_OK )
+			goto end;
+
+		result = cursor_parent_crumb(cursor, &lparent_crumb);
+		if( result != BTREE_OK )
+			goto end;
+
+		left_page_id = cursor->current_page_id;
+	}
+
 	result = noderc_acquire_load_n(
-		cursor_rcer(cursor), 3, &source_nv, 0, &dest_nv, 0, &parent_nv, 0);
+		cursor_rcer(cursor),
+		3,
+		&left_nv,
+		left_page_id,
+		&right_nv,
+		right_page_id,
+		&parent_nv,
+		lparent_crumb.page_id);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = cursor_read_parent(cursor, &parent_nv);
+	u32 parent_key =
+		node_key_at(nv_node(&parent_nv), lparent_crumb.key_index.index);
+
+	if( node_is_leaf(nv_node(&left_nv)) )
+	{
+		// Just copy
+		for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
+		{
+			result = btree_node_move_cell(
+				nv_node(&right_nv), nv_node(&left_nv), i, cursor_pager(cursor));
+			if( result != BTREE_OK )
+				goto end;
+		}
+	}
+	else
+	{
+		// Slide parent
+		u32 rchild_of_lnode = node_right_child(nv_node(&left_nv));
+
+		struct InsertionIndex insert_end = {.mode = KLIM_END};
+		result = btree_node_write_ex(
+			nv_node(&left_nv),
+			nv_pager(&left_nv),
+			&insert_end,
+			parent_key,
+			0, // ignored
+			&rchild_of_lnode,
+			sizeof(rchild_of_lnode),
+			WRITER_EX_MODE_RAW);
+		if( result != BTREE_OK )
+			goto end;
+
+		for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
+		{
+			result = btree_node_move_cell(
+				nv_node(&right_nv), nv_node(&left_nv), i, cursor_pager(cursor));
+			if( result != BTREE_OK )
+				goto end;
+		}
+
+		node_right_child_set(
+			nv_node(&left_nv), node_right_child(nv_node(&right_nv)));
+	}
+
+	// Remove left parent.
+	result = btree_node_remove(
+		nv_node(&parent_nv), &lparent_crumb.key_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = noderc_reinit_read(
-		cursor_rcer(cursor), &dest_nv, cursor->current_page_id);
+	// Result always ends up on the right-side page.
+	result = btree_node_copy(nv_node(&right_nv), nv_node(&left_nv));
 	if( result != BTREE_OK )
 		goto end;
+
+	// TODO: Free list.
 
 end:
+	noderc_release_n(cursor_rcer(cursor), 3, &left_nv, &right_nv, &parent_nv);
 	return result;
 }
 

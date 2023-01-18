@@ -69,6 +69,12 @@ main()
 	printf("bt rotate nonleaf: %d\n", result);
 	result = btree_alg_rotate_leaf_test();
 	printf("bt rotate leaf: %d\n", result);
+	result = btree_alg_merge_test();
+	printf("bt merge: %d\n", result);
+	result = btree_alg_merge_nonleaf_test();
+	printf("bt merge nonleaf: %d\n", result);
+	result = btree_alg_merge_nonleaf_l_test();
+	printf("bt merge nonleaf l: %d\n", result);
 
 	return 0;
 }

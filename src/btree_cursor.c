@@ -346,15 +346,15 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	}
 	else
 	{
-		if( (crumb.key_index.index == node.header->num_keys ||
-			 crumb.key_index.mode != KLIM_INDEX) &&
-			node.header->right_child == 0 )
+		if( (crumb.key_index.index + 1 == node.header->num_keys &&
+			 node.header->right_child == 0) ||
+			crumb.key_index.mode != KLIM_INDEX )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
 			goto undo;
 		}
 
-		if( crumb.key_index.index == node.header->num_keys )
+		if( crumb.key_index.index + 1 == node.header->num_keys )
 		{
 			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
 			cursor->current_key_index.index = node.header->num_keys;
@@ -439,19 +439,37 @@ cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view)
 	return result;
 }
 
+// TODO: Deprecate this
 enum btree_e
 cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index)
 {
 	enum btree_e result = BTREE_OK;
-	struct CursorBreadcrumb crumb = {0};
+	struct CursorBreadcrumb crumb;
 
-	result = cursor_pop(cursor, &crumb);
+	result = cursor_parent_crumb(cursor, &crumb);
+
+	if( result == BTREE_OK )
+		*out_index = crumb.key_index;
+
+	return result;
+}
+
+enum btree_e
+cursor_parent_crumb(struct Cursor* cursor, struct CursorBreadcrumb* out_crumb)
+{
+	enum btree_e result = BTREE_OK;
+	struct CursorBreadcrumb child;
+
+	result = cursor_pop(cursor, &child);
 	if( result != BTREE_OK )
-		return result;
+		goto end;
 
-	*out_index = cursor->current_key_index;
+	result = cursor_peek(cursor, out_crumb);
+	if( result != BTREE_OK )
+		goto end;
 
-	result = cursor_push_crumb(cursor, &crumb);
+end:
+	result = cursor_push_crumb(cursor, &child);
 	if( result != BTREE_OK )
 		return result;
 

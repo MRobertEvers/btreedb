@@ -58,6 +58,8 @@ cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view);
  */
 enum btree_e
 cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index);
+enum btree_e
+cursor_parent_crumb(struct Cursor* cursor, struct CursorBreadcrumb* out_crumb);
 
 struct BTreeNodeRC* cursor_rcer(struct Cursor* cursor);
 struct Pager* cursor_pager(struct Cursor* cursor);
