@@ -1076,6 +1076,7 @@ ibta_rebalance(struct Cursor* cursor)
 		if( result == BTREE_ERR_CURSOR_NO_PARENT )
 		{
 			// Can't rebalance root.
+			// TODO: Split child and populate root.
 			result = BTREE_OK;
 			goto end;
 		}

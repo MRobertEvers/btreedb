@@ -10,5 +10,6 @@ int btree_alg_rotate_leaf_test(void);
 int btree_alg_merge_test(void);
 int btree_alg_merge_nonleaf_test(void);
 int btree_alg_merge_nonleaf_l_test(void);
+int btree_alg_rebalance(void);
 
 #endif

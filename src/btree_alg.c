@@ -466,6 +466,7 @@ bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		mode == BTA_REBALANCE_MODE_MERGE_RIGHT);
 
 	enum btree_e result = BTREE_OK;
+	bool parent_deficient = false;
 	struct NodeView left_nv = {0};
 	struct NodeView right_nv = {0};
 	struct NodeView parent_nv = {0};
@@ -571,10 +572,16 @@ bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
+	// TODO: Underflow condition
+	parent_deficient = node_num_keys(nv_node(&parent_nv)) < 1;
+
 	// TODO: Free list.
 
 end:
 	noderc_release_n(cursor_rcer(cursor), 3, &left_nv, &right_nv, &parent_nv);
+
+	if( result == BTREE_OK && parent_deficient )
+		result = BTREE_ERR_PARENT_DEFICIENT;
 	return result;
 }
 
@@ -715,6 +722,7 @@ bta_rebalance(struct Cursor* cursor)
 		if( result == BTREE_ERR_CURSOR_NO_PARENT )
 		{
 			// Can't rebalance root.
+			// TODO: Split child and populate root.
 			result = BTREE_OK;
 			goto end;
 		}
@@ -723,11 +731,11 @@ bta_rebalance(struct Cursor* cursor)
 		{
 		case BTA_REBALANCE_MODE_ROTATE_LEFT:
 		case BTA_REBALANCE_MODE_ROTATE_RIGHT:
-			// result = bta_rotate(cursor, mode);
+			result = bta_rotate(cursor, mode);
 			break;
 		case BTA_REBALANCE_MODE_MERGE_LEFT:
 		case BTA_REBALANCE_MODE_MERGE_RIGHT:
-			// result = bta_merge(cursor, mode);
+			result = bta_merge(cursor, mode);
 			break;
 		default:
 			result = BTREE_ERR_UNK;

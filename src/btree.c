@@ -325,52 +325,49 @@ btree_delete(struct BTree* tree, int key)
 	if( result != BTREE_OK )
 		goto end;
 
-	while( 1 )
+	result = cursor_peek(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btree_node_remove(&node, &crumb.key_index, NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = btpage_err(pager_write_page(tree->pager, node.page));
+	if( result != BTREE_OK )
+		goto end;
+
+	// TODO: Small size threshold.
+	if( node.header->num_keys == 0 )
 	{
-		result = cursor_pop(cursor, &crumb);
-		if( result != BTREE_OK )
-			goto end;
+		// Keep deleting.
+		// TODO: Add empty page to free list if it's not the highwater page.
 
-		result =
-			btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
-		if( result != BTREE_OK )
-			goto end;
-
-		result = btree_node_remove(&node, &crumb.key_index, NULL, NULL, 0);
-		if( result != BTREE_OK )
-			break;
-
-		result = btpage_err(pager_write_page(tree->pager, node.page));
-		if( result != BTREE_OK )
-			break;
-
-		// TODO: Small size threshold.
-		if( node.header->num_keys == 0 )
+		// TODO: Deleting the last key from the root_node should just result
+		// in a swap with the last remaining page. page.
+		if( node.page->page_id == tree->root_page_id )
 		{
-			// Keep deleting.
-			// TODO: Add empty page to free list if it's not the highwater page.
-
-			// TODO: Deleting the last key from the root_node should just result
-			// in a swap with the last remaining page. page.
-			if( node.page->page_id == tree->root_page_id )
+			if( !node.header->is_leaf )
 			{
-				if( !node.header->is_leaf )
+				result = swap_root_page(tree, node.header->right_child);
+				if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 				{
-					result = swap_root_page(tree, node.header->right_child);
-					if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
-					{
-						// TODO: What do when 1 remaining child cant fit in
-						// root?
-						assert(0);
-					}
+					// TODO: What do when 1 remaining child cant fit in
+					// root?
+					assert(0);
 				}
-				// If the root page is a leaf, then there is nothing more to do.
-				break;
 			}
+			// If the root page is a leaf, then there is nothing more to do.
 		}
 		else
 		{
-			break;
+			result = bta_rebalance(cursor);
+			if( result != BTREE_OK )
+				goto end;
 		}
 	}
 
