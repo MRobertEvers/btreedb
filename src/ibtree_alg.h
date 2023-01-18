@@ -29,7 +29,7 @@ struct SplitPageAsParent
  */
 enum btree_e ibta_split_node_as_parent(
 	struct BTreeNode* node,
-	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
 	struct SplitPageAsParent* split_page);
 
 struct SplitPage

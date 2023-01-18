@@ -56,6 +56,9 @@ void noderc_release_n(struct BTreeNodeRC* rcer, u32 num, ...);
 enum btree_e noderc_reinit_read(
 	struct BTreeNodeRC* rcer, struct NodeView* out_view, u32 page_id);
 
+enum btree_e noderc_reinit_as(
+	struct BTreeNodeRC* rcer, struct NodeView* out_view, u32 page_id);
+
 struct BTreeNode* nv_node(struct NodeView* view);
 struct Page* nv_page(struct NodeView* view);
 struct Pager* nv_pager(struct NodeView* view);

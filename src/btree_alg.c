@@ -264,45 +264,6 @@ calc_heap_used(struct BTreeNode* node)
 }
 
 /**
- * See header for details.
- */
-enum btree_e
-bta_merge_nodes(
-	struct BTreeNode* stable_node,
-	struct BTreeNode* other_node,
-	struct Pager* pager,
-	struct MergedPage* merged_page)
-{
-	enum btree_e result = BTREE_OK;
-	// TODO: Assert here?
-	if( stable_node->header->is_leaf != other_node->header->is_leaf )
-		return BTREE_ERR_CANNOT_MERGE;
-
-	// Calculate the smallest amount of space that all the cells
-	// from other_node could take up if they were overflow nodes.
-	u32 min_reasonable_size_per_cell = btree_node_heap_required_for_insertion(
-		btree_cell_overflow_min_disk_size());
-	u32 min_size_required =
-		min_reasonable_size_per_cell * other_node->header->num_keys;
-
-	if( stable_node->header->free_heap < min_size_required )
-		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-
-	struct InsertionIndex index = {0};
-	for( int i = 0; i < other_node->header->num_keys; i++ )
-	{
-		result = btree_node_move_cell(other_node, stable_node, i, pager);
-		if( result != BTREE_OK )
-			break;
-	}
-
-	if( result == BTREE_OK )
-		result = btpage_err(pager_write_page(pager, stable_node->page));
-
-	return result;
-}
-
-/**
  * @brief With the cursor pointing at the underflown node, this will rotate
  * right.
  *

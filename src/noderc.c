@@ -155,6 +155,21 @@ end:
 	return result;
 }
 
+enum btree_e
+noderc_reinit_as(
+	struct BTreeNodeRC* rcer, struct NodeView* out_view, u32 page_id)
+{
+	enum btree_e result;
+
+	result = btree_node_init_as_page_number(
+		&out_view->node, page_id, out_view->page);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	return result;
+}
+
 struct BTreeNode*
 nv_node(struct NodeView* view)
 {

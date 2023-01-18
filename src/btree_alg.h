@@ -54,26 +54,6 @@ struct SplitPage
 enum btree_e bta_split_node(
 	struct BTreeNode* node, struct Pager* pager, struct SplitPage* split_page);
 
-struct MergedPage
-{};
-
-/**
- * @brief Nodes must be in order such that all keys of right a greater than all
- * keys of left.
- *
- * TODO: Need to correctly handle space limitations if there are more keys than
- * can fit on page 1.
- *
- * @param left
- * @param right
- * @param pager
- * @return enum btree_e
- */
-enum btree_e bta_merge_nodes(
-	struct BTreeNode* stable_node,
-	struct BTreeNode* other_node,
-	struct Pager* pager,
-	struct MergedPage* merged_page);
 enum bta_rebalance_mode_e
 {
 	BTA_REBALANCE_MODE_UNK,

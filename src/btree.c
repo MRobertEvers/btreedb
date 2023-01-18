@@ -270,45 +270,6 @@ end:
 	return BTREE_OK;
 }
 
-static enum btree_e
-swap_root_page(struct BTree* tree, u32 other_page_id)
-{
-	enum btree_e result = BTREE_OK;
-	struct Page* root_page = NULL;
-	struct Page* other_page = NULL;
-	struct BTreeNode* root_ptr = NULL;
-	struct BTreeNode other = {0};
-	struct PageSelector selector = {0};
-
-	page_create(tree->pager, &root_page);
-	page_create(tree->pager, &other_page);
-
-	btree_node_create_as_page_number(&root_ptr, tree->root_page_id, root_page);
-
-	pager_reselect(&selector, other_page_id);
-	result = btpage_err(pager_read_page(tree->pager, &selector, other_page));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_page(&other, other_page);
-	if( result != BTREE_OK )
-		goto end;
-
-	root_ptr->header->is_leaf = other.header->is_leaf;
-
-	struct MergedPage merge_result = {};
-	result = bta_merge_nodes(root_ptr, &other, tree->pager, &merge_result);
-
-end:
-	if( root_ptr )
-		btree_node_destroy(root_ptr);
-
-	page_destroy(tree->pager, root_page);
-	page_destroy(tree->pager, other_page);
-
-	return result;
-}
-
 enum btree_e
 btree_delete(struct BTree* tree, int key)
 {

@@ -155,6 +155,14 @@ btree_node_create_as_page_number(
 	return btree_node_create_from_page(r_node, page);
 }
 
+enum btree_e
+btree_node_init_as_page_number(
+	struct BTreeNode** r_node, int page_number, struct Page* page)
+{
+	page->page_id = page_number;
+	return btree_node_init_from_page(r_node, page);
+}
+
 /**
  * See header for details.
  */
