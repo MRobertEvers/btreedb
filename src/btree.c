@@ -265,14 +265,14 @@ end:
 	return BTREE_OK;
 }
 
-enum btree_e
-btree_delete(struct BTree* tree, int key)
+static enum btree_e
+delete_single(struct Cursor* cursor, int key)
 {
 	enum btree_e result = BTREE_OK;
 	char found = 0;
 	struct NodeView nv = {0};
+	bool underflow = false;
 	struct CursorBreadcrumb crumb = {0};
-	struct Cursor* cursor = cursor_create(tree);
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
@@ -286,7 +286,7 @@ btree_delete(struct BTree* tree, int key)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = noderc_acquire_load(tree->rcer, &nv, crumb.page_id);
+	result = noderc_acquire_load(cursor_rcer(cursor), &nv, crumb.page_id);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -294,18 +294,31 @@ btree_delete(struct BTree* tree, int key)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = noderc_persist_n(tree->rcer, 1, &nv);
+	result = noderc_persist_n(cursor_rcer(cursor), 1, &nv);
 	if( result != BTREE_OK )
 		goto end;
 
-	// TODO: Small size threshold.
-	if( node_num_keys(nv_node(&nv)) == 0 )
-	{
-		// Keep deleting.
-		// TODO: Add empty page to free list if it's not the highwater page.
+	underflow = node_num_keys(nv_node(&nv)) == 0;
 
-		// TODO: Deleting the last key from the root_node should just result
-		// in a swap with the last remaining page. page.
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
+	if( underflow && result == BTREE_OK )
+		result = BTREE_ERR_UNDERFLOW;
+
+	return result;
+}
+
+enum btree_e
+btree_delete(struct BTree* tree, int key)
+{
+	enum btree_e result = BTREE_OK;
+
+	struct Cursor* cursor = cursor_create(tree);
+	result = delete_single(cursor, key);
+
+	if( result == BTREE_ERR_UNDERFLOW )
+	{
 		result = bta_rebalance(cursor);
 		if( result != BTREE_OK )
 			goto end;
@@ -313,7 +326,7 @@ btree_delete(struct BTree* tree, int key)
 
 end:
 	cursor_destroy(cursor);
-	noderc_release(tree->rcer, &nv);
+
 	return result;
 }
 
