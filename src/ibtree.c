@@ -129,8 +129,8 @@ end:
 	return result;
 }
 
-enum btree_e
-ibtree_delete(struct BTree* tree, void* key, int key_size)
+static enum btree_e
+delete_single(struct Cursor* cursor, void* key, int key_size)
 {
 	enum btree_e result = BTREE_OK;
 	char found = 0;
@@ -138,9 +138,9 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	struct NodeView holding_nv = {0};
 
 	struct CursorBreadcrumb crumb = {0};
-	struct Cursor* cursor = cursor_create(tree);
 
-	result = noderc_acquire_load_n(tree->rcer, 2, &nv, 0, &holding_nv, 0);
+	result =
+		noderc_acquire_load_n(cursor_rcer(cursor), 2, &nv, 0, &holding_nv, 0);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -152,7 +152,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = noderc_reinit_read(tree->rcer, &nv, crumb.page_id);
+	result = noderc_reinit_read(cursor_rcer(cursor), &nv, crumb.page_id);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -161,7 +161,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = noderc_persist_n(tree->rcer, 1, &nv);
+	result = noderc_persist_n(cursor_rcer(cursor), 1, &nv);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -195,7 +195,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 			goto end;
 
 		result = noderc_reinit_read(
-			tree->rcer, &holding_nv, replacement_crumb.page_id);
+			cursor_rcer(cursor), &holding_nv, replacement_crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -213,7 +213,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 			remove_index.index,
 			&insert,
 			orphaned_left_child,
-			tree->pager);
+			cursor_pager(cursor));
 		if( result != BTREE_OK )
 			goto end;
 
@@ -221,7 +221,7 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = noderc_persist_n(tree->rcer, 2, &nv, &holding_nv);
+		result = noderc_persist_n(cursor_rcer(cursor), 2, &nv, &holding_nv);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -235,11 +235,26 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 			node_num_keys(nv_node(&nv)) < cursor->tree->header.underflow;
 	}
 
+end:
+	noderc_release_n(cursor_rcer(cursor), 2, &nv, &holding_nv);
+
+	if( underflow && result == BTREE_OK )
+		result = BTREE_ERR_UNDERFLOW;
+	return result;
+}
+
+enum btree_e
+ibtree_delete(struct BTree* tree, void* key, int key_size)
+{
+	enum btree_e result = BTREE_OK;
+	struct Cursor* cursor = cursor_create(tree);
+
+	result = delete_single(cursor, key, key_size);
 	// If the leaf node underflows, then we need to rebalance.
 
 	// TODO: Assumes min# elements is < 1/2 of the max # elements.
 	// TODO: Small size threshold.
-	if( underflow )
+	if( result == BTREE_ERR_UNDERFLOW )
 	{
 		// TODO: Break the rest of this function into another to spare stack
 		// usage.
@@ -251,7 +266,6 @@ ibtree_delete(struct BTree* tree, void* key, int key_size)
 end:
 	if( cursor )
 		cursor_destroy(cursor);
-	noderc_release_n(tree->rcer, 2, &nv, &holding_nv);
 
 	return result;
 }

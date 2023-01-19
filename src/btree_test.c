@@ -597,8 +597,8 @@ btree_test_delete_merge_root(void)
 
 	// TODO: Reliably allocate one field that will be larger than a inline cell
 	// and one that will be less.
-	char const alpha[30] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
-	char const beta[60] =
+	char alpha[30] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
+	char beta[60] =
 		"abcdefghijkLMnopqrstuvwxyz0123abcdefghijklmnopqrstuvwxyz0123";
 
 	index.mode = KLIM_END;

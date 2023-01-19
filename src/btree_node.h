@@ -49,7 +49,7 @@ enum btree_e btree_node_create_as_page_number(
 	struct BTreeNode**, int page_number, struct Page*);
 
 enum btree_e btree_node_init_as_page_number(
-	struct BTreeNode** r_node, int page_number, struct Page* page);
+	struct BTreeNode* r_node, int page_number, struct Page* page);
 
 enum btree_e btree_node_destroy(struct BTreeNode*);
 
