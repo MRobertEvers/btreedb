@@ -290,8 +290,8 @@ ibta_insert_at_init_ex(
 enum btree_e
 ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 {
-	struct BTree* tree = cursor->tree;
-	assert(tree->compare != NULL);
+	assert(
+		cursor->tree->compare != NULL && cursor->tree->reset_compare != NULL);
 
 	enum btree_e result = BTREE_OK;
 
@@ -329,7 +329,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 
 		result = btree_node_write_ex(
 			nv_node(&nv),
-			tree->pager,
+			cursor_pager(cursor),
 			&index,
 			page_index_as_key,
 			flags, // Nonzero only on split.
@@ -341,11 +341,11 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 			// TODO: This first half thing is shaky.
 			u32 first_half = (node_num_keys(nv_node(&nv)) + 1) / 2;
 			int child_insertion = left_or_right_insertion(&index, nv_node(&nv));
-			if( nv_page(&nv)->page_id == tree->root_page_id )
+			if( nv_page(&nv)->page_id == cursor->tree->root_page_id )
 			{
 				struct SplitPageAsParent split_result;
 				result = ibta_split_node_as_parent(
-					nv_node(&nv), tree->rcer, &split_result);
+					nv_node(&nv), cursor_rcer(cursor), &split_result);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -362,7 +362,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 
 				result = btree_node_write_ex(
 					nv_node(&nv),
-					tree->pager,
+					cursor_pager(cursor),
 					&index,
 					page_index_as_key,
 					flags,
@@ -384,7 +384,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 				struct SplitPage split_result;
 				result = ibta_split_node(
 					nv_node(&nv),
-					tree->rcer,
+					cursor_rcer(cursor),
 					nv_node(next_holding_nv),
 					&split_result);
 				if( result != BTREE_OK )
@@ -405,7 +405,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 				// Write the input payload to the correct child.
 				result = btree_node_write_ex(
 					nv_node(&nv),
-					tree->pager,
+					cursor_pager(cursor),
 					&index,
 					page_index_as_key,
 					flags,

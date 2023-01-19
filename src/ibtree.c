@@ -251,8 +251,6 @@ ibtree_delete_ex(struct BTree* tree, void* key, int key_size, void* cmp_ctx)
 	// TODO: Small size threshold.
 	if( result == BTREE_ERR_UNDERFLOW )
 	{
-		// TODO: Break the rest of this function into another to spare stack
-		// usage.
 		result = ibta_rebalance(cursor);
 		if( result != BTREE_OK )
 			goto end;
