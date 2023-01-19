@@ -38,7 +38,8 @@ ibtree_test_insert_shallow(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(
+		tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -107,7 +108,8 @@ ibtree_test_insert_split_root(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(
+		tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -213,7 +215,8 @@ ibtree_test_deep_tree(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	enum btree_e btresult = ibtree_init(tree, pager, &rcer, 1, &ibtree_compare);
+	enum btree_e btresult = ibtree_init(
+		tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset);
 	if( btresult != BTREE_OK )
 	{
 		result = 0;
@@ -359,7 +362,9 @@ ibta_rotate_test(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -533,7 +538,9 @@ ibta_merge_test(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 2, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -670,7 +677,9 @@ ibta_rebalance_test(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 2, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -850,7 +859,9 @@ ibta_rebalance_nonleaf_test(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 2, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 2, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -1020,7 +1031,9 @@ ibta_rebalance_root_fit(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;
@@ -1142,7 +1155,9 @@ ibta_rebalance_root_nofit(void)
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
 	btree_alloc(&tree);
-	if( ibtree_init(tree, pager, &rcer, 1, &ibtree_compare) != BTREE_OK )
+	if( ibtree_init(
+			tree, pager, &rcer, 1, &ibtree_compare, &ibtree_compare_reset) !=
+		BTREE_OK )
 	{
 		result = 0;
 		goto end;

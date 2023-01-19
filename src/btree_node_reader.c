@@ -97,7 +97,13 @@ btree_node_read_ex(
 	enum btree_e result = BTREE_OK;
 	struct Pager* pager = tree->pager;
 	u32 key_index = 0;
-	result = btree_node_search_keys(tree, node, key, key_size, &key_index);
+
+	struct BTreeCompareContext ctx = {
+		.compare = tree->compare,
+		.reset = tree->reset_compare,
+		.compare_context = NULL,
+		.pager = tree->pager};
+	result = btree_node_search_keys(&ctx, node, key, key_size, &key_index);
 	if( result != BTREE_OK )
 		return result;
 

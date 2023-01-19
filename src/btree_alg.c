@@ -548,7 +548,6 @@ restore:
 	result = cursor_restore(cursor, crumbs, 2);
 	if( result != BTREE_OK )
 		goto end;
-
 	result = check_result;
 end:
 	noderc_release(cursor_rcer(cursor), &nv);

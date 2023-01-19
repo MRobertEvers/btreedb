@@ -95,12 +95,15 @@ struct NodeView
  * used as the buffer that gets re-compared.
  */
 typedef int (*btree_compare_fn)(
+	void* compare_context,
 	void* left,
 	u32 left_size,
 	void* right,
 	u32 right_size,
 	u32 right_offset,
 	u32* out_bytes_compared);
+
+typedef void (*btree_compare_reset_fn)(void* compare_context);
 
 enum btree_type_e
 {
@@ -118,6 +121,16 @@ struct BTree
 
 	enum btree_type_e type;
 	btree_compare_fn compare;
+	btree_compare_reset_fn reset_compare;
+};
+
+struct BTreeCompareContext
+{
+	btree_compare_fn compare;
+	btree_compare_reset_fn reset;
+
+	void* compare_context;
+	struct Pager* pager;
 };
 
 enum key_list_index_mode_e
@@ -164,6 +177,8 @@ struct Cursor
 
 	struct CursorBreadcrumb breadcrumbs[8]; // TODO: Dynamic?
 	int breadcrumbs_size;
+
+	void* compare_context;
 };
 
 /**

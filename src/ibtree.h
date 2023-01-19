@@ -5,8 +5,6 @@
 #include "btree_defs.h"
 #include "buffer_writer.h"
 
-int ibtree_payload_writer(void* data, void* cell, struct BufferWriter* writer);
-
 /**
  * @brief
  *
@@ -20,7 +18,8 @@ enum btree_e ibtree_init(
 	struct Pager* pager,
 	struct BTreeNodeRC* rcer,
 	u32 root_page_id,
-	btree_compare_fn compare);
+	btree_compare_fn compare,
+	btree_compare_reset_fn reset_compare);
 
 /**
  * @brief TODO: cmp_chunk_number is ugly
@@ -33,12 +32,15 @@ enum btree_e ibtree_init(
  * @return enum btree_e
  */
 int ibtree_compare(
+	void* compare_context,
 	void* left,
 	u32 left_size,
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,
 	u32* out_bytes_compared);
+
+void ibtree_compare_reset(void* compare_context);
 
 /**
  * @brief
@@ -51,6 +53,10 @@ int ibtree_compare(
  * @return enum btree_e
  */
 enum btree_e ibtree_insert(struct BTree*, void* data, int data_size);
+enum btree_e
+ibtree_insert_ex(struct BTree*, void* data, int data_size, void* cmp_ctx);
 enum btree_e ibtree_delete(struct BTree*, void* key, int key_size);
+enum btree_e
+ibtree_delete_ex(struct BTree*, void* key, int key_size, void* cmp_ctx);
 
 #endif

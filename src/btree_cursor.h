@@ -5,6 +5,7 @@
 #include "btree_defs.h"
 
 struct Cursor* cursor_create(struct BTree* tree);
+struct Cursor* cursor_create_ex(struct BTree* tree, void* compare_context);
 void cursor_destroy(struct Cursor* cursor);
 
 /**

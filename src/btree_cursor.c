@@ -22,6 +22,15 @@ cursor_create(struct BTree* tree)
 	cursor->current_page_id = tree->root_page_id;
 	return cursor;
 }
+struct Cursor*
+cursor_create_ex(struct BTree* tree, void* compare_context)
+{
+	struct Cursor* cursor = cursor_create(tree);
+
+	cursor->compare_context = compare_context;
+
+	return cursor;
+}
 
 void
 cursor_destroy(struct Cursor* cursor)
@@ -215,6 +224,17 @@ end:
 	return result;
 }
 
+struct BTreeCompareContext
+compare_context_init(struct Cursor* cursor)
+{
+	struct BTreeCompareContext ctx = {
+		.compare = cursor->tree->compare,
+		.reset = cursor->tree->reset_compare,
+		.compare_context = cursor->compare_context,
+		.pager = cursor->tree->pager};
+	return ctx;
+}
+
 enum btree_e
 cursor_traverse_to_ex(
 	struct Cursor* cursor, void* key, u32 key_size, char* found)
@@ -222,6 +242,7 @@ cursor_traverse_to_ex(
 	enum btree_e result = BTREE_OK;
 	u32 child_key_index = 0;
 	struct NodeView nv = {0};
+	struct BTreeCompareContext ctx = {0};
 	*found = 0;
 
 	result = noderc_acquire(cursor_rcer(cursor), &nv);
@@ -235,8 +256,9 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
+		ctx = compare_context_init(cursor);
 		result = btree_node_search_keys(
-			cursor->tree, nv_node(&nv), key, key_size, &child_key_index);
+			&ctx, nv_node(&nv), key, key_size, &child_key_index);
 		if( result == BTREE_OK )
 			*found = 1;
 

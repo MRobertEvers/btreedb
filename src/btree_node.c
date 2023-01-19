@@ -775,7 +775,7 @@ get_cell_payload(
 // -1 if index is less.
 enum btree_e
 btree_node_compare_cell(
-	struct BTree* tree,
+	struct BTreeCompareContext* ctx,
 	struct BTreeNode* node,
 	u32 index,
 	void* key,
@@ -793,8 +793,14 @@ btree_node_compare_cell(
 	cmp = get_cell_payload(
 		node, index, &cmp_size, &cmp_total_size, &next_page_id);
 
-	*out_result = tree->compare(
-		cmp, cmp_size, key, key_size, bytes_compared, &comparison_bytes_count);
+	*out_result = ctx->compare(
+		ctx->compare_context,
+		cmp,
+		cmp_size,
+		key,
+		key_size,
+		bytes_compared,
+		&comparison_bytes_count);
 	bytes_compared += comparison_bytes_count;
 
 	if( comparison_bytes_count == 0 )
@@ -812,21 +818,22 @@ btree_node_compare_cell(
 		struct Page* page = NULL;
 		struct BTreeOverflowReadResult ov = {0};
 
-		result = btpage_err(page_create(tree->pager, &page));
+		result = btpage_err(page_create(ctx->pager, &page));
 		if( result != BTREE_OK )
 			goto end_overflow;
 
 		do
 		{
 			result =
-				btree_overflow_peek(tree->pager, page, next_page_id, &cmp, &ov);
+				btree_overflow_peek(ctx->pager, page, next_page_id, &cmp, &ov);
 			if( result != BTREE_OK )
 				goto end_overflow;
 
 			cmp_size = ov.payload_bytes;
 			next_page_id = ov.next_page_id;
 
-			*out_result = tree->compare(
+			*out_result = ctx->compare(
+				ctx->compare_context,
 				cmp,
 				cmp_size,
 				key,
@@ -865,7 +872,7 @@ btree_node_compare_cell(
 
 	end_overflow:
 		if( page )
-			page_destroy(tree->pager, page);
+			page_destroy(ctx->pager, page);
 	}
 
 	return result;
@@ -873,13 +880,12 @@ btree_node_compare_cell(
 
 enum btree_e
 btree_node_search_keys(
-	struct BTree* tree,
+	struct BTreeCompareContext* ctx,
 	struct BTreeNode* node,
 	void* key,
 	u32 key_size,
 	u32* out_index)
 {
-	assert(tree->compare != NULL);
 	u32 num_keys = node->header->num_keys;
 	enum btree_e result = BTREE_OK;
 	int left = 0;
@@ -891,8 +897,9 @@ btree_node_search_keys(
 	{
 		mid = (right - left) / 2 + left;
 
+		ctx->reset(ctx->compare_context);
 		result = btree_node_compare_cell(
-			tree, node, mid, key, key_size, &compare_result);
+			ctx, node, mid, key, key_size, &compare_result);
 		if( result != BTREE_OK )
 			goto err;
 

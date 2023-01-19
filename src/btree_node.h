@@ -223,7 +223,7 @@ u32 btree_node_heap_required_for_insertion(u32 cell_disk_size);
 u32 btree_node_calc_heap_capacity(struct BTreeNode* node);
 
 enum btree_e btree_node_compare_cell(
-	struct BTree* tree,
+	struct BTreeCompareContext* ctx,
 	struct BTreeNode* node,
 	u32 index,
 	void* key,
@@ -240,7 +240,7 @@ enum btree_e btree_node_compare_cell(
  * @return enum btree_e
  */
 enum btree_e btree_node_search_keys(
-	struct BTree* tree,
+	struct BTreeCompareContext* ctx,
 	struct BTreeNode* node,
 	void* key,
 	u32 key_size,

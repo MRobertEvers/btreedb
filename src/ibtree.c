@@ -27,16 +27,19 @@ ibtree_init(
 	struct Pager* pager,
 	struct BTreeNodeRC* rcer,
 	u32 root_page_id,
-	btree_compare_fn compare)
+	btree_compare_fn compare,
+	btree_compare_reset_fn reset_compare)
 {
 	enum btree_e result = btree_init(tree, pager, rcer, root_page_id);
 	tree->type = BTREE_INDEX;
 	tree->compare = compare;
+	tree->reset_compare = reset_compare;
 	return result;
 }
 
 int
 ibtree_compare(
+	void* compare_context,
 	void* left,
 	u32 left_size,
 	void* right,
@@ -64,6 +67,10 @@ ibtree_compare(
 	}
 }
 
+void
+ibtree_compare_reset(void* compare_context)
+{}
+
 struct InsertionIndex
 from_cli(struct ChildListIndex* cli)
 {
@@ -85,10 +92,17 @@ from_cli(struct ChildListIndex* cli)
 enum btree_e
 ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 {
+	return ibtree_insert_ex(tree, payload, payload_size, NULL);
+}
+
+enum btree_e
+ibtree_insert_ex(
+	struct BTree* tree, void* payload, int payload_size, void* cmp_ctx)
+{
 	assert(tree->compare != NULL);
 	enum btree_e result = BTREE_OK;
 	char found;
-	struct Cursor* cursor = cursor_create(tree);
+	struct Cursor* cursor = cursor_create_ex(tree, cmp_ctx);
 
 	result = cursor_traverse_to_ex(cursor, payload, payload_size, &found);
 	if( result != BTREE_OK )
@@ -221,8 +235,14 @@ end:
 enum btree_e
 ibtree_delete(struct BTree* tree, void* key, int key_size)
 {
+	return ibtree_delete_ex(tree, key, key_size, NULL);
+}
+
+enum btree_e
+ibtree_delete_ex(struct BTree* tree, void* key, int key_size, void* cmp_ctx)
+{
 	enum btree_e result = BTREE_OK;
-	struct Cursor* cursor = cursor_create(tree);
+	struct Cursor* cursor = cursor_create_ex(tree, cmp_ctx);
 
 	result = delete_single(cursor, key, key_size);
 	// If the leaf node underflows, then we need to rebalance.
