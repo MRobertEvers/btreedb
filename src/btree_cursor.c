@@ -102,6 +102,33 @@ cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
+enum btree_e
+cursor_save(struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_save)
+{
+	if( cursor->breadcrumbs_size < num_save )
+		return BTREE_ERR_CURSOR_NO_PARENT;
+
+	for( int i = 0; i < num_save; i++ )
+		*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - (i + 1)];
+
+	return BTREE_OK;
+}
+
+enum btree_e
+cursor_restore(
+	struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_restore)
+{
+	enum btree_e result = BTREE_OK;
+	for( int i = 0; i < num_restore; i++ )
+	{
+		result = cursor_push_crumb(cursor, crumb + (num_restore - 1 - i));
+		if( result != BTREE_OK )
+			return result;
+	}
+
+	return BTREE_OK;
+}
+
 /**
  * @brief Gets the child page id from the cell.
  *
