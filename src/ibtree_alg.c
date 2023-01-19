@@ -674,14 +674,13 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	// Merge left
 	// sandwich left parent.
 	// Parent cell points to the right child of the left node.
-	struct BTreeNode left_node = {0};
-	struct BTreeNode right_node = {0};
+
 	struct NodeView parent_nv = {0};
+	struct NodeView left_nv = {0};
+	struct NodeView right_nv = {0};
 
-	struct Page* left_page = NULL;
-	struct Page* right_page = NULL;
-
-	result = noderc_acquire(cursor_rcer(cursor), &parent_nv);
+	result = noderc_acquire_load_n(
+		cursor_rcer(cursor), 3, &parent_nv, 0, &left_nv, 0, &right_nv, 0);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -689,22 +688,12 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btpage_err(page_create(cursor->tree->pager, &left_page));
-	if( result != BTREE_OK )
-		goto end;
-	result = btpage_err(page_create(cursor->tree->pager, &right_page));
-	if( result != BTREE_OK )
-		goto end;
-
 	struct ChildListIndex parent_index = {0};
 	if( mode == BTA_REBALANCE_MODE_MERGE_RIGHT )
 	{
 		// The cursor points to the left child.
-		result = btree_node_init_from_read(
-			&left_node,
-			left_page,
-			cursor->tree->pager,
-			cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &left_nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -716,21 +705,15 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_read(
-			&right_node,
-			right_page,
-			cursor->tree->pager,
-			cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &right_nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 	}
 	else
 	{
-		result = btree_node_init_from_read(
-			&right_node,
-			right_page,
-			cursor->tree->pager,
-			cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &right_nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -738,11 +721,8 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_read(
-			&left_node,
-			left_page,
-			cursor->tree->pager,
-			cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &left_nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -753,14 +733,10 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 
 	result = btree_node_move_cell_ex(
 		nv_node(&parent_nv),
-		&left_node,
+		nv_node(&left_nv),
 		parent_index.index,
-		left_node.header->right_child,
+		node_right_child(nv_node(&left_nv)),
 		cursor->tree->pager);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(pager_write_page(cursor->tree->pager, left_node.page));
 	if( result != BTREE_OK )
 		goto end;
 
@@ -769,40 +745,34 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	result =
-		btpage_err(pager_write_page(cursor->tree->pager, nv_page(&parent_nv)));
+	result = noderc_persist_n(cursor_rcer(cursor), 2, &left_nv, &parent_nv);
 	if( result != BTREE_OK )
 		goto end;
 
 	char parent_deficient =
 		node_num_keys(nv_node(&parent_nv)) < cursor->tree->header.underflow;
-	for( int i = 0; i < right_node.header->num_keys; i++ )
+	for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
 	{
 		result = btree_node_move_cell(
-			&right_node, &left_node, i, cursor->tree->pager);
+			nv_node(&right_nv), nv_node(&left_nv), i, cursor->tree->pager);
 		if( result != BTREE_OK )
 			goto end;
 	}
-	left_node.header->right_child = right_node.header->right_child;
+	node_right_child_set(
+		nv_node(&left_nv), node_right_child(nv_node(&right_nv)));
 
-	result = btree_node_copy(&right_node, &left_node);
+	result = btree_node_copy(nv_node(&right_nv), nv_node(&left_nv));
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btpage_err(pager_write_page(cursor->tree->pager, right_node.page));
+	result = noderc_persist_n(cursor_rcer(cursor), 1, &right_nv);
 	if( result != BTREE_OK )
 		goto end;
 
 	// TODO: Free list left page.
 
 end:
-
-	if( left_page )
-		page_destroy(cursor->tree->pager, left_page);
-	if( right_page )
-		page_destroy(cursor->tree->pager, right_page);
-
-	noderc_release(cursor_rcer(cursor), &parent_nv);
+	noderc_release_n(cursor_rcer(cursor), 3, &parent_nv, &left_nv, &right_nv);
 
 	if( result == BTREE_OK && parent_deficient )
 		result = BTREE_ERR_PARENT_DEFICIENT;
