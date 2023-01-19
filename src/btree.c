@@ -126,7 +126,10 @@ btree_init(
 	tree->rcer = rcer;
 
 	struct Page* page = NULL;
-	page_create(tree->pager, &page);
+	btree_result = btpage_err(page_create(tree->pager, &page));
+	if( btree_result != BTREE_OK )
+		goto end;
+
 	btree_result = btree_init_root_page(tree, page, root_page_id);
 	if( btree_result != BTREE_OK )
 		goto end;
