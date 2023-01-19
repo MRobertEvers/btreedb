@@ -270,13 +270,9 @@ btree_delete(struct BTree* tree, int key)
 {
 	enum btree_e result = BTREE_OK;
 	char found = 0;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
+	struct NodeView nv = {0};
 	struct CursorBreadcrumb crumb = {0};
 	struct Cursor* cursor = cursor_create(tree);
-	result = btpage_err(page_create(tree->pager, &page));
-	if( result != BTREE_OK )
-		goto end;
 
 	result = cursor_traverse_to(cursor, key, &found);
 	if( result != BTREE_OK )
@@ -290,20 +286,20 @@ btree_delete(struct BTree* tree, int key)
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+	result = noderc_acquire_load(tree->rcer, &nv, crumb.page_id);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btree_node_remove(&node, &crumb.key_index, NULL, NULL, 0);
+	result = btree_node_remove(nv_node(&nv), &crumb.key_index, NULL, NULL, 0);
 	if( result != BTREE_OK )
 		goto end;
 
-	result = btpage_err(pager_write_page(tree->pager, node.page));
+	result = noderc_persist_n(tree->rcer, 1, &nv);
 	if( result != BTREE_OK )
 		goto end;
 
 	// TODO: Small size threshold.
-	if( node_num_keys(&node) == 0 )
+	if( node_num_keys(nv_node(&nv)) == 0 )
 	{
 		// Keep deleting.
 		// TODO: Add empty page to free list if it's not the highwater page.
@@ -317,7 +313,7 @@ btree_delete(struct BTree* tree, int key)
 
 end:
 	cursor_destroy(cursor);
-	page_destroy(tree->pager, page);
+	noderc_release(tree->rcer, &nv);
 	return result;
 }
 
