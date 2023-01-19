@@ -307,7 +307,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 	struct NodeView holding_one_nv = {0};
 	struct NodeView holding_two_nv = {0};
 
-	struct BTreeNode* next_holding_node = nv_node(&holding_one_nv);
+	struct NodeView* next_holding_nv = &holding_one_nv;
 
 	struct CursorBreadcrumb crumb = {0};
 
@@ -378,16 +378,16 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 			}
 			else
 			{
-				memset(
-					next_holding_node->page->page_buffer,
-					0x00,
-					next_holding_node->page->page_size);
-				btree_node_init_from_page(
-					next_holding_node, next_holding_node->page);
+				result = btree_node_reset(nv_node(next_holding_nv));
+				if( result != BTREE_OK )
+					goto end;
 
 				struct SplitPage split_result;
 				result = ibta_split_node(
-					nv_node(&nv), tree->rcer, next_holding_node, &split_result);
+					nv_node(&nv),
+					tree->rcer,
+					nv_node(next_holding_nv),
+					&split_result);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -427,16 +427,16 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 					goto end;
 
 				writer_mode = WRITER_EX_MODE_CELL_MOVE;
-				flags = next_holding_node->keys[0].flags;
+				flags = nv_node(next_holding_nv)->keys[0].flags;
 				page_index_as_key = split_result.left_page_id;
 
-				payload = btu_get_cell_buffer(next_holding_node, 0);
-				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
+				payload = btu_get_cell_buffer(nv_node(next_holding_nv), 0);
+				payload_size =
+					btu_get_cell_buffer_size(nv_node(next_holding_nv), 0);
 
-				next_holding_node =
-					next_holding_node == nv_node(&holding_one_nv)
-						? nv_node(&holding_two_nv)
-						: nv_node(&holding_one_nv);
+				next_holding_nv = next_holding_nv == &holding_one_nv
+									  ? &holding_two_nv
+									  : &holding_one_nv;
 			}
 		}
 		else
