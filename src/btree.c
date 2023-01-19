@@ -5,6 +5,7 @@
 #include "btree_node.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
+#include "noderc.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -148,12 +149,12 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 {
 	enum btree_e result = BTREE_OK;
 	char found = 0;
-	struct Page* page = NULL;
-	struct PageSelector selector = {0};
-	struct BTreeNode node = {0};
+	struct NodeView nv = {0};
 	struct CursorBreadcrumb crumb = {0};
+
 	struct Cursor* cursor = cursor_create(tree);
-	result = btpage_err(page_create(tree->pager, &page));
+
+	result = noderc_acquire(tree->rcer, &nv);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -167,42 +168,35 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		pager_reselect(&selector, crumb.page_id);
-		result = btpage_err(pager_read_page(tree->pager, &selector, page));
+		result = noderc_reinit_read(tree->rcer, &nv, crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_page(&node, page);
-		if( result != BTREE_OK )
-			goto end;
-
-		result = btree_node_write(&node, tree->pager, key, data, data_size);
+		result =
+			btree_node_write(nv_node(&nv), tree->pager, key, data, data_size);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
 			// We want to keep the root node as the first page.
 			// So if the first page is to be split, then split
 			// the data in this page between two children nodes.
 			// This node becomes the new parent of those nodes.
-			if( node.page->page_id == tree->root_page_id )
+			if( nv_page(&nv)->page_id == tree->root_page_id )
 			{
 				struct SplitPageAsParent split_result;
-				bta_split_node_as_parent(&node, tree->rcer, &split_result);
+				bta_split_node_as_parent(
+					nv_node(&nv), tree->rcer, &split_result);
 
-				// TODO: Key compare function.
-				if( key <= split_result.left_child_high_key )
-				{
-					pager_reselect(&selector, split_result.left_child_page_id);
-				}
-				else
-				{
-					pager_reselect(&selector, split_result.right_child_page_id);
-				}
+				result = noderc_reinit_read(
+					tree->rcer,
+					&nv,
+					key <= split_result.left_child_high_key
+						? split_result.left_child_page_id
+						: split_result.right_child_page_id);
+				if( result != BTREE_OK )
+					goto end;
 
-				pager_read_page(tree->pager, &selector, page);
-				btree_node_init_from_page(&node, page);
-
-				result =
-					btree_node_write(&node, tree->pager, key, data, data_size);
+				result = btree_node_write(
+					nv_node(&nv), tree->pager, key, data, data_size);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -211,18 +205,19 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			else
 			{
 				struct SplitPage split_result;
-				bta_split_node(&node, tree->rcer, &split_result);
+				bta_split_node(nv_node(&nv), tree->rcer, &split_result);
 
 				// TODO: Key compare function.
 				if( key <= split_result.left_page_high_key )
 				{
-					pager_reselect(&selector, split_result.left_page_id);
-					pager_read_page(tree->pager, &selector, page);
-					btree_node_init_from_page(&node, page);
+					result = noderc_reinit_read(
+						tree->rcer, &nv, split_result.left_page_id);
+					if( result != BTREE_OK )
+						goto end;
 				}
 
-				result =
-					btree_node_write(&node, tree->pager, key, data, data_size);
+				result = btree_node_write(
+					nv_node(&nv), tree->pager, key, data, data_size);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -266,7 +261,7 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 
 end:
 	cursor_destroy(cursor);
-	page_destroy(tree->pager, page);
+	noderc_release(tree->rcer, &nv);
 	return BTREE_OK;
 }
 
