@@ -409,6 +409,33 @@ src/btree_node_writer.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_writer.c.s
 .PHONY : src/btree_node_writer.c.s
 
+src/btree_op_select.o: src/btree_op_select.c.o
+.PHONY : src/btree_op_select.o
+
+# target to build an object file
+src/btree_op_select.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_select.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_select.c.o
+.PHONY : src/btree_op_select.c.o
+
+src/btree_op_select.i: src/btree_op_select.c.i
+.PHONY : src/btree_op_select.i
+
+# target to preprocess a source file
+src/btree_op_select.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_select.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_select.c.i
+.PHONY : src/btree_op_select.c.i
+
+src/btree_op_select.s: src/btree_op_select.c.s
+.PHONY : src/btree_op_select.s
+
+# target to generate assembly for a file
+src/btree_op_select.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_select.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_select.c.s
+.PHONY : src/btree_op_select.c.s
+
 src/btree_overflow.o: src/btree_overflow.c.o
 .PHONY : src/btree_overflow.o
 
@@ -911,6 +938,9 @@ help:
 	@echo "... src/btree_node_writer.o"
 	@echo "... src/btree_node_writer.i"
 	@echo "... src/btree_node_writer.s"
+	@echo "... src/btree_op_select.o"
+	@echo "... src/btree_op_select.i"
+	@echo "... src/btree_op_select.s"
 	@echo "... src/btree_overflow.o"
 	@echo "... src/btree_overflow.i"
 	@echo "... src/btree_overflow.s"

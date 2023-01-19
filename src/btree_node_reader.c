@@ -141,3 +141,18 @@ btree_node_read_at(
 
 	return result;
 }
+
+enum btree_e
+btree_node_read_size_at(
+	struct BTree* tree, struct BTreeNode* node, u32 index, u32* out_size)
+{
+	byte* cell_buffer = btu_get_cell_buffer(node, index);
+	// TODO: Not this
+	u32 cell_buffer_size = btu_calc_highwater_offset(node, 0) - cell_buffer;
+
+	struct BTreeCellInline cell = {0};
+	btree_cell_read_inline(
+		cell_buffer, cell_buffer_size, &cell, NULL, 0, out_size);
+
+	return BTREE_OK;
+}

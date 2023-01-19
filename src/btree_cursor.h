@@ -75,6 +75,7 @@ enum btree_e
 cursor_parent_crumb(struct Cursor* cursor, struct CursorBreadcrumb* out_crumb);
 
 struct BTreeNodeRC* cursor_rcer(struct Cursor* cursor);
+struct BTree* cursor_tree(struct Cursor* cursor);
 struct Pager* cursor_pager(struct Cursor* cursor);
 
 #endif

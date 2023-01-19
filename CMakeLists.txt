@@ -20,6 +20,7 @@ add_executable(db
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_select.c
     src/btree_node_debug.c
     src/btree_cell.c
     src/btree_node_writer.c
@@ -57,6 +58,7 @@ add_executable(test
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_select.c
     src/btree_node_debug.c
     src/btree_cell.c
     src/btree_node_writer.c

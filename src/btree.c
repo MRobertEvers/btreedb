@@ -3,6 +3,7 @@
 #include "btree_alg.h"
 #include "btree_cursor.h"
 #include "btree_node.h"
+#include "btree_node_reader.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "noderc.h"
@@ -377,6 +378,48 @@ btree_delete(struct BTree* tree, int key)
 
 end:
 	cursor_destroy(cursor);
+
+	return result;
+}
+
+enum btree_e
+btree_select_ex(struct BTree* tree, u32 key, void* buffer, u32 buffer_size)
+{
+	enum btree_e result = BTREE_OK;
+	char found;
+	struct NodeView nv = {0};
+	struct Cursor* cursor = cursor_create(tree);
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_traverse_to(cursor, key, &found);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( !found )
+	{
+		result = BTREE_ERR_KEY_NOT_FOUND;
+		goto end;
+	}
+
+	result = cursor_read_current(cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
+
+	u32 ind = cursor->current_key_index.index;
+	result = btree_node_read_at(tree, nv_node(&nv), ind, buffer, buffer_size);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
+	if( cursor )
+		cursor_destroy(cursor);
 
 	return result;
 }

@@ -489,6 +489,12 @@ cursor_rcer(struct Cursor* cursor)
 	return cursor->tree->rcer;
 }
 
+struct BTree*
+cursor_tree(struct Cursor* cursor)
+{
+	return cursor->tree;
+}
+
 struct Pager*
 cursor_pager(struct Cursor* cursor)
 {
