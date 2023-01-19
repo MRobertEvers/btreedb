@@ -211,7 +211,8 @@ ibtree_test_deep_tree(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	pager_cstd_create(&pager, cache, db_name, 220);
+	u32 page_size = btree_min_page_size() + 1 * 4;
+	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
