@@ -64,7 +64,6 @@ btree_node_write_ex(
 	u32 data_size,
 	enum writer_ex_mode_e mode)
 {
-	char found;
 	enum btree_e result = BTREE_OK;
 
 	if( mode == WRITER_EX_MODE_CELL_MOVE )

@@ -26,7 +26,7 @@ assert_cache_correct(struct PageCache* cache)
  * @return int
  */
 static int
-find_in_cache(struct PageCache* cache, int page_id, char* found)
+find_in_cache(struct PageCache* cache, u32 page_id, char* found)
 {
 	int left = 0;
 	int right = cache->size - 1;

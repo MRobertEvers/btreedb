@@ -161,7 +161,7 @@ pager_open(struct Pager* pager, char const* pager_str)
 		pager_str,
 		min(sizeof(pager->pager_name_str) - 1, strlen(pager_str)));
 
-	enum pager_e opened = pager->ops->open(&pager->file, pager->pager_name_str);
+	pager->ops->open(&pager->file, pager->pager_name_str);
 	int size = pager->ops->size(pager->file);
 	pager->max_page = size / pager->page_size;
 

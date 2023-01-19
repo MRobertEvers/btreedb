@@ -1,6 +1,7 @@
 #ifndef PAGER_H_
 #define PAGER_H_
 
+#include "btint.h"
 #include "page.h"
 #include "page_cache.h"
 #include "pager_ops.h"
@@ -11,8 +12,8 @@ struct Pager
 {
 	char pager_name_str[32];
 	struct PagerOps* ops;
-	int page_size;
-	int max_page;
+	u32 page_size;
+	u32 max_page;
 	void* file;
 
 	struct PageCache* cache;

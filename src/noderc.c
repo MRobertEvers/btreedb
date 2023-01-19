@@ -126,7 +126,6 @@ noderc_release(struct BTreeNodeRC* rcer, struct NodeView* out_view)
 void
 noderc_release_n(struct BTreeNodeRC* rcer, u32 num, ...)
 {
-	enum btree_e result = BTREE_OK;
 	va_list argp;
 
 	va_start(argp, num);

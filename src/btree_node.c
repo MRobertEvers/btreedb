@@ -475,7 +475,7 @@ btree_node_move_cell_from_data(
 			payload = cell.payload;
 			u32 new_inline_payload_size =
 				btree_cell_overflow_calc_inline_payload_size(inline_size);
-			overflow_payload = cell.payload + new_inline_payload_size;
+			overflow_payload = payload + new_inline_payload_size;
 			overflow_payload_size = cell.inline_size - new_inline_payload_size;
 			follow_page_id = 0;
 		}
@@ -557,8 +557,6 @@ btree_node_remove(
 		// The rightmost non-right-child key becomes the right-child.
 		char buf[sizeof(u32)] = {0};
 		struct BTreeCellInline removed_cell = {0};
-		struct BTreePageKey rightmost_key =
-			node->keys[node->header->num_keys - 1];
 		struct ChildListIndex delete_index = {0};
 		delete_index.index = node->header->num_keys - 1;
 		delete_index.mode = KLIM_INDEX;
@@ -648,7 +646,6 @@ ibtree_node_remove(
 		}
 
 		// The rightmost non-right-child key becomes the right-child.
-		struct BTreeCellInline removed_cell = {0};
 		struct BTreePageKey rightmost_key =
 			node->keys[node->header->num_keys - 1];
 		u32 child_value = rightmost_key.key;
@@ -870,7 +867,7 @@ btree_node_compare_cell(
 		if( page )
 			page_destroy(tree->pager, page);
 	}
-done:
+
 	return result;
 }
 

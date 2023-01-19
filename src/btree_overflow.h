@@ -2,6 +2,7 @@
 #define BTREE_OVERFLOW_H_
 
 #include "btint.h"
+#include "btree_defs.h"
 #include "pager.h"
 
 struct BTreeOverflowPageHeader

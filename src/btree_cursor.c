@@ -341,7 +341,6 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto end;
 
-	u32 sibling_id = 0;
 	if( sibling == CURSOR_SIBLING_LEFT )
 	{
 		if( crumbs[1].key_index.index == 0 )

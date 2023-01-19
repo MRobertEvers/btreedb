@@ -82,30 +82,6 @@ from_cli(struct ChildListIndex* cli)
 	return result;
 }
 
-/**
- * @brief
- *
- * @param index
- * @param node
- * @return int 1 for right, -1 for left
- */
-static int
-left_or_right_insertion(struct InsertionIndex* index, struct BTreeNode* node)
-{
-	if( index->mode != KLIM_INDEX )
-		return 1;
-
-	u32 first_half = (node->header->num_keys + 1) / 2;
-	if( index->index < first_half )
-	{
-		return -1;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
 enum btree_e
 ibtree_insert(struct BTree* tree, void* payload, int payload_size)
 {
@@ -136,7 +112,7 @@ delete_single(struct Cursor* cursor, void* key, int key_size)
 	char found = 0;
 	struct NodeView nv = {0};
 	struct NodeView holding_nv = {0};
-
+	bool underflow = false;
 	struct CursorBreadcrumb crumb = {0};
 
 	result =
@@ -165,7 +141,6 @@ delete_single(struct Cursor* cursor, void* key, int key_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	bool underflow = false;
 	// The cell is removed. If it wasn't a leaf node find the largest cell
 	// in the left subtree and promote it to the same location. If it was a
 	// leaf node, do nothing.

@@ -4,6 +4,8 @@ project(BtreeDb)
 
 include_directories(src)
 
+
+
 # Now build our tools
 add_executable(db
     src/main.c
@@ -26,6 +28,12 @@ add_executable(db
     src/noderc.c
     src/buffer_writer.c
 )
+
+if(MSVC)
+  target_compile_options(db PRIVATE /W4 /WX)
+else()
+  target_compile_options(db PRIVATE -Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter -Wno-newline-eof -Wno-sign-compare)
+endif()
 
 add_executable(test
     src/test.c

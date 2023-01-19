@@ -295,7 +295,6 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 
 	enum btree_e result = BTREE_OK;
 
-	char found = 0;
 	int page_index_as_key =
 		insert_at->key; // This is only not zero when there is a page split.
 	u32 flags = insert_at->flags; // Only used when writing to parent.

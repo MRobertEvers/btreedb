@@ -71,7 +71,7 @@ enum btree_type
 struct BTreeHeader
 {
 	int page_high_water;
-	int underflow;
+	u32 underflow;
 	enum btree_type type;
 };
 
@@ -114,7 +114,7 @@ struct BTree
 	struct Pager* pager;
 	struct BTreeNodeRC* rcer;
 
-	int root_page_id;
+	u32 root_page_id;
 
 	enum btree_type_e type;
 	btree_compare_fn compare;

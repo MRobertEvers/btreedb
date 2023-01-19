@@ -107,27 +107,4 @@ enum btree_e ibta_rebalance(struct Cursor* cursor);
  */
 enum btree_e ibta_rebalance_root(struct Cursor* cursor);
 
-struct MergedPage
-{};
-
-// /**
-//  * @brief Nodes must be in order such that all keys of right a greater than
-//  all
-//  * keys of left.
-//  *
-//  * TODO: Need to correctly handle space limitations if there are more keys
-//  than
-//  * can fit on page 1.
-//  *
-//  * @param left
-//  * @param right
-//  * @param pager
-//  * @return enum btree_e
-//  */
-// enum btree_e ibta_merge_nodes(
-// 	struct BTreeNode* stable_node,
-// 	struct BTreeNode* other_node,
-// 	struct Pager* pager,
-// 	struct MergedPage* merged_page);
-
 #endif

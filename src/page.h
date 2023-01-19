@@ -1,17 +1,18 @@
 #ifndef PAGE_H_
 #define PAGE_H_
 
+#include "btint.h"
 #include "pager_e.h"
 
 struct PageSelector
 {
-	int page_id;
+	u32 page_id;
 };
 
 struct Page
 {
-	int page_id;
-	unsigned int page_size;
+	u32 page_id;
+	u32 page_size;
 	enum pager_e status;
 
 	void* page_buffer;

@@ -18,7 +18,6 @@ dbg_print_node(struct BTreeNode* node)
 	{
 		struct CellData cell = {0};
 
-		int key = node->keys[i].key;
 		btu_read_cell(node, i, &cell);
 		// unsigned int page_id = 0;
 		// memcpy(&page_id, cell.pointer, sizeof(page_id));

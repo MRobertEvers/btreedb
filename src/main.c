@@ -9,8 +9,6 @@
 int
 main()
 {
-	char billy[] = "billy";
-	char charlie[] = "charlie";
 	struct BTree* tree = NULL;
 
 	struct Pager* pager = NULL;
