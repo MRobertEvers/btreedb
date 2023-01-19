@@ -738,7 +738,7 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		goto end;
 
 	char parent_deficient =
-		node_num_keys(nv_node(&parent_nv)) < cursor->tree->header.underflow;
+		node_num_keys(nv_node(&parent_nv)) < btree_underflow_lim(cursor->tree);
 	for( int i = 0; i < node_num_keys(nv_node(&right_nv)); i++ )
 	{
 		result = btree_node_move_cell(
