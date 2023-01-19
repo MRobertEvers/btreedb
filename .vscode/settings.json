@@ -26,6 +26,7 @@
         "btree_node_reader.h": "c",
         "ibtree_alg.h": "c",
         "noderc.h": "c",
-        "buffer_writer.h": "c"
+        "buffer_writer.h": "c",
+        "btree_op_select.h": "c"
     },
 }

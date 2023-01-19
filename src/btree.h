@@ -56,7 +56,4 @@ enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
  */
 enum btree_e btree_delete(struct BTree*, int key);
 
-enum btree_e
-btree_select_ex(struct BTree* tree, u32 key, void* buffer, u32 buffer_size);
-
 #endif
