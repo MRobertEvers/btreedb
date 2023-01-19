@@ -432,11 +432,8 @@ cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view)
 	if( result != BTREE_OK )
 		return result;
 
-	result = btree_node_init_from_read(
-		&out_view->node,
-		out_view->page,
-		cursor->tree->pager,
-		cursor->current_page_id);
+	result = noderc_reinit_read(
+		cursor_rcer(cursor), out_view, cursor->current_page_id);
 	if( result != BTREE_OK )
 		return result;
 
