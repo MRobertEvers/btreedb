@@ -1317,6 +1317,7 @@ compare(
 	void* ctx,
 	void* window,
 	u32 window_size,
+	u32 wnd_total_size,
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,

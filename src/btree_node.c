@@ -798,6 +798,7 @@ btree_node_compare_cell(
 		ctx->compare_context,
 		cmp,
 		cmp_size,
+		cmp_total_size,
 		key,
 		key_size,
 		bytes_compared,
@@ -838,6 +839,7 @@ btree_node_compare_cell(
 				ctx->compare_context,
 				cmp,
 				cmp_size,
+				cmp_total_size,
 				key,
 				key_size,
 				bytes_compared,
@@ -849,30 +851,8 @@ btree_node_compare_cell(
 			if( *out_result != 0 )
 				break;
 
-		} while( next_page_id != 0 && key_size_remaining != 0 );
-
-		// If they were equal all the way up to the end
-		// TODO: This
-		if( *out_result == 0 )
-		{
-			// There are no more pages and there are key bytes left.
-			if( key_size_remaining != 0 && next_page_id == 0 )
-			{
-				// Key is less than because it is longer than cmp.
-				*out_result = 1;
-			}
-			// There are no more key bytes and there are pages left.
-			else if( next_page_id != 0 && key_size_remaining == 0 )
-			{
-				// Key is less than than because it is shorter than cmp
-				*out_result = -1;
-			}
-			else
-			{
-				// Keys are same length;
-				*out_result = 0;
-			}
-		}
+		} while( next_page_id != 0 && bytes_compared < cmp_total_size &&
+				 key_size_remaining != 0 );
 
 	end_overflow:
 		if( page )

@@ -22,24 +22,31 @@ enum btree_e ibtree_init(
 	btree_compare_reset_fn reset_compare);
 
 /**
- * @brief TODO: cmp_chunk_number is ugly
+ * @brief
  *
- * @param left
- * @param left_size
- * @param right
- * @param right_size
- * @param bytes_compared The number of bytes already compared.
- * @return enum btree_e
+ * @param compare_context Not used for this function
+ * @param cmp_window Window of bytes to compare
+ * @param cmp_window_size Window of bytes size
+ * @param cmp_total_size Total size of cmp (including bytes not in window)
+ * @param right Full buffer of the right side bytes to compare
+ * @param right_size Full size
+ * @param bytes_compared Total bytes compared so far
+ * @param out_bytes_compared [out] Bytes compared in this call
+ * @param key_size_remaining [out] Bytes remaining to compare in the key. Used
+ * when the bytes that we want to compare are not all the bytes in the right
+ * buffer
+ * @return int comparison result.
  */
 int ibtree_compare(
 	void* compare_context,
 	void* cmp_window,
 	u32 cmp_window_size,
+	u32 cmp_total_size,
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,
 	u32* out_bytes_compared,
-	u32* key_size_remaining);
+	u32* out_key_size_remaining);
 
 void ibtree_compare_reset(void* compare_context);
 

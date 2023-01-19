@@ -76,20 +76,39 @@ struct NodeView
 };
 
 /**
- * @brief Return -1 if left is less than right, 1 if right is; 0 if equal.
+ * @brief Partial compare on a window of bytes.
  *
- * If compare needs to be called more than once. The right hand side should be
- * used as the buffer that gets re-compared.
+ * The right buffer is the entire comparison value; the window is only a partial
+ * byte buffer of bytes to compare.
+ *
+ * The right buffer should NOT be adjusted between partial calls. It is up to
+ * the function the adjust which bytes in the right buffer are compared to the
+ * window. right_offset is the number of bytes compared so far.
+ *
+ * If out_key_size_remaining returns as 0, this indicates there are no more
+ * bytes in the right buffer that need to be compared and so the comparison is
+ * done.
+ *
+ * If the return value is 0, out_key_size_remaining != 0 and there are more
+ * bytes in window_total_size, then this function will be called again.
+ * Note! In some cases window_total_size will contain more bytes than
+ * the comparison function cares about. It is important in that case to
+ * return out_key_size_remaining = 0 so that the caller knows when the
+ * comparison is done.
+ *
+ * @return -1 if the result of the comparison is window < right; 1 if window >
+ * right; 0 otherwise.
  */
 typedef int (*btree_compare_fn)(
 	void* compare_context,
-	void* left,
-	u32 left_size,
+	void* window,
+	u32 window_size,
+	u32 window_total_size,
 	void* right,
 	u32 right_size,
 	u32 right_offset,
 	u32* out_bytes_compared,
-	u32* key_size_remaining);
+	u32* out_key_size_remaining);
 
 typedef void (*btree_compare_reset_fn)(void* compare_context);
 

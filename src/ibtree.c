@@ -42,17 +42,18 @@ ibtree_compare(
 	void* compare_context,
 	void* left,
 	u32 left_size,
+	u32 cmp_total_size,
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,
 	u32* out_bytes_compared,
-	u32* key_bytes_remaining)
+	u32* out_key_size_remaining)
 {
 	assert(right_size > bytes_compared);
 	if( bytes_compared >= right_size )
 	{
 		*out_bytes_compared = 0;
-		*key_bytes_remaining = 0;
+		*out_key_size_remaining = 0;
 		return 0;
 	}
 
@@ -63,10 +64,25 @@ ibtree_compare(
 	right_buffer += bytes_compared;
 
 	*out_bytes_compared = min(left_size, right_size - bytes_compared);
-	*key_bytes_remaining = right_size - bytes_compared - *out_bytes_compared;
+	u32 new_total_bytes_compared = bytes_compared + *out_bytes_compared;
+	*out_key_size_remaining = right_size - new_total_bytes_compared;
 	int cmp = memcmp(left_buffer, right_buffer, *out_bytes_compared);
 	if( cmp == 0 )
 	{
+		if( *out_key_size_remaining == 0 &&
+			new_total_bytes_compared < cmp_total_size )
+		{
+			// Key is shorter than compare. Therefor Key < Cmp;
+			return 1;
+		}
+		else if(
+			*out_key_size_remaining != 0 &&
+			new_total_bytes_compared == cmp_total_size )
+		{
+			// Key is longer than compare. Therefore Cmp < Key
+			return -1;
+		}
+
 		return cmp;
 	}
 	else
