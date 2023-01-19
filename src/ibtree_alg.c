@@ -293,6 +293,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 	assert(tree->compare != NULL);
 
 	enum btree_e result = BTREE_OK;
+
 	char found = 0;
 	int page_index_as_key =
 		insert_at->key; // This is only not zero when there is a page split.
@@ -300,36 +301,17 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 	enum writer_ex_mode_e writer_mode = insert_at->mode;
 	byte* payload = insert_at->data;
 	u32 payload_size = insert_at->data_size;
-	struct Page* page = NULL;
-	struct Page* holding_page_one = NULL;
-	struct Page* holding_page_two = NULL;
-	struct PageSelector selector = {0};
-	struct BTreeNode node = {0};
-	struct BTreeNode holding_node_one = {0};
-	struct BTreeNode holding_node_two = {0};
 
-	struct BTreeNode* next_holding_node = &holding_node_one;
+	struct NodeView nv = {0};
+	struct NodeView holding_one_nv = {0};
+	struct NodeView holding_two_nv = {0};
+
+	struct BTreeNode* next_holding_node = nv_node(&holding_one_nv);
 
 	struct CursorBreadcrumb crumb = {0};
 
-	// Holding page and node is required to move cells up the tree.
-	result = btpage_err(page_create(tree->pager, &holding_page_one));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_page(&holding_node_one, holding_page_one);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(tree->pager, &holding_page_two));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_page(&holding_node_two, holding_page_two);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(tree->pager, &page));
+	result = noderc_acquire_load_n(
+		cursor_rcer(cursor), 3, &nv, 0, &holding_one_nv, 0, &holding_two_nv, 0);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -339,15 +321,14 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 		if( result != BTREE_OK )
 			goto end;
 
-		result =
-			btree_node_init_from_read(&node, page, tree->pager, crumb.page_id);
+		result = noderc_reinit_read(cursor_rcer(cursor), &nv, crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
 		struct InsertionIndex index = from_cli(&crumb.key_index);
 
 		result = btree_node_write_ex(
-			&node,
+			nv_node(&nv),
 			tree->pager,
 			&index,
 			page_index_as_key,
@@ -357,29 +338,22 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 			writer_mode);
 		if( result == BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		{
-			if( node.page->page_id == tree->root_page_id )
+			// TODO: This first half thing is shaky.
+			u32 first_half = (node_num_keys(nv_node(&nv)) + 1) / 2;
+			int child_insertion = left_or_right_insertion(&index, nv_node(&nv));
+			if( nv_page(&nv)->page_id == tree->root_page_id )
 			{
-				// TODO: This first half thing is shaky.
-				u32 first_half = (node.header->num_keys + 1) / 2;
-				int child_insertion = left_or_right_insertion(&index, &node);
-
 				struct SplitPageAsParent split_result;
-				result =
-					ibta_split_node_as_parent(&node, tree->rcer, &split_result);
+				result = ibta_split_node_as_parent(
+					nv_node(&nv), tree->rcer, &split_result);
 				if( result != BTREE_OK )
 					goto end;
 
-				pager_reselect(
-					&selector,
+				result = noderc_reinit_read(
+					cursor_rcer(cursor),
+					&nv,
 					child_insertion == -1 ? split_result.left_child_page_id
 										  : split_result.right_child_page_id);
-
-				result =
-					btpage_err(pager_read_page(tree->pager, &selector, page));
-				if( result != BTREE_OK )
-					goto end;
-
-				result = btree_node_init_from_page(&node, page);
 				if( result != BTREE_OK )
 					goto end;
 
@@ -387,7 +361,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 					index.index -= first_half;
 
 				result = btree_node_write_ex(
-					&node,
+					nv_node(&nv),
 					tree->pager,
 					&index,
 					page_index_as_key,
@@ -403,9 +377,6 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 			}
 			else
 			{
-				u32 first_half = (node.header->num_keys + 1) / 2;
-				int child_insertion = left_or_right_insertion(&index, &node);
-
 				memset(
 					next_holding_node->page->page_buffer,
 					0x00,
@@ -415,16 +386,17 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 
 				struct SplitPage split_result;
 				result = ibta_split_node(
-					&node, tree->rcer, next_holding_node, &split_result);
+					nv_node(&nv), tree->rcer, next_holding_node, &split_result);
 				if( result != BTREE_OK )
 					goto end;
 
 				// TODO: Key compare function.
 				if( child_insertion == -1 )
 				{
-					pager_reselect(&selector, split_result.left_page_id);
-					pager_read_page(tree->pager, &selector, page);
-					btree_node_init_from_page(&node, page);
+					result = noderc_reinit_read(
+						cursor_rcer(cursor), &nv, split_result.left_page_id);
+					if( result != BTREE_OK )
+						goto end;
 				}
 
 				if( child_insertion == 1 )
@@ -432,7 +404,7 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 
 				// Write the input payload to the correct child.
 				result = btree_node_write_ex(
-					&node,
+					nv_node(&nv),
 					tree->pager,
 					&index,
 					page_index_as_key,
@@ -460,9 +432,10 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 				payload = btu_get_cell_buffer(next_holding_node, 0);
 				payload_size = btu_get_cell_buffer_size(next_holding_node, 0);
 
-				next_holding_node = next_holding_node == &holding_node_one
-										? &holding_node_two
-										: &holding_node_one;
+				next_holding_node =
+					next_holding_node == nv_node(&holding_one_nv)
+						? nv_node(&holding_two_nv)
+						: nv_node(&holding_one_nv);
 			}
 		}
 		else
@@ -472,12 +445,8 @@ ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at)
 	}
 
 end:
-	if( page )
-		page_destroy(tree->pager, page);
-	if( holding_page_one )
-		page_destroy(tree->pager, holding_page_one);
-	if( holding_page_two )
-		page_destroy(tree->pager, holding_page_two);
+	noderc_release_n(
+		cursor_rcer(cursor), 3, &nv, &holding_one_nv, &holding_two_nv);
 	return result;
 }
 
