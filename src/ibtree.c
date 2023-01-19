@@ -45,9 +45,16 @@ ibtree_compare(
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,
-	u32* out_bytes_compared)
+	u32* out_bytes_compared,
+	u32* key_bytes_remaining)
 {
 	assert(right_size > bytes_compared);
+	if( bytes_compared >= right_size )
+	{
+		*out_bytes_compared = 0;
+		*key_bytes_remaining = 0;
+		return 0;
+	}
 
 	// The inline payload of a cell on disk for an IBTree always starts with the
 	// left child page id.
@@ -56,6 +63,7 @@ ibtree_compare(
 	right_buffer += bytes_compared;
 
 	*out_bytes_compared = min(left_size, right_size - bytes_compared);
+	*key_bytes_remaining = right_size - bytes_compared - *out_bytes_compared;
 	int cmp = memcmp(left_buffer, right_buffer, *out_bytes_compared);
 	if( cmp == 0 )
 	{

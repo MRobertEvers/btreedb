@@ -4,6 +4,7 @@
 #include "btree_cursor.h"
 #include "btree_defs.h"
 #include "btree_node.h"
+#include "btree_node_debug.h"
 #include "btree_node_reader.h"
 #include "btree_node_writer.h"
 #include "ibtree.h"
@@ -1289,6 +1290,151 @@ end:
 		page_destroy(pager, test_page);
 	remove(db_name);
 
+	return result;
+fail:
+	result = 0;
+	goto end;
+}
+
+const int header_size = 7;
+const int key_size = 4;
+struct CompareCtx
+{
+	byte compare_buffer[4];
+	u32 len;
+	u32 offset;
+};
+
+static void
+cmp_reset(void* ctx)
+{
+	memset(ctx, 0x00, sizeof(struct CompareCtx));
+}
+
+static int
+compare(
+	void* ctx,
+	void* window,
+	u32 window_size,
+	void* right,
+	u32 right_size,
+	u32 bytes_compared,
+	u32* out_bytes_compared,
+	u32* key_size_rem)
+{
+	struct CompareCtx* cmper = (struct CompareCtx*)ctx;
+	*key_size_rem = key_size;
+	byte* ptr = (byte*)window;
+	byte* rptr = (byte*)right;
+	rptr += header_size;
+
+	u32 window_offset = 0;
+
+	while( cmper->offset < header_size && window_offset < window_size )
+	{
+		ptr += 1;
+		cmper->offset += 1;
+		window_offset += 1;
+	}
+
+	if( cmper->offset >= header_size )
+	{
+		while( cmper->len < key_size && window_offset < window_size )
+		{
+			cmper->compare_buffer[cmper->len] = ptr[0];
+			ptr += 1;
+			cmper->len += 1;
+			window_offset += 1;
+		}
+	}
+
+	if( cmper->len == key_size )
+	{
+		int cmp = memcmp(cmper->compare_buffer, rptr, key_size);
+		*out_bytes_compared = window_offset + key_size;
+		*key_size_rem = 0;
+		if( cmp == 0 )
+		{
+			return cmp;
+		}
+		else
+		{
+			return cmp < 0 ? -1 : 1;
+		}
+	}
+	else
+	{
+		*out_bytes_compared = window_offset;
+		return 0;
+	}
+}
+
+int
+ibta_cmp_ctx_test(void)
+{
+	char const* db_name = "ibta_cmp_ctx_test.db";
+	remove(db_name);
+
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+	struct BTreeNodeRC rcer = {0};
+	struct BTree* tree = NULL;
+	struct BTreeNode test_node = {0};
+	struct Page* test_page = NULL;
+	int result = 1;
+
+	page_cache_create(&cache, 11);
+	u32 page_size = btree_min_page_size() + 1 * 4;
+	pager_cstd_create(&pager, cache, db_name, page_size);
+	page_create(pager, &test_page);
+	noderc_init(&rcer, pager);
+	btree_alloc(&tree);
+	if( ibtree_init(tree, pager, &rcer, 1, &compare, &cmp_reset) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	char A[] = "AAADER-AKEYA-DATA";
+	char B[] = "BBADER-BKEYB-DATA";
+	char C[] = "CCADER-CKEYC-DATA";
+
+	struct CompareCtx ctx = {0};
+	ibtree_insert_ex(tree, A, sizeof(A), &ctx);
+	ibtree_insert_ex(tree, B, sizeof(B), &ctx);
+	ibtree_insert_ex(tree, C, sizeof(C), &ctx);
+
+	// btree_node_init_from_read(&test_node, test_page, pager, 1);
+	// dbg_print_buffer(test_page->page_buffer, test_page->page_size);
+
+	struct Cursor* cursor;
+	char found;
+	char* tests[] = {A, B, C};
+	char buf[100] = {0};
+	for( int i = 0; i < sizeof(tests) / sizeof(tests[0]); i++ )
+	{
+		char* testi = tests[i];
+		memset(buf, 0x00, sizeof(buf));
+		cursor = cursor_create_ex(tree, &ctx);
+		cursor_traverse_to_ex(cursor, testi, strlen(testi) + 1, &found);
+
+		if( !found )
+			goto fail;
+
+		btree_node_init_from_read(
+			&test_node, test_page, pager, cursor->current_page_id);
+
+		cursor_destroy(cursor);
+
+		btree_node_read_ex2(
+			tree, &ctx, &test_node, testi, strlen(testi) + 1, buf, sizeof(buf));
+
+		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
+			goto fail;
+	}
+
+end:
+	remove(db_name);
 	return result;
 fail:
 	result = 0;

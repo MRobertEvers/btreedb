@@ -33,12 +33,13 @@ enum btree_e ibtree_init(
  */
 int ibtree_compare(
 	void* compare_context,
-	void* left,
-	u32 left_size,
+	void* cmp_window,
+	u32 cmp_window_size,
 	void* right,
 	u32 right_size,
 	u32 bytes_compared,
-	u32* out_bytes_compared);
+	u32* out_bytes_compared,
+	u32* key_size_remaining);
 
 void ibtree_compare_reset(void* compare_context);
 

@@ -11,4 +11,5 @@ int ibta_rebalance_test(void);
 int ibta_rebalance_nonleaf_test(void);
 int ibta_rebalance_root_fit(void);
 int ibta_rebalance_root_nofit(void);
+int ibta_cmp_ctx_test(void);
 #endif

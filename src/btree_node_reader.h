@@ -28,4 +28,14 @@ enum btree_e btree_node_read_ex(
 	u32 key_size,
 	void* buffer,
 	u32 buffer_size);
+
+enum btree_e btree_node_read_ex2(
+	struct BTree* tree,
+	void* compare_ctx,
+	struct BTreeNode* node,
+	void* key,
+	u32 key_size,
+	void* buffer,
+	u32 buffer_size);
+
 #endif

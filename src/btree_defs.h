@@ -101,7 +101,8 @@ typedef int (*btree_compare_fn)(
 	void* right,
 	u32 right_size,
 	u32 right_offset,
-	u32* out_bytes_compared);
+	u32* out_bytes_compared,
+	u32* key_size_remaining);
 
 typedef void (*btree_compare_reset_fn)(void* compare_context);
 

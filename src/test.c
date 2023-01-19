@@ -81,6 +81,8 @@ main()
 	printf("bt rebalance root fit: %d\n", result);
 	result = bta_rebalance_root_nofit();
 	printf("bt rebalance root nofit: %d\n", result);
+	result = ibta_cmp_ctx_test();
+	printf("compare with ctx: %d\n", result);
 
 	return 0;
 }

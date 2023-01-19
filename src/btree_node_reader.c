@@ -94,6 +94,20 @@ btree_node_read_ex(
 	void* buffer,
 	u32 buffer_size)
 {
+	return btree_node_read_ex2(
+		tree, NULL, node, key, key_size, buffer, buffer_size);
+}
+
+enum btree_e
+btree_node_read_ex2(
+	struct BTree* tree,
+	void* compare_ctx,
+	struct BTreeNode* node,
+	void* key,
+	u32 key_size,
+	void* buffer,
+	u32 buffer_size)
+{
 	enum btree_e result = BTREE_OK;
 	struct Pager* pager = tree->pager;
 	u32 key_index = 0;
@@ -101,7 +115,7 @@ btree_node_read_ex(
 	struct BTreeCompareContext ctx = {
 		.compare = tree->compare,
 		.reset = tree->reset_compare,
-		.compare_context = NULL,
+		.compare_context = compare_ctx,
 		.pager = tree->pager};
 	result = btree_node_search_keys(&ctx, node, key, key_size, &key_index);
 	if( result != BTREE_OK )

@@ -788,6 +788,7 @@ btree_node_compare_cell(
 	u32 next_page_id = 0;
 	u32 cmp_size = 0;
 	u32 comparison_bytes_count = 0;
+	u32 key_size_remaining = 0;
 
 	byte* cmp = NULL;
 	cmp = get_cell_payload(
@@ -800,13 +801,14 @@ btree_node_compare_cell(
 		key,
 		key_size,
 		bytes_compared,
-		&comparison_bytes_count);
+		&comparison_bytes_count,
+		&key_size_remaining);
 	bytes_compared += comparison_bytes_count;
 
 	if( comparison_bytes_count == 0 )
 		return BTREE_ERR_UNK;
 
-	if( *out_result != 0 )
+	if( *out_result != 0 || key_size_remaining == 0 )
 	{
 		return BTREE_OK;
 	}
@@ -839,26 +841,28 @@ btree_node_compare_cell(
 				key,
 				key_size,
 				bytes_compared,
-				&comparison_bytes_count);
+				&comparison_bytes_count,
+				&key_size_remaining);
 
 			bytes_compared += comparison_bytes_count;
 
 			if( *out_result != 0 )
 				break;
 
-		} while( next_page_id != 0 && bytes_compared < key_size );
+		} while( next_page_id != 0 && key_size_remaining != 0 );
 
 		// If they were equal all the way up to the end
+		// TODO: This
 		if( *out_result == 0 )
 		{
 			// There are no more pages and there are key bytes left.
-			if( bytes_compared < key_size )
+			if( key_size_remaining != 0 && next_page_id == 0 )
 			{
 				// Key is less than because it is longer than cmp.
 				*out_result = 1;
 			}
 			// There are no more key bytes and there are pages left.
-			else if( (next_page_id != 0 || comparison_bytes_count != cmp_size) )
+			else if( next_page_id != 0 && key_size_remaining == 0 )
 			{
 				// Key is less than than because it is shorter than cmp
 				*out_result = -1;

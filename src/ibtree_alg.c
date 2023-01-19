@@ -595,8 +595,6 @@ ibta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		// Need to update the lowered cell to point to this.
 		orphaned_child_page = prev_rightmost_of_left_node;
 	}
-	else
-	{}
 
 	struct ChildListIndex source_index;
 	source_index.index = source_index_number;
