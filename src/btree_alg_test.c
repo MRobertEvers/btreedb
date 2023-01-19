@@ -236,7 +236,7 @@ btree_alg_test_split_as_parent_nonleaf(void)
 
 	struct SplitPageAsParent split_result = {0};
 
-	bta_split_node_as_parent(&nv, &rcer, &split_result);
+	bta_split_node_as_parent(nv_node(&nv), &rcer, &split_result);
 
 	struct BTreeNode* left_node = {0};
 	struct BTreeNode* right_node = {0};

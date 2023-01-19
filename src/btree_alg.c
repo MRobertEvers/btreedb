@@ -521,30 +521,15 @@ end:
  * @param cursor
  * @return enum btree_e
  */
-static enum btree_e
-check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
+enum btree_e
+bta_check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 {
 	enum btree_e result = BTREE_OK;
 	enum btree_e check_result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
-	struct CursorBreadcrumb base_crumb = {0};
-	struct CursorBreadcrumb parent_crumb = {0};
+	struct NodeView nv = {0};
+	struct CursorBreadcrumb crumbs[2] = {0};
 
-	result = cursor_pop(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_pop(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(cursor->tree->pager, &page));
+	result = cursor_pop_n(cursor, crumbs, 2);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -552,54 +537,36 @@ check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto restore;
 
-	result = btree_node_init_from_read(
-		&node, page, cursor->tree->pager, cursor->current_page_id);
+	result =
+		noderc_acquire_load(cursor_rcer(cursor), &nv, cursor->current_page_id);
 	if( result != BTREE_OK )
 		goto restore;
 
-	if( node.header->num_keys <= cursor->tree->header.underflow )
+	if( node_num_keys(nv_node(&nv)) <= cursor->tree->header.underflow )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-
-	// If we've been passed a deficient node. This will fail.
-	// So we allow this to pass if there is no sibling.
-	// result = cursor_sibling(
-	// 	cursor,
-	// 	sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
-	// 								   : CURSOR_SIBLING_LEFT);
-	// if( result != BTREE_OK || result != BTREE_ERR_CURSOR_NO_SIBLING )
-	// 	goto end;
 
 restore:
 	check_result = result;
-	result = cursor_pop(cursor, NULL);
+	result = cursor_restore(cursor, crumbs, 2);
 	if( result != BTREE_OK )
 		goto end;
-	result = cursor_pop(cursor, NULL);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
+
 	result = check_result;
 end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
+	noderc_release(cursor_rcer(cursor), &nv);
 	if( result == BTREE_OK || result == BTREE_ERR_CURSOR_NO_SIBLING )
 		result = check_result;
 	return result;
 }
 
-static enum btree_e
-decide_rebalance_mode(
+enum btree_e
+bta_decide_rebalance_mode(
 	struct Cursor* cursor, enum bta_rebalance_mode_e* out_mode)
 {
 	enum btree_e result = BTREE_OK;
 	enum btree_e right_result = BTREE_OK;
 
-	right_result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
+	right_result = bta_check_sibling(cursor, CURSOR_SIBLING_RIGHT);
 	result = right_result;
 	if( result == BTREE_OK )
 	{
@@ -611,7 +578,7 @@ decide_rebalance_mode(
 		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
 		goto end;
 
-	result = check_sibling(cursor, CURSOR_SIBLING_LEFT);
+	result = bta_check_sibling(cursor, CURSOR_SIBLING_LEFT);
 	if( result == BTREE_OK )
 	{
 		*out_mode = BTA_REBALANCE_MODE_ROTATE_RIGHT;
@@ -645,7 +612,7 @@ bta_rebalance(struct Cursor* cursor)
 
 	do
 	{
-		result = decide_rebalance_mode(cursor, &mode);
+		result = bta_decide_rebalance_mode(cursor, &mode);
 		if( result == BTREE_ERR_CURSOR_NO_PARENT )
 		{
 			result = bta_rebalance_root(cursor);

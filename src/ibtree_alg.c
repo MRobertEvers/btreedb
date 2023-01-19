@@ -1,5 +1,6 @@
 #include "ibtree_alg.h"
 
+#include "btree_alg.h"
 #include "btree_cell.h"
 #include "btree_cursor.h"
 #include "btree_node.h"
@@ -451,130 +452,6 @@ end:
 }
 
 /**
- * @brief Checks if right sibling can
- *
- * Clobber current cursor index.
- *
- * @param cursor
- * @return enum btree_e
- */
-static enum btree_e
-check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
-{
-	enum btree_e result = BTREE_OK;
-	enum btree_e check_result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
-	struct CursorBreadcrumb base_crumb = {0};
-	struct CursorBreadcrumb parent_crumb = {0};
-
-	result = cursor_pop(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_pop(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btpage_err(page_create(cursor->tree->pager, &page));
-	if( result != BTREE_OK )
-		goto end;
-
-	result = cursor_sibling(cursor, sibling);
-	if( result != BTREE_OK )
-		goto restore;
-
-	result = btree_node_init_from_read(
-		&node, page, cursor->tree->pager, cursor->current_page_id);
-	if( result != BTREE_OK )
-		goto restore;
-
-	if( node.header->num_keys <= cursor->tree->header.underflow )
-		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
-
-	// If we've been passed a deficient node. This will fail.
-	// So we allow this to pass if there is no sibling.
-	// result = cursor_sibling(
-	// 	cursor,
-	// 	sibling == CURSOR_SIBLING_LEFT ? CURSOR_SIBLING_RIGHT
-	// 								   : CURSOR_SIBLING_LEFT);
-	// if( result != BTREE_OK || result != BTREE_ERR_CURSOR_NO_SIBLING )
-	// 	goto end;
-
-restore:
-	check_result = result;
-	result = cursor_pop(cursor, NULL);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_pop(cursor, NULL);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &parent_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &base_crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = check_result;
-end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
-	if( result == BTREE_OK || result == BTREE_ERR_CURSOR_NO_SIBLING )
-		result = check_result;
-	return result;
-}
-
-static enum btree_e
-decide_rebalance_mode(
-	struct Cursor* cursor, enum ibta_rebalance_mode_e* out_mode)
-{
-	enum btree_e result = BTREE_OK;
-	enum btree_e right_result = BTREE_OK;
-
-	right_result = check_sibling(cursor, CURSOR_SIBLING_RIGHT);
-	result = right_result;
-	if( result == BTREE_OK )
-	{
-		*out_mode = IBTA_REBALANCE_MODE_ROTATE_LEFT;
-		goto end;
-	}
-
-	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
-		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
-		goto end;
-
-	result = check_sibling(cursor, CURSOR_SIBLING_LEFT);
-	if( result == BTREE_OK )
-	{
-		*out_mode = IBTA_REBALANCE_MODE_ROTATE_RIGHT;
-		goto end;
-	}
-
-	if( result != BTREE_ERR_CURSOR_NO_SIBLING &&
-		result != BTREE_ERR_NODE_NOT_ENOUGH_SPACE )
-		goto end;
-
-	// TODO: Assert that at least one is present?
-	assert(
-		result != BTREE_ERR_CURSOR_NO_SIBLING ||
-		right_result != BTREE_ERR_CURSOR_NO_SIBLING);
-
-	// There is a left sibling; merge with it.
-	if( result != BTREE_ERR_CURSOR_NO_SIBLING )
-		*out_mode = IBTA_REBALANCE_MODE_MERGE_LEFT;
-	else
-		*out_mode = IBTA_REBALANCE_MODE_MERGE_RIGHT;
-
-end:
-	return result;
-}
-
-/**
  * @brief With the cursor pointing at the underflown node, this will rotate
  * right.
  *
@@ -585,11 +462,11 @@ end:
  * @return enum btree_e
  */
 enum btree_e
-ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
+ibta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 {
 	assert(
-		mode == IBTA_REBALANCE_MODE_ROTATE_LEFT ||
-		mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT);
+		mode == BTA_REBALANCE_MODE_ROTATE_LEFT ||
+		mode == BTA_REBALANCE_MODE_ROTATE_RIGHT);
 	enum btree_e result = BTREE_OK;
 	struct Page* page = NULL;
 	struct BTreeNode node = {0};
@@ -617,7 +494,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		if( parent_index.mode == KLIM_RIGHT_CHILD )
 			parent_index.index = node_num_keys(nv_node(&parent_nv)) - 1;
@@ -627,7 +504,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	parent_index.mode = KLIM_INDEX;
 
 	struct InsertionIndex insert_lowered_index = {0};
-	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		insert_lowered_index.mode = KLIM_INDEX;
 		insert_lowered_index.index = 0;
@@ -671,8 +548,8 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	// Now move the highest element from the left child to the parent.
 	result = cursor_sibling(
 		cursor,
-		mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_LEFT
-												 : CURSOR_SIBLING_RIGHT);
+		mode == BTA_REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_LEFT
+												: CURSOR_SIBLING_RIGHT);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -682,7 +559,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 		goto end;
 
 	u32 source_index_number = 0;
-	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		source_index_number = node.header->num_keys - 1;
 	}
@@ -696,7 +573,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	insert_elevated_index.mode =
 		parent_index.mode == KLIM_RIGHT_CHILD ? KLIM_END : KLIM_INDEX;
 	// We always want to point to the left child.
-	u32 orphaned_page_id = mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT
+	u32 orphaned_page_id = mode == BTA_REBALANCE_MODE_ROTATE_RIGHT
 							   ? cursor->current_page_id
 							   : source_node_page_id;
 	result = btree_node_move_cell_ex_to(
@@ -720,7 +597,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	// On rotate left, node points to right sibling.
 	u32 orphaned_child_page = node.keys[source_index_number].key;
 
-	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		u32 prev_rightmost_of_left_node = node.header->right_child;
 
@@ -747,8 +624,8 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	// the correct children.
 	result = cursor_sibling(
 		cursor,
-		mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_RIGHT
-												 : CURSOR_SIBLING_LEFT);
+		mode == BTA_REBALANCE_MODE_ROTATE_RIGHT ? CURSOR_SIBLING_RIGHT
+												: CURSOR_SIBLING_LEFT);
 	if( result != BTREE_OK )
 		goto end;
 
@@ -757,7 +634,7 @@ ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	if( mode == IBTA_REBALANCE_MODE_ROTATE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_ROTATE_RIGHT )
 	{
 		// Need to update the lowered cell to point to
 		node.keys[insert_lowered_index.index].key = orphaned_child_page;
@@ -786,11 +663,11 @@ end:
 }
 
 enum btree_e
-ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
+ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 {
 	assert(
-		mode == IBTA_REBALANCE_MODE_MERGE_LEFT ||
-		mode == IBTA_REBALANCE_MODE_MERGE_RIGHT);
+		mode == BTA_REBALANCE_MODE_MERGE_LEFT ||
+		mode == BTA_REBALANCE_MODE_MERGE_RIGHT);
 
 	enum btree_e result = BTREE_OK;
 
@@ -820,7 +697,7 @@ ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode)
 		goto end;
 
 	struct ChildListIndex parent_index = {0};
-	if( mode == IBTA_REBALANCE_MODE_MERGE_RIGHT )
+	if( mode == BTA_REBALANCE_MODE_MERGE_RIGHT )
 	{
 		// The cursor points to the left child.
 		result = btree_node_init_from_read(
@@ -936,11 +813,11 @@ enum btree_e
 ibta_rebalance(struct Cursor* cursor)
 {
 	enum btree_e result = BTREE_OK;
-	enum ibta_rebalance_mode_e mode = IBTA_REBALANCE_MODE_UNK;
+	enum bta_rebalance_mode_e mode = BTA_REBALANCE_MODE_UNK;
 
 	do
 	{
-		result = decide_rebalance_mode(cursor, &mode);
+		result = bta_decide_rebalance_mode(cursor, &mode);
 		if( result == BTREE_ERR_CURSOR_NO_PARENT )
 		{
 			// Can't rebalance root.
@@ -951,12 +828,12 @@ ibta_rebalance(struct Cursor* cursor)
 
 		switch( mode )
 		{
-		case IBTA_REBALANCE_MODE_ROTATE_LEFT:
-		case IBTA_REBALANCE_MODE_ROTATE_RIGHT:
+		case BTA_REBALANCE_MODE_ROTATE_LEFT:
+		case BTA_REBALANCE_MODE_ROTATE_RIGHT:
 			result = ibta_rotate(cursor, mode);
 			break;
-		case IBTA_REBALANCE_MODE_MERGE_LEFT:
-		case IBTA_REBALANCE_MODE_MERGE_RIGHT:
+		case BTA_REBALANCE_MODE_MERGE_LEFT:
+		case BTA_REBALANCE_MODE_MERGE_RIGHT:
 			result = ibta_merge(cursor, mode);
 			break;
 		default:

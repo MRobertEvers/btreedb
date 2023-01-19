@@ -1,6 +1,7 @@
 #ifndef BTREE_ALG_H
 #define BTREE_ALG_H
 
+#include "btree_cursor.h"
 #include "btree_defs.h"
 
 struct SplitPageAsParent
@@ -66,6 +67,12 @@ enum bta_rebalance_mode_e
 };
 enum btree_e bta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
 enum btree_e bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
+
+enum btree_e
+bta_check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
+
+enum btree_e bta_decide_rebalance_mode(
+	struct Cursor* cursor, enum bta_rebalance_mode_e* out_mode);
 
 enum btree_e bta_rebalance(struct Cursor* cursor);
 

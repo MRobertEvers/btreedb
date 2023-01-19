@@ -1,15 +1,9 @@
 #ifndef IBTREE_ALG_H
 #define IBTREE_ALG_H
 
+#include "btree_alg.h"
 #include "btree_defs.h"
 #include "btree_node_writer.h"
-
-struct SplitPageAsParent
-{
-	int left_child_page_id;
-	int left_child_high_key;
-	int right_child_page_id;
-};
 
 /**
  * @brief Split node algorithm.
@@ -31,12 +25,6 @@ enum btree_e ibta_split_node_as_parent(
 	struct BTreeNode* node,
 	struct BTreeNodeRC* rcer,
 	struct SplitPageAsParent* split_page);
-
-struct SplitPage
-{
-	int left_page_id;
-	int left_page_high_key;
-};
 
 /**
  * @brief Split node algorithm
@@ -80,17 +68,7 @@ void ibta_insert_at_init_ex(
 enum btree_e
 ibta_insert_at(struct Cursor* cursor, struct ibta_insert_at* insert_at);
 
-enum ibta_rebalance_mode_e
-{
-	IBTA_REBALANCE_MODE_UNK,
-	IBTA_REBALANCE_MODE_ROTATE_RIGHT,
-	IBTA_REBALANCE_MODE_ROTATE_LEFT,
-	IBTA_REBALANCE_MODE_MERGE_RIGHT,
-	IBTA_REBALANCE_MODE_MERGE_LEFT,
-};
-
-enum btree_e
-ibta_rotate(struct Cursor* cursor, enum ibta_rebalance_mode_e mode);
+enum btree_e ibta_rotate(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
 
 enum merge_mode_e
 {
@@ -106,7 +84,7 @@ enum merge_mode_e
  * @param cursor
  * @return enum btree_e
  */
-enum btree_e ibta_merge(struct Cursor* cursor, enum ibta_rebalance_mode_e mode);
+enum btree_e ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode);
 
 /**
  * @brief Expects the cursor to be at the node that just underflowed.
