@@ -55,7 +55,7 @@ btree_test_insert()
 	btree_node_create_from_page(&raw_node, raw_page);
 
 	char buf[sizeof(billy)] = {0};
-	btree_node_read(raw_node, pager, 12, buf, sizeof(buf));
+	btree_node_read(tree, raw_node, 12, buf, sizeof(buf));
 
 	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;
@@ -272,7 +272,7 @@ btree_test_delete(void)
 	btree_node_create_from_page(&node, raw_page);
 
 	char buf[sizeof(ruth)] = {0};
-	btree_node_read(node, pager, 1, buf, sizeof(buf));
+	btree_node_read(tree, node, 1, buf, sizeof(buf));
 
 	if( memcmp(buf, ruth, sizeof(ruth)) != 0 )
 		result = 0;
@@ -293,7 +293,7 @@ btree_test_delete(void)
 	btree_node_create_from_page(&node, raw_page);
 
 	char buf2[sizeof(billy)] = {0};
-	btree_node_read(node, pager, 12, buf2, sizeof(buf2));
+	btree_node_read(tree, node, 12, buf2, sizeof(buf2));
 
 	if( memcmp(buf2, billy, sizeof(billy)) != 0 )
 		result = 0;
@@ -520,7 +520,7 @@ btree_test_deep_tree(void)
 	btree_node_create_from_page(&node, page);
 
 	char buf[sizeof(hoosin)] = {0};
-	btree_node_read(node, pager, 12, buf, sizeof(buf));
+	btree_node_read(tree, node, 12, buf, sizeof(buf));
 
 	if( memcmp(buf, hoosin, sizeof(hoosin)) != 0 )
 		result = 0;
@@ -653,7 +653,7 @@ btree_test_delete_merge_root(void)
 
 	char alpha_buf[sizeof(alpha)] = {0};
 
-	btree_node_read(test_node, tree->pager, 1, alpha_buf, sizeof(alpha_buf));
+	btree_node_read(tree, test_node, 1, alpha_buf, sizeof(alpha_buf));
 
 	if( memcmp(alpha, alpha_buf, sizeof(alpha)) != 0 )
 	{
@@ -662,7 +662,7 @@ btree_test_delete_merge_root(void)
 	}
 
 	char beta_buf[sizeof(beta)] = {0};
-	btree_node_read(test_node, tree->pager, 2, beta_buf, sizeof(beta_buf));
+	btree_node_read(tree, test_node, 2, beta_buf, sizeof(beta_buf));
 
 	if( memcmp(beta, beta_buf, sizeof(beta)) != 0 )
 	{
@@ -781,7 +781,7 @@ bta_rebalance_root_nofit(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -902,7 +902,7 @@ bta_rebalance_root_fit(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;

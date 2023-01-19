@@ -78,7 +78,8 @@ void btree_cell_read_inline(
 	u32 cell_buffer_size,
 	struct BTreeCellInline* cell,
 	void* buffer,
-	u32 buffer_size);
+	u32 buffer_size,
+	u32* out_total_size);
 
 // Attention! If you change this, you must change the size calculation!!!
 struct BTreeCellOverflow

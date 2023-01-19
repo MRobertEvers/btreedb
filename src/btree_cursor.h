@@ -3,6 +3,7 @@
 
 #include "btint.h"
 #include "btree_defs.h"
+#include "noderc.h"
 
 struct Cursor* cursor_create(struct BTree* tree);
 struct Cursor* cursor_create_ex(struct BTree* tree, void* compare_context);
@@ -21,6 +22,9 @@ enum btree_e cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 enum btree_e
 cursor_pop_n(struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num);
 enum btree_e cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
+
+enum btree_e
+cursor_read_current(struct Cursor* cursor, struct NodeView* out_nv);
 
 enum btree_e cursor_restore(
 	struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_restore);
@@ -57,6 +61,9 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
  */
 enum btree_e
 cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view);
+
+enum btree_e
+cursor_read_current(struct Cursor* cursor, struct NodeView* out_nv);
 
 /**
  * @brief Returns the index of the parent cell in the parent node.

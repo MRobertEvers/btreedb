@@ -8,6 +8,7 @@
 #include "btree_node_reader.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
+#include "noderc.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
 
@@ -25,12 +26,16 @@ btree_overflow_test_overflow_rw(void)
 	struct Page* page = NULL;
 	struct Pager* pager = NULL;
 	struct PageCache* cache = NULL;
+	struct BTree* tree;
+	struct BTreeNodeRC rcer;
+	btree_alloc(&tree);
 
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, 512);
-
+	noderc_init(&rcer, pager);
+	btree_init(tree, pager, &rcer, 1);
 	char billy[512 * 4] =
 		"billy_hello_how_are_you we are good thanks. Your name is what?"; // 12
 
@@ -52,10 +57,10 @@ btree_overflow_test_overflow_rw(void)
 	// 	h[pager->page_size - (i + 1)] = ('a' + i % ('z' - 'a'));
 	// }
 
-	btree_node_write(node, pager, 12, billy, sizeof(billy));
+	btree_node_write(node, tree->pager, 12, billy, sizeof(billy));
 
 	char buf[sizeof(billy)] = {0};
-	btree_node_read(node, pager, 12, buf, sizeof(buf));
+	btree_node_read(tree, node, 12, buf, sizeof(buf));
 
 	if( memcmp(buf, billy, sizeof(billy)) != 0 )
 		result = 0;

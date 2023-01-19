@@ -431,6 +431,21 @@ cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view)
 	return result;
 }
 
+enum btree_e
+cursor_read_current(struct Cursor* cursor, struct NodeView* out_nv)
+{
+	enum btree_e result = BTREE_OK;
+
+	assert(out_nv->page != NULL);
+
+	result = noderc_reinit_read(
+		cursor_rcer(cursor), out_nv, cursor->current_page_id);
+	if( result != BTREE_OK )
+		return result;
+
+	return result;
+}
+
 // TODO: Deprecate this
 enum btree_e
 cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index)

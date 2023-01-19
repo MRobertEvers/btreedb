@@ -353,7 +353,7 @@ btree_node_read_inline_as_page(
 
 	byte read_buf[sizeof(u32)];
 	btree_cell_read_inline(
-		cell_buffer, cell_buffer_size, &cell, read_buf, sizeof(read_buf));
+		cell_buffer, cell_buffer_size, &cell, read_buf, sizeof(read_buf), NULL);
 
 	ser_read_32bit_le(out_page_id, read_buf);
 
@@ -423,7 +423,7 @@ btree_node_move_cell_from_data(
 	enum btree_e result = BTREE_OK;
 
 	struct BTreeCellInline cell = {0};
-	btree_cell_read_inline(cell_buffer, cell_buffer_size, &cell, NULL, 0);
+	btree_cell_read_inline(cell_buffer, cell_buffer_size, &cell, NULL, 0, NULL);
 
 	u32 dest_max_size = btree_node_max_cell_size(dest_node);
 	if( cell_buffer_size <= dest_max_size )

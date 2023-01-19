@@ -60,11 +60,15 @@ btree_cell_read_inline(
 	u32 cell_buffer_size,
 	struct BTreeCellInline* cell,
 	void* buffer,
-	u32 buffer_size)
+	u32 buffer_size,
+	u32* out_total_size)
 {
 	// TODO: Bounds check.
 	char* cell_left_edge = cell_buffer;
 	ser_read_32bit_le(&cell->inline_size, cell_left_edge);
+
+	if( out_total_size )
+		*out_total_size = cell->inline_size;
 
 	cell_left_edge += sizeof(cell->inline_size);
 	if( buffer != NULL && buffer_size != 0 )

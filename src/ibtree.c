@@ -4,6 +4,7 @@
 #include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_debug.h"
+#include "btree_node_reader.h"
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "ibtree_alg.h"
@@ -136,7 +137,7 @@ ibtree_keyof(
 	else
 	{
 		struct BTreeCellInline cell = {0};
-		btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
+		btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0, NULL);
 
 		payload = (byte*)cell.payload;
 		*out_size = cell.inline_size;
@@ -249,7 +250,6 @@ delete_single(struct Cursor* cursor, void* key, int key_size)
 		if( result != BTREE_OK )
 			goto end;
 
-		// Look
 		result = cursor_traverse_largest(cursor);
 		if( result != BTREE_OK )
 			goto end;
@@ -323,7 +323,6 @@ ibtree_delete_ex(struct BTree* tree, void* key, int key_size, void* cmp_ctx)
 	// If the leaf node underflows, then we need to rebalance.
 
 	// TODO: Assumes min# elements is < 1/2 of the max # elements.
-	// TODO: Small size threshold.
 	if( result == BTREE_ERR_UNDERFLOW )
 	{
 		result = ibta_rebalance(cursor);
@@ -332,6 +331,54 @@ ibtree_delete_ex(struct BTree* tree, void* key, int key_size, void* cmp_ctx)
 	}
 
 end:
+	if( cursor )
+		cursor_destroy(cursor);
+
+	return result;
+}
+
+enum btree_e
+ibtree_select_ex(
+	struct BTree* tree,
+	void* cmp_ctx,
+	void* key,
+	int key_size,
+	void* buffer,
+	u32 buffer_size)
+{
+	enum btree_e result = BTREE_OK;
+	char found;
+	struct NodeView nv = {0};
+	struct Cursor* cursor = cursor_create_ex(tree, cmp_ctx);
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_traverse_to_ex(cursor, key, key_size, &found);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( !found )
+	{
+		result = BTREE_ERR_KEY_NOT_FOUND;
+		goto end;
+	}
+
+	result = cursor_read_current(cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
+
+	u32 ind = cursor->current_key_index.index;
+	result = btree_node_read_at(tree, nv_node(&nv), ind, buffer, buffer_size);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
 	if( cursor )
 		cursor_destroy(cursor);
 

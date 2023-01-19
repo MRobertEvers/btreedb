@@ -551,7 +551,7 @@ btree_alg_rotate_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -585,7 +585,7 @@ btree_alg_rotate_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -776,7 +776,7 @@ btree_alg_rotate_leaf_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -809,7 +809,7 @@ btree_alg_rotate_leaf_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1021,7 +1021,7 @@ btree_alg_merge_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1054,7 +1054,7 @@ btree_alg_merge_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1292,7 +1292,7 @@ btree_alg_merge_nonleaf_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1530,7 +1530,7 @@ btree_alg_merge_nonleaf_l_test(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;
@@ -1770,7 +1770,7 @@ btree_alg_rebalance(void)
 			&test_node, test_page, pager, cursor->current_page_id);
 		cursor_destroy(cursor);
 
-		btree_node_read(&test_node, tree->pager, test_key, buf, sizeof(buf));
+		btree_node_read(tree, &test_node, test_key, buf, sizeof(buf));
 
 		if( memcmp(buf, testi, strlen(testi) + 1) != 0 )
 			goto fail;

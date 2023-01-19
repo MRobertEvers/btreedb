@@ -75,4 +75,23 @@ enum btree_e ibtree_delete(struct BTree*, void* key, int key_size);
 enum btree_e
 ibtree_delete_ex(struct BTree*, void* key, int key_size, void* cmp_ctx);
 
+/**
+ * @brief TODO: This should return a reader object with the size and ability to
+ * read.
+ *
+ * @param cmp_ctx
+ * @param key
+ * @param key_size
+ * @param buffer
+ * @param buffer_size
+ * @return enum btree_e
+ */
+enum btree_e ibtree_select_ex(
+	struct BTree*,
+	void* cmp_ctx,
+	void* key,
+	int key_size,
+	void* buffer,
+	u32 buffer_size);
+
 #endif
