@@ -3,6 +3,7 @@
 #include "btree_cell.h"
 #include "btree_node.h"
 #include "btree_utils.h"
+#include "noderc.h"
 #include "pager.h"
 
 #include <assert.h>
@@ -32,7 +33,7 @@ enum btree_e
 cursor_push(struct Cursor* cursor)
 {
 	if( cursor->breadcrumbs_size ==
-		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[0]) )
+		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[1]) )
 		return BTREE_ERR_CURSOR_DEPTH_EXCEEDED;
 
 	struct CursorBreadcrumb* crumb =
@@ -48,7 +49,7 @@ enum btree_e
 cursor_push_crumb(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 {
 	if( cursor->breadcrumbs_size ==
-		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[0]) )
+		sizeof(cursor->breadcrumbs) / sizeof(cursor->breadcrumbs[1]) )
 		return BTREE_ERR_CURSOR_DEPTH_EXCEEDED;
 
 	cursor->breadcrumbs[cursor->breadcrumbs_size] = *crumb;
@@ -92,6 +93,20 @@ cursor_pop(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 }
 
 enum btree_e
+cursor_pop_n(struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num)
+{
+	enum btree_e result = BTREE_OK;
+	for( int i = 0; i < num; i++ )
+	{
+		result = cursor_pop(cursor, crumb + i);
+		if( result != BTREE_OK )
+			break;
+	}
+
+	return result;
+}
+
+enum btree_e
 cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 {
 	if( cursor->breadcrumbs_size == 0 )
@@ -99,18 +114,6 @@ cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 
 	if( crumb )
 		*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - 1];
-	return BTREE_OK;
-}
-
-enum btree_e
-cursor_save(struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_save)
-{
-	if( cursor->breadcrumbs_size < num_save )
-		return BTREE_ERR_CURSOR_NO_PARENT;
-
-	for( int i = 0; i < num_save; i++ )
-		*crumb = cursor->breadcrumbs[cursor->breadcrumbs_size - (i + 1)];
-
 	return BTREE_OK;
 }
 
@@ -219,25 +222,24 @@ enum btree_e
 cursor_traverse_to_ex(
 	struct Cursor* cursor, void* key, u32 key_size, char* found)
 {
-	u32 child_key_index = 0;
 	enum btree_e result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
+	u32 child_key_index = 0;
+	struct NodeView nv = {0};
 	*found = 0;
 
-	result = btpage_err(page_create(cursor->tree->pager, &page));
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
 	if( result != BTREE_OK )
 		goto end; // TODO: No-mem
 
 	do
 	{
-		result = btree_node_init_from_read(
-			&node, page, cursor->tree->pager, cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
 		result = btree_node_search_keys(
-			cursor->tree, &node, key, key_size, &child_key_index);
+			cursor->tree, nv_node(&nv), key, key_size, &child_key_index);
 		if( result == BTREE_OK )
 			*found = 1;
 
@@ -248,24 +250,23 @@ cursor_traverse_to_ex(
 			goto end;
 
 		btu_init_keylistindex_from_index(
-			&cursor->current_key_index, &node, child_key_index);
+			&cursor->current_key_index, nv_node(&nv), child_key_index);
 
 		result = cursor_push(cursor);
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node_is_leaf(&node) && !(*found) )
+		if( !node_is_leaf(nv_node(&nv)) && !(*found) )
 		{
-			result = read_cell_page(cursor, &node, child_key_index);
+			result = read_cell_page(cursor, nv_node(&nv), child_key_index);
 			if( result != BTREE_OK )
 				goto end;
 		}
 		// TODO: Only break if ibtree
-	} while( !node.header->is_leaf && !(*found) );
+	} while( !node_is_leaf(nv_node(&nv)) && !(*found) );
 
 end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
+	noderc_release(cursor_rcer(cursor), &nv);
 
 	return result;
 }
@@ -331,68 +332,56 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 {
 	enum btree_e result = BTREE_OK;
 	enum btree_e restore_result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
-	struct CursorBreadcrumb crumb = {0};
-	struct CursorBreadcrumb restore_crumb = {0};
+	struct NodeView nv = {0};
+	struct CursorBreadcrumb crumbs[2] = {0};
 
-	if( cursor->breadcrumbs_size < 1 )
+	if( cursor->breadcrumbs_size < 2 )
 		return BTREE_ERR_CURSOR_NO_PARENT;
 
-	result = btpage_err(page_create(cursor->tree->pager, &page));
-	if( result != BTREE_OK )
-		goto end;
-
 	// Pop the child.
-	result = cursor_pop(cursor, &restore_crumb);
+	result = cursor_pop_n(cursor, crumbs, 2);
 	if( result != BTREE_OK )
 		goto end;
 
-	// Pop the parent.
-	result = cursor_pop(cursor, &crumb);
-	if( result != BTREE_OK )
-		goto end;
-
-	result = btree_node_init_from_read(
-		&node, page, cursor->tree->pager, crumb.page_id);
+	result = noderc_acquire_load(cursor_rcer(cursor), &nv, crumbs[1].page_id);
 	if( result != BTREE_OK )
 		goto end;
 
 	u32 sibling_id = 0;
 	if( sibling == CURSOR_SIBLING_LEFT )
 	{
-		if( crumb.key_index.index == 0 )
+		if( crumbs[1].key_index.index == 0 )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
 			goto undo;
 		}
 
 		cursor->current_key_index.mode = KLIM_INDEX;
-		cursor->current_key_index.index = crumb.key_index.index - 1;
-		cursor->current_page_id = crumb.page_id;
+		cursor->current_key_index.index = crumbs[1].key_index.index - 1;
+		cursor->current_page_id = crumbs[1].page_id;
 	}
 	else
 	{
-		if( (crumb.key_index.index + 1 == node.header->num_keys &&
-			 node.header->right_child == 0) ||
-			crumb.key_index.mode != KLIM_INDEX )
+		if( (crumbs[1].key_index.index + 1 == node_num_keys(nv_node(&nv)) &&
+			 node_right_child(nv_node(&nv)) == 0) ||
+			crumbs[1].key_index.mode != KLIM_INDEX )
 		{
 			result = BTREE_ERR_CURSOR_NO_SIBLING;
 			goto undo;
 		}
 
-		if( crumb.key_index.index + 1 == node.header->num_keys )
+		if( crumbs[1].key_index.index + 1 == node_num_keys(nv_node(&nv)) )
 		{
 			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
-			cursor->current_key_index.index = node.header->num_keys;
+			cursor->current_key_index.index = node_num_keys(nv_node(&nv));
 		}
 		else
 		{
 			cursor->current_key_index.mode = KLIM_INDEX;
-			cursor->current_key_index.index = crumb.key_index.index + 1;
+			cursor->current_key_index.index = crumbs[1].key_index.index + 1;
 		}
 
-		cursor->current_page_id = crumb.page_id;
+		cursor->current_page_id = crumbs[1].page_id;
 	}
 
 	result = cursor_push(cursor);
@@ -402,13 +391,15 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	// Read the page id.
 	if( sibling == CURSOR_SIBLING_LEFT )
 	{
-		result = read_cell_page(cursor, &node, crumb.key_index.index - 1);
+		result =
+			read_cell_page(cursor, nv_node(&nv), crumbs[1].key_index.index - 1);
 		if( result != BTREE_OK )
 			goto end;
 	}
 	else
 	{
-		result = read_cell_page(cursor, &node, crumb.key_index.index + 1);
+		result =
+			read_cell_page(cursor, nv_node(&nv), crumbs[1].key_index.index + 1);
 		if( result != BTREE_OK )
 			goto end;
 	}
@@ -422,17 +413,13 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 		goto end;
 
 end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
+	noderc_release_n(cursor_rcer(cursor), 1, &nv);
 
 	return result;
 
 undo:
 	restore_result = result;
-	result = cursor_push_crumb(cursor, &crumb);
-	if( result != BTREE_OK )
-		goto end;
-	result = cursor_push_crumb(cursor, &restore_crumb);
+	result = cursor_restore(cursor, crumbs, 2);
 	if( result != BTREE_OK )
 		goto end;
 	result = restore_result;
