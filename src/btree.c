@@ -32,13 +32,7 @@ init_new_root_page(struct BTree* tree, struct Page* page, u32 page_id)
 	if( result != BTREE_OK )
 		return result;
 
-	struct BTreeHeader* temp_btree_header =
-		(struct BTreeHeader*)page->page_buffer;
-
-	temp_node.header->is_leaf = 1;
-
-	temp_btree_header->page_high_water = 2;
-	temp_btree_header->underflow = 1;
+	node_is_leaf_set(&temp_node, true);
 
 	return BTREE_OK;
 }
@@ -134,7 +128,6 @@ btree_init(
 	if( btree_result != BTREE_OK )
 		goto end;
 
-	tree->header = *(struct BTreeHeader*)page->page_buffer;
 end:
 	if( page )
 		page_destroy(tree->pager, page);
@@ -336,10 +329,4 @@ end:
 	cursor_destroy(cursor);
 
 	return result;
-}
-
-u32
-btree_underflow_lim(struct BTree* tree)
-{
-	return tree->header.underflow;
 }

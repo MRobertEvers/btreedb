@@ -274,6 +274,33 @@ src/btree_cursor.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cursor.c.s
 .PHONY : src/btree_cursor.c.s
 
+src/btree_defs.o: src/btree_defs.c.o
+.PHONY : src/btree_defs.o
+
+# target to build an object file
+src/btree_defs.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_defs.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_defs.c.o
+.PHONY : src/btree_defs.c.o
+
+src/btree_defs.i: src/btree_defs.c.i
+.PHONY : src/btree_defs.i
+
+# target to preprocess a source file
+src/btree_defs.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_defs.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_defs.c.i
+.PHONY : src/btree_defs.c.i
+
+src/btree_defs.s: src/btree_defs.c.s
+.PHONY : src/btree_defs.s
+
+# target to generate assembly for a file
+src/btree_defs.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_defs.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_defs.c.s
+.PHONY : src/btree_defs.c.s
+
 src/btree_node.o: src/btree_node.c.o
 .PHONY : src/btree_node.o
 
@@ -869,6 +896,9 @@ help:
 	@echo "... src/btree_cursor.o"
 	@echo "... src/btree_cursor.i"
 	@echo "... src/btree_cursor.s"
+	@echo "... src/btree_defs.o"
+	@echo "... src/btree_defs.i"
+	@echo "... src/btree_defs.s"
 	@echo "... src/btree_node.o"
 	@echo "... src/btree_node.i"
 	@echo "... src/btree_node.s"

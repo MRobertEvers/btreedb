@@ -709,7 +709,7 @@ bta_rebalance_root_nofit(void)
 		result = 0;
 		goto end;
 	}
-	tree->header.underflow = 7;
+	btree_underflow_lim_set(tree, 7);
 	page_create(pager, &test_page);
 	page_create(pager, &parent_page);
 	page_create(pager, &left_page);

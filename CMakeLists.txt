@@ -16,6 +16,7 @@ add_executable(db
     src/page_cache.c
     src/btree_node.c
     src/btree_utils.c
+    src/btree_defs.c
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
@@ -52,6 +53,7 @@ add_executable(test
     src/page_cache.c
     src/btree_node.c
     src/btree_utils.c
+    src/btree_defs.c
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c

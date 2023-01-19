@@ -495,7 +495,7 @@ bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		goto end;
 
 	parent_deficient =
-		node_num_keys(nv_node(&parent_nv)) < cursor->tree->header.underflow;
+		node_num_keys(nv_node(&parent_nv)) < btree_underflow_lim(cursor->tree);
 
 	// TODO: Free list.
 	result = noderc_persist_n(
@@ -540,7 +540,7 @@ bta_check_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling)
 	if( result != BTREE_OK )
 		goto restore;
 
-	if( node_num_keys(nv_node(&nv)) <= cursor->tree->header.underflow )
+	if( node_num_keys(nv_node(&nv)) <= btree_underflow_lim(cursor->tree) )
 		result = BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
 restore:

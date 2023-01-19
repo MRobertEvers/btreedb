@@ -223,13 +223,13 @@ delete_single(struct Cursor* cursor, void* key, int key_size)
 			goto end;
 
 		underflow = node_num_keys(nv_node(&holding_nv)) <
-					cursor->tree->header.underflow;
+					btree_underflow_lim(cursor->tree);
 	}
 	else
 	{
 		// Do nothing, detect underflow.
 		underflow =
-			node_num_keys(nv_node(&nv)) < cursor->tree->header.underflow;
+			node_num_keys(nv_node(&nv)) < btree_underflow_lim(cursor->tree);
 	}
 
 end:

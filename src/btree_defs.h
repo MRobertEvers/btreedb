@@ -62,19 +62,6 @@ struct BTreeNode
 	struct Page* page; // Page backing this node.
 };
 
-enum btree_type
-{
-	bplus_tree,
-	btree
-};
-
-struct BTreeHeader
-{
-	int page_high_water;
-	u32 underflow;
-	enum btree_type type;
-};
-
 struct BTreeNodeRC
 {
 	struct Pager* pager;
@@ -114,13 +101,13 @@ enum btree_type_e
 
 struct BTree
 {
-	struct BTreeHeader header;
 	struct Pager* pager;
 	struct BTreeNodeRC* rcer;
 
 	u32 root_page_id;
 
 	enum btree_type_e type;
+	u32 underflow;
 	btree_compare_fn compare;
 	btree_compare_reset_fn reset_compare;
 };
@@ -192,5 +179,9 @@ struct CellData
 	// High bit indicates the pointer is a LinkListWrapperData
 	int* size;
 };
+
+u32 btree_underflow_lim(struct BTree*);
+
+u32 btree_underflow_lim_set(struct BTree* tree, u32 underflow);
 
 #endif
