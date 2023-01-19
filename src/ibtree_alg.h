@@ -55,7 +55,7 @@ struct SplitPage
  */
 enum btree_e ibta_split_node(
 	struct BTreeNode* node,
-	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
 	struct BTreeNode* holding_node,
 	struct SplitPage* split_page);
 
