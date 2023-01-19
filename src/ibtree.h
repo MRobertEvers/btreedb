@@ -50,6 +50,14 @@ int ibtree_compare(
 
 void ibtree_compare_reset(void* compare_context);
 
+byte* ibtree_keyof(
+	void* compare_context,
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page);
+
 /**
  * @brief
  *

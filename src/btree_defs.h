@@ -111,6 +111,13 @@ typedef int (*btree_compare_fn)(
 	u32* out_key_size_remaining);
 
 typedef void (*btree_compare_reset_fn)(void* compare_context);
+typedef byte* (*btree_keyof_fn)(
+	void* compare_context,
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page);
 
 enum btree_type_e
 {
@@ -127,12 +134,14 @@ struct BTree
 
 	enum btree_type_e type;
 	u32 underflow;
+	btree_keyof_fn keyof;
 	btree_compare_fn compare;
 	btree_compare_reset_fn reset_compare;
 };
 
 struct BTreeCompareContext
 {
+	btree_keyof_fn keyof;
 	btree_compare_fn compare;
 	btree_compare_reset_fn reset;
 

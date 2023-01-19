@@ -721,55 +721,6 @@ btree_node_calc_heap_capacity(struct BTreeNode* node)
 	return node->page->page_size - sizeof(struct BTreePageHeader) - offset;
 }
 
-// TODO: Return error
-// TODO: Might have to read onto overflow page...
-static byte*
-get_cell_payload(
-	struct BTreeNode* node,
-	u32 index,
-	u32* out_size,
-	u32* out_total_size,
-	u32* out_follow_page)
-{
-	struct BTreePageKey* key = &node->keys[index];
-	bool is_overflow =
-		btree_pkey_is_cell_type(key->flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
-
-	byte* cell_data = btu_get_cell_buffer(node, index);
-	u32 cell_data_size = btu_get_cell_buffer_size(node, index);
-
-	byte* payload = NULL;
-	*out_size = 0;
-	*out_total_size = 0;
-	*out_follow_page = 0;
-	if( is_overflow )
-	{
-		// Overflow page -> Overflow page.
-		struct BTreeCellOverflow read_cell = {0};
-		struct BufferReader reader = {0};
-		btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
-
-		btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
-
-		payload = (byte*)read_cell.inline_payload;
-		*out_size =
-			btree_cell_overflow_calc_inline_payload_size(read_cell.inline_size);
-		*out_total_size = read_cell.total_size;
-		*out_follow_page = read_cell.overflow_page_id;
-	}
-	else
-	{
-		struct BTreeCellInline cell = {0};
-		btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
-
-		payload = (byte*)cell.payload;
-		*out_size = cell.inline_size;
-		*out_total_size = cell.inline_size;
-	}
-
-	return payload;
-}
-
 // Returns 1 if key is less than index
 // 0 if equal
 // -1 if index is less.
@@ -789,10 +740,15 @@ btree_node_compare_cell(
 	u32 cmp_size = 0;
 	u32 comparison_bytes_count = 0;
 	u32 key_size_remaining = 0;
-
 	byte* cmp = NULL;
-	cmp = get_cell_payload(
-		node, index, &cmp_size, &cmp_total_size, &next_page_id);
+
+	cmp = ctx->keyof(
+		ctx->compare_context,
+		node,
+		index,
+		&cmp_size,
+		&cmp_total_size,
+		&next_page_id);
 
 	*out_result = ctx->compare(
 		ctx->compare_context,

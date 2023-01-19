@@ -230,6 +230,7 @@ compare_context_init(struct Cursor* cursor)
 	struct BTreeCompareContext ctx = {
 		.compare = cursor->tree->compare,
 		.reset = cursor->tree->reset_compare,
+		.keyof = cursor->tree->keyof,
 		.compare_context = cursor->compare_context,
 		.pager = cursor->tree->pager};
 	return ctx;
@@ -242,7 +243,7 @@ cursor_traverse_to_ex(
 	enum btree_e result = BTREE_OK;
 	u32 child_key_index = 0;
 	struct NodeView nv = {0};
-	struct BTreeCompareContext ctx = {0};
+	struct BTreeCompareContext ctx = compare_context_init(cursor);
 	*found = 0;
 
 	result = noderc_acquire(cursor_rcer(cursor), &nv);
@@ -256,7 +257,6 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
-		ctx = compare_context_init(cursor);
 		result = btree_node_search_keys(
 			&ctx, nv_node(&nv), key, key_size, &child_key_index);
 		if( result == BTREE_OK )

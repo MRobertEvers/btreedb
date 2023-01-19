@@ -115,6 +115,7 @@ btree_node_read_ex2(
 	struct BTreeCompareContext ctx = {
 		.compare = tree->compare,
 		.reset = tree->reset_compare,
+		.keyof = tree->keyof,
 		.compare_context = compare_ctx,
 		.pager = tree->pager};
 	result = btree_node_search_keys(&ctx, node, key, key_size, &key_index);

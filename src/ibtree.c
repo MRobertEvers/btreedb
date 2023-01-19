@@ -34,6 +34,7 @@ ibtree_init(
 	tree->type = BTREE_INDEX;
 	tree->compare = compare;
 	tree->reset_compare = reset_compare;
+	tree->keyof = &ibtree_keyof;
 	return result;
 }
 
@@ -94,6 +95,56 @@ ibtree_compare(
 void
 ibtree_compare_reset(void* compare_context)
 {}
+
+// TODO: Return error
+// TODO: Might have to read onto overflow page...
+byte*
+ibtree_keyof(
+	void* compare_context,
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page)
+{
+	struct BTreePageKey* key = &node->keys[index];
+	bool is_overflow =
+		btree_pkey_is_cell_type(key->flags, PKEY_FLAG_CELL_TYPE_OVERFLOW);
+
+	byte* cell_data = btu_get_cell_buffer(node, index);
+	u32 cell_data_size = btu_get_cell_buffer_size(node, index);
+
+	byte* payload = NULL;
+	*out_size = 0;
+	*out_total_size = 0;
+	*out_follow_page = 0;
+	if( is_overflow )
+	{
+		// Overflow page -> Overflow page.
+		struct BTreeCellOverflow read_cell = {0};
+		struct BufferReader reader = {0};
+		btree_cell_init_overflow_reader(&reader, cell_data, cell_data_size);
+
+		btree_cell_read_overflow_ex(&reader, &read_cell, NULL, 0);
+
+		payload = (byte*)read_cell.inline_payload;
+		*out_size =
+			btree_cell_overflow_calc_inline_payload_size(read_cell.inline_size);
+		*out_total_size = read_cell.total_size;
+		*out_follow_page = read_cell.overflow_page_id;
+	}
+	else
+	{
+		struct BTreeCellInline cell = {0};
+		btree_cell_read_inline(cell_data, cell_data_size, &cell, NULL, 0);
+
+		payload = (byte*)cell.payload;
+		*out_size = cell.inline_size;
+		*out_total_size = cell.inline_size;
+	}
+
+	return payload;
+}
 
 struct InsertionIndex
 from_cli(struct ChildListIndex* cli)
