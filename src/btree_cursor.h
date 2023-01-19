@@ -25,7 +25,7 @@ enum btree_e cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 enum btree_e cursor_restore(
 	struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_restore);
 
-enum btree_e cursor_traverse_to(struct Cursor* cursor, int key, char* found);
+enum btree_e cursor_traverse_to(struct Cursor* cursor, u32 key, char* found);
 enum btree_e cursor_traverse_to_ex(
 	struct Cursor* cursor, void* key, u32 key_size, char* found);
 enum btree_e cursor_traverse_largest(struct Cursor* cursor);

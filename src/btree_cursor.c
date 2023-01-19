@@ -183,47 +183,6 @@ end:
 	return result;
 }
 
-enum btree_e
-cursor_traverse_to(struct Cursor* cursor, int key, char* found)
-{
-	int child_key_index = 0;
-	enum btree_e result = BTREE_OK;
-	struct NodeView nv = {0};
-
-	result = noderc_acquire(cursor_rcer(cursor), &nv);
-	if( result != BTREE_OK )
-		goto end; // TODO: No-mem
-
-	do
-	{
-		result = noderc_reinit_read(
-			cursor_rcer(cursor), &nv, cursor->current_page_id);
-		if( result != BTREE_OK )
-			goto end;
-
-		child_key_index = btu_binary_search_keys(
-			nv_node(&nv)->keys, node_num_keys(nv_node(&nv)), key, found);
-
-		btu_init_keylistindex_from_index(
-			&cursor->current_key_index, nv_node(&nv), child_key_index);
-
-		result = cursor_push(cursor);
-		if( result != BTREE_OK )
-			goto end;
-
-		if( !node_is_leaf(nv_node(&nv)) )
-		{
-			result = read_cell_page(cursor, nv_node(&nv), child_key_index);
-			if( result != BTREE_OK )
-				goto end;
-		}
-	} while( !node_is_leaf(nv_node(&nv)) );
-
-end:
-	noderc_release(cursor_rcer(cursor), &nv);
-	return result;
-}
-
 struct BTreeCompareContext
 compare_context_init(struct Cursor* cursor)
 {
@@ -237,6 +196,12 @@ compare_context_init(struct Cursor* cursor)
 }
 
 enum btree_e
+cursor_traverse_to(struct Cursor* cursor, u32 key, char* found)
+{
+	return cursor_traverse_to_ex(cursor, &key, sizeof(key), found);
+}
+
+enum btree_e
 cursor_traverse_to_ex(
 	struct Cursor* cursor, void* key, u32 key_size, char* found)
 {
@@ -244,6 +209,7 @@ cursor_traverse_to_ex(
 	u32 child_key_index = 0;
 	struct NodeView nv = {0};
 	struct BTreeCompareContext ctx = compare_context_init(cursor);
+	bool stop_on_found = cursor->tree->type == BTREE_INDEX;
 	*found = 0;
 
 	result = noderc_acquire(cursor_rcer(cursor), &nv);
@@ -275,14 +241,14 @@ cursor_traverse_to_ex(
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node_is_leaf(nv_node(&nv)) && !(*found) )
+		if( !node_is_leaf(nv_node(&nv)) && (!stop_on_found || !(*found)) )
 		{
 			result = read_cell_page(cursor, nv_node(&nv), child_key_index);
 			if( result != BTREE_OK )
 				goto end;
 		}
 		// TODO: Only break if ibtree
-	} while( !node_is_leaf(nv_node(&nv)) && !(*found) );
+	} while( !node_is_leaf(nv_node(&nv)) && (!stop_on_found || !(*found)) );
 
 end:
 	noderc_release(cursor_rcer(cursor), &nv);

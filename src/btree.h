@@ -16,6 +16,27 @@ enum btree_e btree_init(
 	u32 root_page_id);
 enum btree_e btree_deinit(struct BTree* tree);
 
+int btree_compare(
+	void* compare_context,
+	void* cmp_window,
+	u32 cmp_window_size,
+	u32 cmp_total_size,
+	void* right,
+	u32 right_size,
+	u32 bytes_compared,
+	u32* out_bytes_compared,
+	u32* out_key_size_remaining);
+
+void btree_compare_reset(void* compare_context);
+
+byte* btree_keyof(
+	void* compare_context,
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page);
+
 enum btree_e btree_insert(struct BTree*, int key, void* data, int data_size);
 
 /**

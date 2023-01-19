@@ -110,6 +110,10 @@ btree_init(
 
 	tree->type = BTREE_TBL;
 
+	tree->compare = &btree_compare;
+	tree->reset_compare = &btree_compare_reset;
+	tree->keyof = &btree_keyof;
+
 	// Arbitrary 4*12 is approximately 4 entries that overflow.
 	// 1 int for cell size, 2 more for overflow page meta.
 	if( pager->page_size < btree_min_page_size() )
@@ -138,6 +142,52 @@ enum btree_e
 btree_deinit(struct BTree* tree)
 {
 	return BTREE_OK;
+}
+
+int
+btree_compare(
+	void* compare_context,
+	void* cmp_window,
+	u32 cmp_window_size,
+	u32 cmp_total_size,
+	void* right,
+	u32 right_size,
+	u32 bytes_compared,
+	u32* out_bytes_compared,
+	u32* out_key_size_remaining)
+{
+	// Assumes key fits in entire window.
+	// Assumes key is a pointer to u32
+	assert(cmp_window_size == sizeof(u32));
+	u32 left_val = *(u32*)cmp_window;
+	u32 right_val = *(u32*)right;
+
+	*out_bytes_compared = cmp_window_size;
+	*out_key_size_remaining = 0;
+
+	if( left_val == right_val )
+		return 0;
+	else
+		return left_val < right_val ? -1 : 1;
+}
+
+void
+btree_compare_reset(void* compare_context)
+{}
+
+byte*
+btree_keyof(
+	void* compare_context,
+	struct BTreeNode* node,
+	u32 index,
+	u32* out_size,
+	u32* out_total_size,
+	u32* out_follow_page)
+{
+	*out_size = sizeof(node->keys[index].key);
+	*out_total_size = sizeof(node->keys[index].key);
+	*out_follow_page = 0;
+	return (byte*)&node->keys[index].key;
 }
 
 enum btree_e
