@@ -179,42 +179,39 @@ cursor_traverse_to(struct Cursor* cursor, int key, char* found)
 {
 	int child_key_index = 0;
 	enum btree_e result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
+	struct NodeView nv = {0};
 
-	result = btpage_err(page_create(cursor->tree->pager, &page));
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
 	if( result != BTREE_OK )
 		goto end; // TODO: No-mem
 
 	do
 	{
-		result = btree_node_init_from_read(
-			&node, page, cursor->tree->pager, cursor->current_page_id);
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &nv, cursor->current_page_id);
 		if( result != BTREE_OK )
 			goto end;
 
 		child_key_index = btu_binary_search_keys(
-			node.keys, node.header->num_keys, key, found);
+			nv_node(&nv)->keys, node_num_keys(nv_node(&nv)), key, found);
 
 		btu_init_keylistindex_from_index(
-			&cursor->current_key_index, &node, child_key_index);
+			&cursor->current_key_index, nv_node(&nv), child_key_index);
 
 		result = cursor_push(cursor);
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node.header->is_leaf )
+		if( !node_is_leaf(nv_node(&nv)) )
 		{
-			result = read_cell_page(cursor, &node, child_key_index);
+			result = read_cell_page(cursor, nv_node(&nv), child_key_index);
 			if( result != BTREE_OK )
 				goto end;
 		}
-	} while( !node.header->is_leaf );
+	} while( !node_is_leaf(nv_node(&nv)) );
 
 end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
-
+	noderc_release(cursor_rcer(cursor), &nv);
 	return result;
 }
 
@@ -275,13 +272,12 @@ enum btree_e
 cursor_traverse_largest(struct Cursor* cursor)
 {
 	enum btree_e result = BTREE_OK;
-	struct Page* page = NULL;
-	struct BTreeNode node = {0};
 	struct CursorBreadcrumb crumb = {0};
+	struct NodeView nv = {0};
 
-	result = btpage_err(page_create(cursor->tree->pager, &page));
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
 	if( result != BTREE_OK )
-		goto end; // TODO: No-mem
+		goto end;
 
 	do
 	{
@@ -289,20 +285,19 @@ cursor_traverse_largest(struct Cursor* cursor)
 		if( result != BTREE_OK )
 			goto end;
 
-		result = btree_node_init_from_read(
-			&node, page, cursor->tree->pager, crumb.page_id);
+		result = noderc_reinit_read(cursor_rcer(cursor), &nv, crumb.page_id);
 		if( result != BTREE_OK )
 			goto end;
 
-		if( node.header->is_leaf )
+		if( node_is_leaf(nv_node(&nv)) )
 		{
-			cursor->current_key_index.index = node.header->num_keys - 1;
+			cursor->current_key_index.index = node_num_keys(nv_node(&nv)) - 1;
 			cursor->current_key_index.mode = KLIM_INDEX;
 			cursor->current_page_id = crumb.page_id;
 		}
 		else
 		{
-			cursor->current_key_index.index = node.header->num_keys;
+			cursor->current_key_index.index = node_num_keys(nv_node(&nv));
 			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
 			cursor->current_page_id = crumb.page_id;
 		}
@@ -311,18 +306,17 @@ cursor_traverse_largest(struct Cursor* cursor)
 		if( result != BTREE_OK )
 			goto end;
 
-		if( !node.header->is_leaf )
+		if( !node_is_leaf(nv_node(&nv)) )
 		{
-			result =
-				read_cell_page(cursor, &node, cursor->current_key_index.index);
+			result = read_cell_page(
+				cursor, nv_node(&nv), cursor->current_key_index.index);
 			if( result != BTREE_OK )
 				goto end;
 		}
-	} while( !node.header->is_leaf );
+	} while( !node_is_leaf(nv_node(&nv)) );
 
 end:
-	if( page )
-		page_destroy(cursor->tree->pager, page);
+	noderc_release_n(cursor_rcer(cursor), 1, &nv);
 
 	return result;
 }
