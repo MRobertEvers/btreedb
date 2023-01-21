@@ -45,7 +45,7 @@ enum btree_e btree_node_read_at(
 	void* buffer,
 	u32 buffer_size);
 
-enum btree_e btree_node_read_size_at(
+enum btree_e btree_node_payload_size_at(
 	struct BTree* tree, struct BTreeNode* node, u32 index, u32* out_size);
 
 #endif

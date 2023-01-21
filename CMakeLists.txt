@@ -28,6 +28,7 @@ add_executable(db
     src/btree_overflow.c
     src/serialization.c
     src/noderc.c
+    src/schema.c
     src/buffer_writer.c
 )
 

@@ -143,16 +143,36 @@ btree_node_read_at(
 }
 
 enum btree_e
-btree_node_read_size_at(
+btree_node_payload_size_at(
 	struct BTree* tree, struct BTreeNode* node, u32 index, u32* out_size)
 {
+	enum btree_e result = BTREE_OK;
 	byte* cell_buffer = btu_get_cell_buffer(node, index);
 	// TODO: Not this
 	u32 cell_buffer_size = btu_calc_highwater_offset(node, 0) - cell_buffer;
 
-	struct BTreeCellInline cell = {0};
-	btree_cell_read_inline(
-		cell_buffer, cell_buffer_size, &cell, NULL, 0, out_size);
+	char is_overflow_cell = btree_pkey_is_cell_type(
+		btu_get_cell_flags(node, index), PKEY_FLAG_CELL_TYPE_OVERFLOW);
+
+	if( is_overflow_cell )
+	{
+		struct BTreeCellOverflow cell = {0};
+		struct BufferReader reader = {0};
+
+		btree_cell_init_overflow_reader(&reader, cell_buffer, cell_buffer_size);
+
+		result = btree_cell_read_overflow_ex(&reader, &cell, NULL, 0);
+		if( result != BTREE_OK )
+			return result;
+
+		*out_size = cell.total_size;
+	}
+	else
+	{
+		struct BTreeCellInline cell = {0};
+		btree_cell_read_inline(
+			cell_buffer, cell_buffer_size, &cell, NULL, 0, out_size);
+	}
 
 	return BTREE_OK;
 }

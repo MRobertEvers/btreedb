@@ -5,6 +5,7 @@
 #include "ibtree.h"
 #include "noderc.h"
 #include "pager_ops_cstd.h"
+#include "schema.h"
 #include "serialization.h"
 
 #include <assert.h>
@@ -21,16 +22,13 @@ struct MyRecordType
 	u32 age;
 };
 
-static int
-min(int left, int right)
-{
-	return left < right ? left : right;
-}
-
 u32
 serialize_my_record(struct MyRecordType* rc, byte* buffer, u32 buffer_size)
 {
 	byte* ptr = buffer;
+
+	ser_write_32bit_le(ptr, rc->age);
+	ptr += 4;
 
 	ser_write_32bit_le(ptr, rc->email_size);
 	ptr += 4;
@@ -41,9 +39,6 @@ serialize_my_record(struct MyRecordType* rc, byte* buffer, u32 buffer_size)
 	ptr += 4;
 	memcpy(ptr, rc->name, rc->name_size);
 	ptr += rc->name_size;
-
-	ser_write_32bit_le(ptr, rc->age);
-	ptr += 4;
 
 	return ptr - buffer;
 }
@@ -56,6 +51,9 @@ deserialize_my_record(struct MyRecordType* rc, byte* buffer, u32 buffer_size)
 
 	char temp[sizeof(rc->email_size)] = {0};
 	buffer_reader_read(&rdr, temp, sizeof(temp));
+	ser_read_32bit_le(&rc->age, temp);
+
+	buffer_reader_read(&rdr, temp, sizeof(temp));
 	ser_read_32bit_le(&rc->email_size, temp);
 	buffer_reader_read(&rdr, rc->email, rc->email_size);
 
@@ -63,104 +61,7 @@ deserialize_my_record(struct MyRecordType* rc, byte* buffer, u32 buffer_size)
 	ser_read_32bit_le(&rc->name_size, temp);
 	buffer_reader_read(&rdr, rc->name, rc->name_size);
 
-	buffer_reader_read(&rdr, temp, sizeof(temp));
-	ser_read_32bit_le(&rc->age, temp);
-
 	return rdr.bytes_read;
-}
-
-struct CompareMyRecordContext
-{
-	byte key_size_buf[4];
-	u32 key_size_len;
-
-	byte key_buf[sizeof(((struct MyRecordType*)0)->email)];
-	u32 key_len;
-};
-
-static int
-compare_rr(
-	void* compare_context,
-	void* cmp_window,
-	u32 cmp_window_size,
-	u32 cmp_total_size,
-	void* right,
-	u32 right_size,
-	u32 bytes_compared,
-	u32* out_bytes_compared,
-	u32* out_key_size_remaining)
-{
-	struct CompareMyRecordContext* ctx =
-		(struct CompareMyRecordContext*)compare_context;
-
-	if( *out_key_size_remaining == 0 )
-	{
-		u32 right_key_size = 0;
-		ser_read_32bit_le(&right_key_size, right);
-		*out_key_size_remaining = right_key_size;
-	}
-
-	// Key is right at the front
-	u32 window_offset = 0;
-	u32 wnd_key_size = 0;
-
-	byte* ptr = cmp_window;
-
-	while( ctx->key_size_len < 4 && window_offset < cmp_window_size )
-	{
-		ctx->key_size_buf[ctx->key_size_len] = ptr[0];
-		ptr += 1;
-		ctx->key_size_len += 1;
-		window_offset += 1;
-	}
-
-	ser_read_32bit_le(&wnd_key_size, ctx->key_size_buf);
-
-	while( ctx->key_len < wnd_key_size && window_offset < cmp_window_size )
-	{
-		ctx->key_buf[ctx->key_len] = ptr[0];
-		ptr += 1;
-		ctx->key_len += 1;
-		window_offset += 1;
-	}
-
-	*out_key_size_remaining = ctx->key_len;
-	*out_bytes_compared = window_offset;
-
-	// TODO: Error if we run out of bytes
-	// TODO: Also could eagerly compare bytes but that is harder to keep track
-	// of. Just load all the bytes into mem and do the cmp all at once.
-	if( ctx->key_len == wnd_key_size )
-	{
-		u32 right_key_size = 0;
-		ser_read_32bit_le(&right_key_size, right);
-		byte* rptr = (byte*)right;
-		rptr += 4;
-		u32 rem = *out_key_size_remaining;
-
-		u32 cmp_bytes = min(right_key_size, wnd_key_size);
-		int cmp = memcmp(ctx->key_buf, rptr, cmp_bytes);
-		*out_key_size_remaining -= cmp_bytes;
-		if( cmp != 0 )
-			return cmp < 0 ? -1 : 1;
-		rem = *out_key_size_remaining;
-		if( rem == 0 && cmp_bytes == wnd_key_size )
-			return 0;
-		else if( rem == 0 && cmp_bytes != wnd_key_size )
-			return 1;
-		else
-			return -1;
-	}
-	else
-	{
-		return 0;
-	}
-}
-
-static void
-reset_compare(void* compare_context)
-{
-	memset(compare_context, 0x00, sizeof(struct CompareMyRecordContext));
 }
 
 int
@@ -170,12 +71,28 @@ main()
 	struct BTreeNodeRC rcer = {0};
 	struct Pager* pager = NULL;
 	struct PageCache* cache = NULL;
+
+	remove("test.db");
 	page_cache_create(&cache, 10);
-	pager_cstd_create(&pager, cache, "test.db", 0x1000);
+	u32 page_size = btree_min_page_size() + 1 * 4;
+	pager_cstd_create(&pager, cache, "test.db", page_size);
 	noderc_init(&rcer, pager);
 
 	btree_alloc(&tree);
-	ibtree_init(tree, pager, &rcer, 1, &compare_rr, &reset_compare);
+	ibtree_init(tree, pager, &rcer, 1, &schema_compare, &schema_reset_compare);
+
+	struct Schema schema = {
+		.key_offset = 4,
+	};
+
+	schema.nkeytypes = 1;
+	schema.key_types[0] = SCHEMA_KEY_TYPE_VARSIZE;
+
+	struct SchemaCompareContext ctx = {
+		.schema = schema,
+		.curr_key = 0,
+		.initted = false,
+		.type = PAYLOAD_COMPARE_TYPE_RECORD};
 
 	char alice[] = "alice";
 	char alice_email[] = "alice@gmail.com";
@@ -184,7 +101,6 @@ main()
 	char candace[] = "candace";
 	char candance_email[] = "candace@gmail.com";
 	byte buffer[0x500] = {0};
-	struct CompareMyRecordContext ctx = {0};
 	struct MyRecordType r = {0};
 	u32 len;
 	enum btree_e result;
@@ -233,6 +149,8 @@ main()
 
 	byte read_buf[0x500];
 
+	ctx.initted = false;
+	ctx.type = PAYLOAD_COMPARE_TYPE_KEY;
 	byte key_buf[sizeof(candance_email) + sizeof(u32)] = {0};
 	memcpy(key_buf + 4, candance_email, sizeof(candance_email));
 	ser_write_32bit_le(key_buf, sizeof(candance_email));

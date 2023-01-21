@@ -81,7 +81,7 @@ btree_op_select_prepare(struct OpSelection* op)
 	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
 
 	u32 ind = cursor->current_key_index.index;
-	result = btree_node_read_size_at(
+	result = btree_node_payload_size_at(
 		cursor_tree(cursor), nv_node(&nv), ind, &op->data_size);
 	if( result != BTREE_OK )
 		goto end;

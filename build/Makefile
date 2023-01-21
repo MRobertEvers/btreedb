@@ -823,6 +823,30 @@ src/pager_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.s
 .PHONY : src/pager_test.c.s
 
+src/schema.o: src/schema.c.o
+.PHONY : src/schema.o
+
+# target to build an object file
+src/schema.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.o
+.PHONY : src/schema.c.o
+
+src/schema.i: src/schema.c.i
+.PHONY : src/schema.i
+
+# target to preprocess a source file
+src/schema.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.i
+.PHONY : src/schema.c.i
+
+src/schema.s: src/schema.c.s
+.PHONY : src/schema.s
+
+# target to generate assembly for a file
+src/schema.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.s
+.PHONY : src/schema.c.s
+
 src/serialization.o: src/serialization.c.o
 .PHONY : src/serialization.o
 
@@ -986,6 +1010,9 @@ help:
 	@echo "... src/pager_test.o"
 	@echo "... src/pager_test.i"
 	@echo "... src/pager_test.s"
+	@echo "... src/schema.o"
+	@echo "... src/schema.i"
+	@echo "... src/schema.s"
 	@echo "... src/serialization.o"
 	@echo "... src/serialization.i"
 	@echo "... src/serialization.s"
