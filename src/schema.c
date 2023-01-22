@@ -27,56 +27,6 @@ struct Comparison
 	u32* out_key_size_remaining;
 };
 
-// u32
-// varsize_feed(struct SchemaCompareContext* ctx, struct Comparison* cmp)
-// {
-// 	byte* ptr = cmp->cmp_wnd;
-// 	ptr += cmp->cmp_offset;
-
-// 	while( ctx->key_len_buf_len < 4 && cmp->cmp_offset < cmp->cmp_wnd_size )
-// 	{
-// 		ctx->key_len_buf[ctx->key_len_buf_len] = ptr[0];
-// 		ptr += 1;
-// 		ctx->key_len_buf_len += 1;
-// 		cmp->cmp_offset += 1;
-// 	}
-
-// 	if( ctx->key_len_buf_len == 4 )
-// 	{
-// 		ser_read_32bit_le(&ctx->key_size, ctx->key_len_buf);
-// 		return ctx->key_size;
-// 	}
-// 	else
-// 	{
-// 		// Return 1 if we don't know the size yet.
-// 		return 1;
-// 	}
-// }
-
-// u32
-// keysize(struct SchemaCompareContext* ctx, struct Comparison* cmp)
-// {
-// 	if( ctx->key_len_buf_len == 4 )
-// 		return ctx->key_size;
-
-// 	switch( ctx->schema.key_type )
-// 	{
-// 	case SCHEMA_KEY_TYPE_FIXED:
-// 		ctx->key_size = ctx->schema.key_size;
-// 		//  Set this to 4 so we don't keep re-entering this switch.
-// 		ctx->key_len_buf_len = 4;
-// 		break;
-// 	case SCHEMA_KEY_TYPE_VARSIZE:
-// 		ctx->key_size = varsize_feed(ctx, cmp);
-// 		break;
-// 	default:
-// 		assert(0);
-// 		break;
-// 	}
-
-// 	return ctx->key_size;
-// }
-
 struct KeyBytes
 {
 	byte* bytes;
@@ -170,63 +120,6 @@ keybytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	return bytes;
 }
 
-enum adjust_offset_e
-{
-	ADJUST_OFFSET_BYTES_AVAILABLE,
-	ADJUST_OFFSET_NEED_MORE_DATA,
-};
-
-// static int
-// compare_fixed_size(
-// 	struct SchemaCompareContext* compare_context, struct Comparison* cmp)
-// {
-// 	return 0;
-// }
-
-// static int
-// compare_varsize(
-// 	struct SchemaCompareContext* compare_context, struct Comparison* cmp)
-// {
-// 	byte* lptr = (byte*)cmp->cmp_wnd;
-// 	byte* rptr = (byte*)cmp->payload;
-// 	if( compare_context->type == PAYLOAD_COMPARE_TYPE_RECORD )
-// 		rptr += compare_context->schema.key_offset;
-
-// 	u32 rkey_size = 0;
-// 	ser_read_32bit_le(&rkey_size, rptr);
-// 	rptr += 4;
-
-// 	if( cmp->bytes_compared + cmp->cmp_offset >=
-// 		compare_context->schema.key_offset )
-// 	{
-// 		u32 key_offset = (cmp->bytes_compared + cmp->cmp_offset) -
-// 						 compare_context->schema.key_offset;
-
-// 		u32 cmp_size =
-// 			min(rkey_size - key_offset, compare_context->key_size - key_offset);
-// 		*cmp->out_bytes_compared = cmp_size;
-
-// 		int cmp_result = memcmp(lptr, rptr, cmp_size);
-
-// 		u32 rrem = rkey_size - key_offset - cmp_size;
-// 		*cmp->out_key_size_remaining = rrem;
-// 		u32 lrem = compare_context->key_size - key_offset - cmp_size;
-
-// 		if( cmp_result != 0 )
-// 			return cmp_result < 0 ? -1 : 1;
-// 		if( rrem == 0 && lrem == 0 )
-// 			return 0;
-// 		else if( rrem == 0 && lrem != 0 )
-// 			return 1;
-// 		else
-// 			return -1;
-// 	}
-// 	else
-// 	{
-// 		return 0;
-// 	}
-// }
-
 static void
 init_if_not(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 {
@@ -304,6 +197,7 @@ schema_compare(
 		cmp_bytes = cmpbytes(ctx, &cmp);
 		if( cmp_bytes.not_in_window )
 		{
+			// The only bytes available are not comparable key bytes.
 			*cmp.out_key_size_remaining = 1;
 			*cmp.out_bytes_compared = cmp_window_size;
 			return 0;
