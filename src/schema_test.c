@@ -273,6 +273,7 @@ schema_comparer_test(void)
 	u32 nbytes_compared = 0;
 	u32 nkey_bytes_remaining = 0;
 	u32 window_size = 1;
+	schema_reset_compare(&ctx);
 	int compare_result = schema_compare(
 		&ctx,
 		window,
