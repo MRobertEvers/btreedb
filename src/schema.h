@@ -38,6 +38,7 @@ struct VarsizeKeyState
 	byte len_bytes[sizeof(u32)];
 	u8 len_len;
 	u32 key_size;
+	bool ready;
 	// We keep track of the total size of this key already read
 	// because we need to find the same offset in the key buffer.
 	u32 consumed_size;
@@ -45,7 +46,6 @@ struct VarsizeKeyState
 	// Offset of this key in the key buffer.
 	u32 rkey_size;
 	u32 rkey_offset;
-	bool ready;
 };
 
 struct SchemaCompareContext

@@ -829,6 +829,7 @@ src/schema.o: src/schema.c.o
 # target to build an object file
 src/schema.c.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.o
 .PHONY : src/schema.c.o
 
 src/schema.i: src/schema.c.i
@@ -837,6 +838,7 @@ src/schema.i: src/schema.c.i
 # target to preprocess a source file
 src/schema.c.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.i
 .PHONY : src/schema.c.i
 
 src/schema.s: src/schema.c.s
@@ -845,7 +847,32 @@ src/schema.s: src/schema.c.s
 # target to generate assembly for a file
 src/schema.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.s
 .PHONY : src/schema.c.s
+
+src/schema_test.o: src/schema_test.c.o
+.PHONY : src/schema_test.o
+
+# target to build an object file
+src/schema_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema_test.c.o
+.PHONY : src/schema_test.c.o
+
+src/schema_test.i: src/schema_test.c.i
+.PHONY : src/schema_test.i
+
+# target to preprocess a source file
+src/schema_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema_test.c.i
+.PHONY : src/schema_test.c.i
+
+src/schema_test.s: src/schema_test.c.s
+.PHONY : src/schema_test.s
+
+# target to generate assembly for a file
+src/schema_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema_test.c.s
+.PHONY : src/schema_test.c.s
 
 src/serialization.o: src/serialization.c.o
 .PHONY : src/serialization.o
@@ -1013,6 +1040,9 @@ help:
 	@echo "... src/schema.o"
 	@echo "... src/schema.i"
 	@echo "... src/schema.s"
+	@echo "... src/schema_test.o"
+	@echo "... src/schema_test.i"
+	@echo "... src/schema_test.s"
 	@echo "... src/serialization.o"
 	@echo "... src/serialization.i"
 	@echo "... src/serialization.s"

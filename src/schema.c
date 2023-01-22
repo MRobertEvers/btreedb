@@ -81,7 +81,11 @@ struct KeyBytes
 {
 	byte* bytes;
 	u32 nbytes;
+
+	// Used for cmp key only.
+	u32 lwnd;
 	bool not_in_window;
+	bool has_more;
 };
 
 struct KeyBytes
@@ -95,8 +99,8 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	//
 	//   x (bytes compared)
 	//      w (bytes compared + window size)
-	u32 abs_lwnd = cmp->bytes_compared;
-	u32 lwnd = 0;
+	u32 abs_lwnd = cmp->bytes_compared + cmp->cmp_offset;
+	u32 lwnd = cmp->cmp_offset;
 
 	if( abs_lwnd < ctx->schema.key_offset )
 	{
@@ -111,19 +115,18 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 
 	// We are now passed th[[]]
 	byte* cmp_ptr = cmp->cmp_wnd;
-	dbg_print_buffer(cmp_ptr, 12);
 	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
 	if( !ctx->varkeys[ctx->curr_key].ready )
 	{
 		// Try to read key.
 		while( lwnd < cmp->cmp_wnd_size &&
-			   keystate->key_size < sizeof(keystate->len_bytes) )
+			   keystate->len_len < sizeof(keystate->len_bytes) )
 		{
-			keystate->len_bytes[keystate->key_size++] = cmp_ptr[lwnd];
+			keystate->len_bytes[keystate->len_len++] = cmp_ptr[lwnd];
 			lwnd += 1;
 		}
 
-		if( keystate->key_size == sizeof(keystate->len_bytes) )
+		if( keystate->len_len == sizeof(keystate->len_bytes) )
 		{
 			ser_read_32bit_le(&keystate->key_size, keystate->len_bytes);
 			ctx->varkeys[ctx->curr_key].ready = true;
@@ -136,7 +139,14 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 		bytes.nbytes =
 			min(cmp->cmp_wnd_size - lwnd,
 				keystate->key_size - keystate->consumed_size);
+		bytes.has_more = (lwnd + bytes.nbytes) < cmp->cmp_wnd_size;
 	}
+	else
+	{
+		bytes.not_in_window = true;
+	}
+
+	bytes.lwnd = lwnd;
 
 	return bytes;
 }
@@ -236,13 +246,14 @@ init_if_not(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 			if( ctx->schema.key_types[i] == SCHEMA_KEY_TYPE_VARSIZE )
 			{
 				u32 rkey_size = 0;
-				ser_read_32bit_le(&rkey_size, cmp->payload);
+				ser_read_32bit_le(&rkey_size, rptr);
 				offset += 4;
+				rptr += 4;
 
 				keystate->rkey_offset = offset;
 				keystate->rkey_size = rkey_size;
 				offset += rkey_size;
-				ctx->nvarkeys += 1;
+				rptr += rkey_size;
 			}
 			else
 			{
@@ -250,6 +261,7 @@ init_if_not(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 			}
 		}
 
+		ctx->nvarkeys = ctx->schema.nkeytypes;
 		ctx->initted = true;
 	}
 }
@@ -273,51 +285,79 @@ schema_compare(
 		.cmp_wnd = cmp_window,
 		.cmp_wnd_size = cmp_window_size,
 		.cmp_total_size = cmp_total_size,
+		.cmp_offset = 0,
 		.payload = payload,
 		.payload_size = payload_size,
 		.bytes_compared = bytes_compared,
 		.out_bytes_compared = out_bytes_compared,
 		.out_key_size_remaining = out_key_size_remaining};
+	*cmp.out_bytes_compared = 0;
 
+	struct KeyBytes cmp_bytes = {0};
+	struct KeyBytes key_bytes = {0};
 	init_if_not(ctx, &cmp);
 
-	struct KeyBytes cmp_bytes = cmpbytes(ctx, &cmp);
-	if( cmp_bytes.not_in_window )
+	int cmp_result = 0;
+	do
 	{
-		*cmp.out_key_size_remaining = 1;
-		*cmp.out_bytes_compared = cmp_window_size;
-		return 0;
-	}
+		cmp_bytes = cmpbytes(ctx, &cmp);
+		if( cmp_bytes.not_in_window )
+		{
+			*cmp.out_key_size_remaining = 1;
+			*cmp.out_bytes_compared = cmp_window_size;
+			return 0;
+		}
 
-	struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
-	struct KeyBytes key_bytes = keybytes(ctx, &cmp);
+		struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
+		key_bytes = keybytes(ctx, &cmp);
 
-	int nbytes_to_cmp = min(key_bytes.nbytes, cmp_bytes.nbytes);
-	int cmp_result = memcmp(cmp_bytes.bytes, key_bytes.bytes, nbytes_to_cmp);
+		int nbytes_to_cmp = min(key_bytes.nbytes, cmp_bytes.nbytes);
+		cmp_result = memcmp(cmp_bytes.bytes, key_bytes.bytes, nbytes_to_cmp);
 
-	cmp_keystate->consumed_size += nbytes_to_cmp;
-	if( cmp_keystate->consumed_size == cmp_keystate->rkey_size &&
-		ctx->curr_key == ctx->nvarkeys - 1 )
-		*cmp.out_key_size_remaining = 0;
-	else
-		*cmp.out_key_size_remaining = 1;
+		cmp_keystate->consumed_size += nbytes_to_cmp;
 
-	if( cmp_keystate->consumed_size == cmp_keystate->rkey_size )
-		ctx->curr_key += 1;
+		if( cmp_keystate->consumed_size == cmp_keystate->rkey_size )
+			ctx->curr_key += 1;
 
-	*cmp.out_bytes_compared = nbytes_to_cmp;
+		// Check if the rkey is completely done.
+		// Have we consumed all the rkey bytes and we are on the last key.
+		bool rkey_remaining;
+		if( cmp_keystate->consumed_size == cmp_keystate->rkey_size &&
+			ctx->curr_key == ctx->nvarkeys )
+			rkey_remaining = false;
+		else
+			rkey_remaining = true;
 
-	if( cmp_result != 0 )
-		return cmp_result;
+		// Check if the cmp key is completely done.
+		// Have we consumed all the cmp key bytes and we are on the last key.
+		bool cmp_remaining;
+		if( cmp_keystate->consumed_size == cmp_keystate->key_size &&
+			ctx->curr_key == ctx->nvarkeys )
+			cmp_remaining = false;
+		else
+			cmp_remaining = true;
 
-	if( *cmp.out_key_size_remaining == 0 )
-		// The key is longer than the stored bytes.
-		return -1;
-	else if( cmp_keystate->consumed_size == cmp_keystate->key_size )
-		// The stored bytes are longer than the key
-		return 1;
-	else
-		return 0;
+		*cmp.out_bytes_compared += cmp_bytes.lwnd + nbytes_to_cmp;
+		cmp.cmp_offset += cmp_bytes.lwnd + nbytes_to_cmp;
+		*cmp.out_key_size_remaining = rkey_remaining ? 1 : 0;
+
+		if( cmp_result != 0 )
+			return cmp_result;
+
+		if( rkey_remaining && cmp_remaining )
+		{} // Do nothing... keep comparing.
+		else if( rkey_remaining )
+			// The key is longer than the stored bytes.
+			return -1;
+		else if( cmp_remaining )
+			// The stored bytes are longer than the key
+			return 1;
+
+		// There are remaining bytes for both keys. Wait for caller to call
+		// again.
+	} while( cmp_bytes.has_more );
+
+	return cmp_result;
 }
 
 void
@@ -328,4 +368,14 @@ schema_reset_compare(void* compare_context)
 		(struct SchemaCompareContext*)compare_context;
 
 	ctx->curr_key = 0;
+
+	for( int i = 0; i < ctx->nvarkeys; i++ )
+	{
+		ctx->varkeys[i].len_len = 0;
+		memset(
+			ctx->varkeys[i].len_bytes, 0x00, sizeof(ctx->varkeys[i].len_bytes));
+		ctx->varkeys[i].ready = false;
+		ctx->varkeys[i].consumed_size = 0;
+		ctx->varkeys[i].key_size = 0;
+	}
 }

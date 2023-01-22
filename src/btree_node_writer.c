@@ -42,17 +42,6 @@ btree_node_write(
 		WRITER_EX_MODE_RAW);
 }
 
-// enum btree_e
-// node_write_unknown(
-// 	struct BTreeNode* node,
-// 	struct Pager* pager,
-// 	struct InsertionIndex* insertion_index,
-// 	cell_type_e cell_type,
-// 	u32 key,
-// 	void* data,
-// 	u32 data_size)
-// {}
-
 enum btree_e
 btree_node_write_ex(
 	struct BTreeNode* node,
