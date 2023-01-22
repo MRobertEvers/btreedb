@@ -298,6 +298,7 @@ schema_compare(
 	init_if_not(ctx, &cmp);
 
 	int cmp_result = 0;
+	int nbytes_to_cmp = 0;
 	do
 	{
 		cmp_bytes = cmpbytes(ctx, &cmp);
@@ -311,7 +312,7 @@ schema_compare(
 		struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
 		key_bytes = keybytes(ctx, &cmp);
 
-		int nbytes_to_cmp = min(key_bytes.nbytes, cmp_bytes.nbytes);
+		nbytes_to_cmp = min(key_bytes.nbytes, cmp_bytes.nbytes);
 		cmp_result = memcmp(cmp_bytes.bytes, key_bytes.bytes, nbytes_to_cmp);
 
 		cmp_keystate->consumed_size += nbytes_to_cmp;
@@ -355,7 +356,9 @@ schema_compare(
 
 		// There are remaining bytes for both keys. Wait for caller to call
 		// again.
-	} while( cmp_bytes.has_more );
+	} while( cmp_bytes.has_more && nbytes_to_cmp != 0 );
+
+	assert(nbytes_to_cmp != 0);
 
 	return cmp_result;
 }
