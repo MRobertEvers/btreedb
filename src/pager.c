@@ -30,9 +30,6 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	page->page_size = pager->page_size;
 	page->page_buffer = malloc(pager->page_size);
 	memset(page->page_buffer, 0x00, pager->page_size);
-	// char* temp = ((char*)page->page_buffer);
-	// for( int i = 0; i < pager->page_size - 1; i++ )
-	// 	temp[i] = 'a' + (i % (('z' - 'a') + 1));
 
 	return PAGER_OK;
 }
