@@ -56,6 +56,7 @@
 
 enum payload_compare_type_e
 {
+	PAYLOAD_COMPARE_TYPE_INVALID = 0,
 	// We are comparing two records
 	PAYLOAD_COMPARE_TYPE_RECORD,
 	// We are comparing records with a key. I.e. We just have the key bytes.
