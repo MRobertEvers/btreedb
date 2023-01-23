@@ -106,6 +106,7 @@ keybytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 {
 	struct KeyBytes bytes = {0};
 	struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
+	struct RKeyState* r_keystate = &ctx->rkeys[ctx->curr_key];
 
 	// We received some bytes in the cmp window. We have to point
 	// to the corresponding bytes in the key window.
@@ -114,49 +115,61 @@ keybytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	u32 rwnd = cmp_keystate->consumed_size;
 
 	byte* rptr = cmp->payload;
-	bytes.bytes = rptr + cmp_keystate->rkey_offset + rwnd;
-	bytes.nbytes = cmp_keystate->rkey_size - rwnd;
+	bytes.bytes = rptr + r_keystate->rkey_offset + rwnd;
+	bytes.nbytes = r_keystate->rkey_size - rwnd;
 
 	return bytes;
+}
+
+/**
+ * @brief Initialize the rkey offsets to contain the offsets of where the start
+ * of each segment of comparable bytes
+ *
+ * @param ctx
+ * @param cmp
+ */
+static void
+initialize_rkey_offsets(
+	struct SchemaCompareContext* ctx, struct Comparison* cmp)
+{
+	byte* rptr = cmp->payload;
+	u32 offset = 0;
+	if( ctx->type == PAYLOAD_COMPARE_TYPE_RECORD )
+		offset += ctx->schema.key_offset;
+
+	rptr += offset;
+	for( int i = 0; i < ctx->schema.nkeytypes; i++ )
+	{
+		struct RKeyState* keystate = &ctx->rkeys[i];
+
+		memset(keystate, 0x00, sizeof(*keystate));
+		if( ctx->schema.key_types[i] == SCHEMA_KEY_TYPE_VARSIZE )
+		{
+			u32 rkey_size = 0;
+			ser_read_32bit_le(&rkey_size, rptr);
+			offset += 4;
+			rptr += 4;
+
+			keystate->rkey_offset = offset;
+			keystate->rkey_size = rkey_size;
+			offset += rkey_size;
+			rptr += rkey_size;
+		}
+		else
+		{
+			assert(0);
+		}
+	}
+
+	ctx->nvarkeys = ctx->schema.nkeytypes;
+	ctx->initted = true;
 }
 
 static void
 init_if_not(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 {
 	if( !ctx->initted )
-	{
-		byte* rptr = cmp->payload;
-		u32 offset = 0;
-		if( ctx->type == PAYLOAD_COMPARE_TYPE_RECORD )
-			offset += ctx->schema.key_offset;
-
-		rptr += offset;
-		for( int i = 0; i < ctx->schema.nkeytypes; i++ )
-		{
-			struct VarsizeKeyState* keystate = &ctx->varkeys[i];
-
-			memset(keystate, 0x00, sizeof(*keystate));
-			if( ctx->schema.key_types[i] == SCHEMA_KEY_TYPE_VARSIZE )
-			{
-				u32 rkey_size = 0;
-				ser_read_32bit_le(&rkey_size, rptr);
-				offset += 4;
-				rptr += 4;
-
-				keystate->rkey_offset = offset;
-				keystate->rkey_size = rkey_size;
-				offset += rkey_size;
-				rptr += rkey_size;
-			}
-			else
-			{
-				assert(0);
-			}
-		}
-
-		ctx->nvarkeys = ctx->schema.nkeytypes;
-		ctx->initted = true;
-	}
+		initialize_rkey_offsets(ctx, cmp);
 }
 
 int
@@ -204,6 +217,7 @@ schema_compare(
 		}
 
 		struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
+		struct RKeyState* r_keystate = &ctx->rkeys[ctx->curr_key];
 		key_bytes = keybytes(ctx, &cmp);
 
 		nbytes_to_cmp = min(key_bytes.nbytes, cmp_bytes.nbytes);
@@ -211,13 +225,13 @@ schema_compare(
 
 		cmp_keystate->consumed_size += nbytes_to_cmp;
 
-		if( cmp_keystate->consumed_size == cmp_keystate->rkey_size )
+		if( cmp_keystate->consumed_size == r_keystate->rkey_size )
 			ctx->curr_key += 1;
 
 		// Check if the rkey is completely done.
 		// Have we consumed all the rkey bytes and we are on the last key.
 		bool rkey_remaining;
-		if( cmp_keystate->consumed_size == cmp_keystate->rkey_size &&
+		if( cmp_keystate->consumed_size == r_keystate->rkey_size &&
 			ctx->curr_key == ctx->nvarkeys )
 			rkey_remaining = false;
 		else
@@ -264,15 +278,6 @@ schema_reset_compare(void* compare_context)
 	struct SchemaCompareContext* ctx =
 		(struct SchemaCompareContext*)compare_context;
 
+	memset(ctx->varkeys, 0x00, sizeof(*ctx->varkeys) * ctx->nvarkeys);
 	ctx->curr_key = 0;
-
-	for( int i = 0; i < ctx->nvarkeys; i++ )
-	{
-		ctx->varkeys[i].len_len = 0;
-		memset(
-			ctx->varkeys[i].len_bytes, 0x00, sizeof(ctx->varkeys[i].len_bytes));
-		ctx->varkeys[i].ready = false;
-		ctx->varkeys[i].consumed_size = 0;
-		ctx->varkeys[i].key_size = 0;
-	}
 }
