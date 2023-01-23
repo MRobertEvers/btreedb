@@ -55,20 +55,24 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	if( abs_lwnd < ctx->schema.key_offset )
 	{
 		if( abs_lwnd + cmp->cmp_wnd_size >= ctx->schema.key_offset )
+			// Jump forward to the bytes in the window that are are passed the
+			// offset.
 			lwnd += (ctx->schema.key_offset - abs_lwnd);
 		else
 		{
+			// There are no key bytes present.
 			bytes.not_in_window = true;
 			return bytes;
 		}
 	}
 
-	// We are now passed th[[]]
+	// If we are not ready, then we have not received all the varsize size
+	// bytes.
 	byte* cmp_ptr = cmp->cmp_wnd;
 	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
 	if( !ctx->varkeys[ctx->curr_key].ready )
 	{
-		// Try to read key.
+		// Read as many key bytes as available.
 		while( lwnd < cmp->cmp_wnd_size &&
 			   keystate->len_len < sizeof(keystate->len_bytes) )
 		{
@@ -93,6 +97,7 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	}
 	else
 	{
+		// There are no comparable bytes in the window.
 		bytes.not_in_window = true;
 	}
 

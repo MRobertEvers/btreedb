@@ -148,6 +148,11 @@ int schema_compare(
 	u32* out_bytes_compared,
 	u32* out_key_size_remaining);
 
+/**
+ * @brief Reset the state of the compare context for the next cmp key.
+ *
+ * @param compare_context
+ */
 void schema_reset_compare(void* compare_context);
 
 #endif
