@@ -90,9 +90,11 @@ schema_compare_test(void)
 		.key_offset = 4,
 	};
 
-	schema.nkeytypes = 2;
-	schema.key_types[0] = SCHEMA_KEY_TYPE_VARSIZE;
-	schema.key_types[1] = SCHEMA_KEY_TYPE_VARSIZE;
+	schema.nkey_definitions = 2;
+	struct SchemaKeyDefinition key_one_def = {
+		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	schema.key_definitions[0] = key_one_def;
+	schema.key_definitions[1] = key_one_def;
 
 	struct SchemaCompareContext ctx = {
 		.schema = schema,
@@ -231,9 +233,11 @@ schema_comparer_test(void)
 		.key_offset = 4,
 	};
 
-	schema.nkeytypes = 2;
-	schema.key_types[0] = SCHEMA_KEY_TYPE_VARSIZE;
-	schema.key_types[1] = SCHEMA_KEY_TYPE_VARSIZE;
+	schema.nkey_definitions = 2;
+	struct SchemaKeyDefinition key_one_def = {
+		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	schema.key_definitions[0] = key_one_def;
+	schema.key_definitions[1] = key_one_def;
 
 	struct SchemaCompareContext ctx = {
 		.schema = schema,

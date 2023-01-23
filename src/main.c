@@ -85,8 +85,10 @@ main()
 		.key_offset = 4,
 	};
 
-	schema.nkeytypes = 1;
-	schema.key_types[0] = SCHEMA_KEY_TYPE_VARSIZE;
+	schema.nkey_definitions = 1;
+	struct SchemaKeyDefinition key_one_def = {
+		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	schema.key_definitions[0] = key_one_def;
 
 	struct SchemaCompareContext ctx = {
 		.schema = schema,

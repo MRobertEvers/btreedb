@@ -54,6 +54,14 @@
  * [ 0x04, 0x00, 0x00, 0x00, 'w', 'i', 'l', 'l' ]
  */
 
+enum payload_compare_type_e
+{
+	// We are comparing two records
+	PAYLOAD_COMPARE_TYPE_RECORD,
+	// We are comparing records with a key. I.e. We just have the key bytes.
+	PAYLOAD_COMPARE_TYPE_KEY
+};
+
 enum schema_key_type_e
 {
 	SCHEMA_KEY_TYPE_INVALID = 0,
@@ -61,12 +69,11 @@ enum schema_key_type_e
 	SCHEMA_KEY_TYPE_VARSIZE,
 };
 
-enum payload_compare_type_e
+struct SchemaKeyDefinition
 {
-	// We are comparing two records
-	PAYLOAD_COMPARE_TYPE_RECORD,
-	// We are comparing records with a key. I.e. We just have the key bytes.
-	PAYLOAD_COMPARE_TYPE_KEY
+	enum schema_key_type_e type;
+	// Only used if SCHEMA_KEY_TYPE_FIXED
+	u32 size;
 };
 
 /**
@@ -78,8 +85,8 @@ struct Schema
 {
 	u32 key_offset;
 
-	enum schema_key_type_e key_types[4];
-	u8 nkeytypes;
+	struct SchemaKeyDefinition key_definitions[4];
+	u8 nkey_definitions;
 };
 
 /**

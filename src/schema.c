@@ -38,6 +38,41 @@ struct KeyBytes
 	bool has_more;
 };
 
+static u32
+consume_varsize_bytes(
+	struct SchemaCompareContext* ctx, struct Comparison* cmp, u32 lwnd)
+{
+	byte* cmp_ptr = cmp->cmp_wnd;
+	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
+	if( !ctx->varkeys[ctx->curr_key].ready )
+	{
+		// Read as many key bytes as available.
+		while( lwnd < cmp->cmp_wnd_size &&
+			   keystate->len_len < sizeof(keystate->len_bytes) )
+		{
+			keystate->len_bytes[keystate->len_len++] = cmp_ptr[lwnd];
+			lwnd += 1;
+		}
+
+		if( keystate->len_len == sizeof(keystate->len_bytes) )
+		{
+			ser_read_32bit_le(&keystate->key_size, keystate->len_bytes);
+			ctx->varkeys[ctx->curr_key].ready = true;
+		}
+	}
+
+	return lwnd;
+}
+
+static u32
+configure_fixed_key(struct SchemaCompareContext* ctx, struct Comparison* cmp)
+{
+	ctx->varkeys[ctx->curr_key].key_size = ctx->rkeys[ctx->curr_key].rkey_size;
+	ctx->varkeys[ctx->curr_key].ready = true;
+
+	return 0;
+}
+
 struct KeyBytes
 cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 {
@@ -68,25 +103,21 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 
 	// If we are not ready, then we have not received all the varsize size
 	// bytes.
-	byte* cmp_ptr = cmp->cmp_wnd;
-	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
-	if( !ctx->varkeys[ctx->curr_key].ready )
+	switch( ctx->schema.key_definitions[ctx->curr_key].type )
 	{
-		// Read as many key bytes as available.
-		while( lwnd < cmp->cmp_wnd_size &&
-			   keystate->len_len < sizeof(keystate->len_bytes) )
-		{
-			keystate->len_bytes[keystate->len_len++] = cmp_ptr[lwnd];
-			lwnd += 1;
-		}
-
-		if( keystate->len_len == sizeof(keystate->len_bytes) )
-		{
-			ser_read_32bit_le(&keystate->key_size, keystate->len_bytes);
-			ctx->varkeys[ctx->curr_key].ready = true;
-		}
+	case SCHEMA_KEY_TYPE_VARSIZE:
+		// Yes lwnd = , not +=
+		lwnd = consume_varsize_bytes(ctx, cmp, lwnd);
+		break;
+	case SCHEMA_KEY_TYPE_FIXED:
+		configure_fixed_key(ctx, cmp);
+		break;
+	default:
+		assert(0);
 	}
 
+	byte* cmp_ptr = cmp->cmp_wnd;
+	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
 	if( ctx->varkeys[ctx->curr_key].ready )
 	{
 		bytes.bytes = cmp_ptr + lwnd;
@@ -143,14 +174,16 @@ initialize_rkey_offsets(
 		offset += ctx->schema.key_offset;
 
 	rptr += offset;
-	for( int i = 0; i < ctx->schema.nkeytypes; i++ )
+
+	u32 rkey_size = 0;
+	for( int i = 0; i < ctx->schema.nkey_definitions; i++ )
 	{
 		struct RKeyState* keystate = &ctx->rkeys[i];
 
 		memset(keystate, 0x00, sizeof(*keystate));
-		if( ctx->schema.key_types[i] == SCHEMA_KEY_TYPE_VARSIZE )
+		if( ctx->schema.key_definitions[i].type == SCHEMA_KEY_TYPE_VARSIZE )
 		{
-			u32 rkey_size = 0;
+			rkey_size = 0;
 			ser_read_32bit_le(&rkey_size, rptr);
 			offset += 4;
 			rptr += 4;
@@ -162,11 +195,13 @@ initialize_rkey_offsets(
 		}
 		else
 		{
-			assert(0);
+			rkey_size = ctx->schema.key_definitions[i].size;
+			offset += rkey_size;
+			rptr += rkey_size;
 		}
 	}
 
-	ctx->nvarkeys = ctx->schema.nkeytypes;
+	ctx->nvarkeys = ctx->schema.nkey_definitions;
 	ctx->initted = true;
 }
 
