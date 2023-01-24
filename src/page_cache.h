@@ -25,7 +25,7 @@ struct PageCache
 
 // 1. ask pager for a page
 // 2. cache miss
-// 3. pager creates Page struct a
+// 3. pager creates Page struct
 //   - load page
 //   - insert into cache
 //   - evict on no space; crash if no eviction
