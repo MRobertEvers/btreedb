@@ -274,6 +274,30 @@ src/btree_cursor.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cursor.c.s
 .PHONY : src/btree_cursor.c.s
 
+src/btree_cursor_test.o: src/btree_cursor_test.c.o
+.PHONY : src/btree_cursor_test.o
+
+# target to build an object file
+src/btree_cursor_test.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cursor_test.c.o
+.PHONY : src/btree_cursor_test.c.o
+
+src/btree_cursor_test.i: src/btree_cursor_test.c.i
+.PHONY : src/btree_cursor_test.i
+
+# target to preprocess a source file
+src/btree_cursor_test.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cursor_test.c.i
+.PHONY : src/btree_cursor_test.c.i
+
+src/btree_cursor_test.s: src/btree_cursor_test.c.s
+.PHONY : src/btree_cursor_test.s
+
+# target to generate assembly for a file
+src/btree_cursor_test.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_cursor_test.c.s
+.PHONY : src/btree_cursor_test.c.s
+
 src/btree_defs.o: src/btree_defs.c.o
 .PHONY : src/btree_defs.o
 
@@ -974,6 +998,9 @@ help:
 	@echo "... src/btree_cursor.o"
 	@echo "... src/btree_cursor.i"
 	@echo "... src/btree_cursor.s"
+	@echo "... src/btree_cursor_test.o"
+	@echo "... src/btree_cursor_test.i"
+	@echo "... src/btree_cursor_test.s"
 	@echo "... src/btree_defs.o"
 	@echo "... src/btree_defs.i"
 	@echo "... src/btree_defs.s"
