@@ -15,10 +15,6 @@ enum btree_e btpage_err(enum pager_e page_err);
 
 /**
  * @deprecated
- * @brief
- * @param node
- * @param index
- * @param cell
  */
 void btu_read_cell(struct BTreeNode* node, int index, struct CellData* cell);
 

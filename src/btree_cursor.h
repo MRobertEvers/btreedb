@@ -23,6 +23,25 @@ enum btree_e
 cursor_pop_n(struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num);
 enum btree_e cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb);
 
+/**
+ * @brief Move the cursor to the smallest child.
+ *
+ * @param cursor
+ * @param crumb
+ * @return enum btree_e
+ */
+enum btree_e cursor_iter_begin(struct Cursor* cursor);
+
+/**
+ * @brief Move the cursor to point to the next cell in the node or move the
+ * cursor to the next node.
+ *
+ * @param cursor
+ * @param crumb
+ * @return enum btree_e
+ */
+enum btree_e cursor_iter_next(struct Cursor* cursor);
+
 enum btree_e
 cursor_read_current(struct Cursor* cursor, struct NodeView* out_nv);
 
@@ -32,7 +51,22 @@ enum btree_e cursor_restore(
 enum btree_e cursor_traverse_to(struct Cursor* cursor, u32 key, char* found);
 enum btree_e cursor_traverse_to_ex(
 	struct Cursor* cursor, void* key, u32 key_size, char* found);
+
+/**
+ * @brief Starting from cursor, find the largest element.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
 enum btree_e cursor_traverse_largest(struct Cursor* cursor);
+
+/**
+ * @brief Starting from cursor, find the smallest element.
+ *
+ * @param cursor
+ * @return enum btree_e
+ */
+enum btree_e cursor_traverse_smallest(struct Cursor* cursor);
 
 enum cursor_sibling_e
 {
@@ -53,7 +87,7 @@ enum btree_e
 cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
 
 /**
- * @brief Expects node to already be initialized with a page!!!
+ * @brief Reads the parent node into out_view.
  *
  * @param cursor
  * @param out_node
@@ -62,12 +96,18 @@ cursor_sibling(struct Cursor* cursor, enum cursor_sibling_e sibling);
 enum btree_e
 cursor_read_parent(struct Cursor* cursor, struct NodeView* out_view);
 
+/**
+ * @brief Reads the current node into out_view.
+ *
+ * @param cursor
+ * @param out_node
+ * @return enum btree_e
+ */
 enum btree_e
 cursor_read_current(struct Cursor* cursor, struct NodeView* out_nv);
 
 /**
  * @brief Returns the index of the parent cell in the parent node.
- *
  */
 enum btree_e
 cursor_parent_index(struct Cursor* cursor, struct ChildListIndex* out_index);
@@ -76,6 +116,7 @@ cursor_parent_crumb(struct Cursor* cursor, struct CursorBreadcrumb* out_crumb);
 
 struct BTreeNodeRC* cursor_rcer(struct Cursor* cursor);
 struct BTree* cursor_tree(struct Cursor* cursor);
+enum btree_type_e cursor_tree_type(struct Cursor* cursor);
 struct Pager* cursor_pager(struct Cursor* cursor);
 
 #endif

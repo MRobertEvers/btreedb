@@ -25,6 +25,7 @@ enum btree_e
 	BTREE_ERR_PAGING,
 	BTREE_ERR_BUFFER_TOO_SMALL,
 	BTREE_ERR_NO_MEM,
+	BTREE_ERR_ITER_DONE,
 	BTREE_NEED_ROOT_INIT,
 	BTREE_ERR_UNK,
 	BTREE_NEED_ALLOC,
@@ -200,7 +201,6 @@ struct Cursor
 
 /**
  * @deprecated
- *
  */
 struct CellData
 {

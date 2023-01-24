@@ -11,6 +11,118 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief Move to the next right cell.
+ *
+ * If force is true, it will move the cursor to the right child.
+ *
+ * @param cursor
+ * @param nv
+ */
+static enum btree_e
+move_right(struct Cursor* cursor, struct NodeView* nv, bool force)
+{
+	enum btree_e result = BTREE_OK;
+	struct CursorBreadcrumb crumb = {0};
+
+	result = cursor_pop(cursor, &crumb);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( crumb.key_index.index < node_num_keys(nv_node(nv)) )
+	{
+		crumb.key_index.index += 1;
+		if( node_num_keys(nv_node(nv)) == crumb.key_index.index )
+		{
+			if( node_is_leaf(nv_node(nv)) )
+			{
+				crumb.key_index.mode = KLIM_END;
+				result = BTREE_ERR_CURSOR_NO_SIBLING;
+			}
+			else
+			{
+				crumb.key_index.mode = KLIM_RIGHT_CHILD;
+			}
+		}
+	}
+	else
+	{
+		result = BTREE_ERR_CURSOR_NO_SIBLING;
+	}
+
+	cursor_push_crumb(cursor, &crumb);
+
+end:
+	return result;
+}
+
+static void
+move_to_end(struct Cursor* cursor, struct NodeView* nv)
+{
+	if( node_is_leaf(nv_node(nv)) )
+	{
+		cursor->current_key_index.index = node_num_keys(nv_node(nv)) - 1;
+		cursor->current_key_index.mode = KLIM_INDEX;
+		cursor->current_page_id = nv->page->page_id;
+	}
+	else
+	{
+		cursor->current_key_index.index = node_num_keys(nv_node(nv));
+		cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
+		cursor->current_page_id = nv->page->page_id;
+	}
+}
+
+static void
+move_to_begin(struct Cursor* cursor, struct NodeView* nv)
+{
+	cursor->current_key_index.index = 0;
+	cursor->current_key_index.mode = KLIM_INDEX;
+	cursor->current_page_id = nv->page->page_id;
+}
+
+/**
+ * @brief Gets the child page id from the cell.
+ *
+ * @param cursor
+ * @param node
+ * @param child_key_index
+ * @return enum btree_e
+ */
+static enum btree_e
+read_cell_page(
+	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
+{
+	enum btree_e result = BTREE_OK;
+	if( child_key_index >= node->header->num_keys )
+	{
+		cursor->current_page_id = node->header->right_child;
+	}
+	else
+	{
+		if( cursor->tree->type == BTREE_TBL )
+		{
+			struct CellData cell = {0};
+			btu_read_cell(node, child_key_index, &cell);
+			u32 cell_size = btree_cell_get_size(&cell);
+			if( cell_size != sizeof(cursor->current_page_id) )
+			{
+				result = BTREE_ERR_CORRUPT_CELL;
+				goto end;
+			}
+
+			memcpy(&cursor->current_page_id, cell.pointer, cell_size);
+		}
+		else
+		{
+			cursor->current_page_id = node->keys[child_key_index].key;
+		}
+	}
+
+end:
+	return result;
+}
+
 struct Cursor*
 cursor_create(struct BTree* tree)
 {
@@ -20,6 +132,11 @@ cursor_create(struct BTree* tree)
 
 	cursor->tree = tree;
 	cursor->current_page_id = tree->root_page_id;
+	cursor->current_key_index.mode = KLIM_INDEX;
+	cursor->current_key_index.index = 0;
+
+	cursor_push(cursor);
+
 	return cursor;
 }
 struct Cursor*
@@ -126,6 +243,145 @@ cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
+// TODO: Test this.
+enum btree_e
+cursor_iter_begin(struct Cursor* cursor)
+{
+	return cursor_traverse_smallest(cursor);
+}
+
+enum btree_e
+btree_iter_next(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+
+	assert(cursor->current_page_id != 0);
+	assert(cursor->current_key_index.mode != KLIM_RIGHT_CHILD);
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	do
+	{
+		result = noderc_reinit_read(
+			cursor_rcer(cursor), &nv, cursor->current_page_id);
+		if( result != BTREE_OK )
+			goto end;
+
+		if( move_right(cursor, &nv, false) == BTREE_OK )
+		{
+			if( !node_is_leaf(nv_node(&nv)) )
+			{
+				result = read_cell_page(
+					cursor, nv_node(&nv), cursor->current_key_index.index);
+				if( result != BTREE_OK )
+					goto end;
+				cursor->current_key_index.index = 0;
+				cursor->current_key_index.mode = KLIM_INDEX;
+
+				result = cursor_push(cursor);
+				if( result != BTREE_OK )
+					goto end;
+
+				result = cursor_traverse_smallest(cursor);
+				if( result != BTREE_OK )
+					goto end;
+			}
+
+			goto end;
+		}
+
+		do
+		{
+			result = cursor_pop(cursor, NULL);
+			if( result != BTREE_OK )
+				goto end;
+
+		} while( cursor->current_key_index.mode == KLIM_RIGHT_CHILD &&
+				 cursor->current_page_id != 0 );
+
+	} while( cursor->current_page_id != 0 );
+
+end:
+	if( cursor->breadcrumbs_size == 0 )
+		result = BTREE_ERR_ITER_DONE;
+	noderc_release(cursor_rcer(cursor), &nv);
+	return result;
+}
+
+enum btree_e
+ibtree_iter_next(struct Cursor* cursor)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+
+	assert(cursor->current_page_id != 0);
+	assert(cursor->current_key_index.mode != KLIM_RIGHT_CHILD);
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result =
+		noderc_reinit_read(cursor_rcer(cursor), &nv, cursor->current_page_id);
+	if( result != BTREE_OK )
+		goto end;
+
+	if( move_right(cursor, &nv, false) == BTREE_OK )
+	{
+		if( !node_is_leaf(nv_node(&nv)) )
+		{
+			result = read_cell_page(
+				cursor, nv_node(&nv), cursor->current_key_index.index);
+			if( result != BTREE_OK )
+				goto end;
+			cursor->current_key_index.index = 0;
+			cursor->current_key_index.mode = KLIM_INDEX;
+
+			result = cursor_push(cursor);
+			if( result != BTREE_OK )
+				goto end;
+
+			result = cursor_traverse_smallest(cursor);
+			if( result != BTREE_OK )
+				goto end;
+		}
+
+		goto end;
+	}
+
+	do
+	{
+		result = cursor_pop(cursor, NULL);
+		if( result != BTREE_OK )
+			goto end;
+
+	} while( cursor->current_key_index.mode == KLIM_RIGHT_CHILD );
+
+end:
+	if( cursor->breadcrumbs_size == 0 )
+		result = BTREE_ERR_ITER_DONE;
+	noderc_release(cursor_rcer(cursor), &nv);
+	return result;
+}
+
+enum btree_e
+cursor_iter_next(struct Cursor* cursor)
+{
+	switch( cursor_tree_type(cursor) )
+	{
+	case BTREE_INDEX:
+		return ibtree_iter_next(cursor);
+	case BTREE_TBL:
+		return btree_iter_next(cursor);
+	default:
+		assert(0);
+		break;
+	}
+}
+
 enum btree_e
 cursor_restore(
 	struct Cursor* cursor, struct CursorBreadcrumb* crumb, u32 num_restore)
@@ -141,49 +397,7 @@ cursor_restore(
 	return BTREE_OK;
 }
 
-/**
- * @brief Gets the child page id from the cell.
- *
- * @param cursor
- * @param node
- * @param child_key_index
- * @return enum btree_e
- */
-static enum btree_e
-read_cell_page(
-	struct Cursor* cursor, struct BTreeNode* node, u32 child_key_index)
-{
-	enum btree_e result = BTREE_OK;
-	if( child_key_index >= node->header->num_keys )
-	{
-		cursor->current_page_id = node->header->right_child;
-	}
-	else
-	{
-		if( cursor->tree->type == BTREE_TBL )
-		{
-			struct CellData cell = {0};
-			btu_read_cell(node, child_key_index, &cell);
-			u32 cell_size = btree_cell_get_size(&cell);
-			if( cell_size != sizeof(cursor->current_page_id) )
-			{
-				result = BTREE_ERR_CORRUPT_CELL;
-				goto end;
-			}
-
-			memcpy(&cursor->current_page_id, cell.pointer, cell_size);
-		}
-		else
-		{
-			cursor->current_page_id = node->keys[child_key_index].key;
-		}
-	}
-
-end:
-	return result;
-}
-
-struct BTreeCompareContext
+static struct BTreeCompareContext
 compare_context_init(struct Cursor* cursor)
 {
 	struct BTreeCompareContext ctx = {
@@ -214,7 +428,7 @@ cursor_traverse_to_ex(
 
 	result = noderc_acquire(cursor_rcer(cursor), &nv);
 	if( result != BTREE_OK )
-		goto end; // TODO: No-mem
+		goto end;
 
 	do
 	{
@@ -256,8 +470,9 @@ end:
 	return result;
 }
 
+typedef void (*mover_fn)(struct Cursor* cursor, struct NodeView* nv);
 enum btree_e
-cursor_traverse_largest(struct Cursor* cursor)
+cursor_traverse_by_mover(struct Cursor* cursor, mover_fn move)
 {
 	enum btree_e result = BTREE_OK;
 	struct CursorBreadcrumb crumb = {0};
@@ -269,7 +484,7 @@ cursor_traverse_largest(struct Cursor* cursor)
 
 	do
 	{
-		result = cursor_pop(cursor, &crumb);
+		result = cursor_peek(cursor, &crumb);
 		if( result != BTREE_OK )
 			goto end;
 
@@ -277,27 +492,16 @@ cursor_traverse_largest(struct Cursor* cursor)
 		if( result != BTREE_OK )
 			goto end;
 
-		if( node_is_leaf(nv_node(&nv)) )
-		{
-			cursor->current_key_index.index = node_num_keys(nv_node(&nv)) - 1;
-			cursor->current_key_index.mode = KLIM_INDEX;
-			cursor->current_page_id = crumb.page_id;
-		}
-		else
-		{
-			cursor->current_key_index.index = node_num_keys(nv_node(&nv));
-			cursor->current_key_index.mode = KLIM_RIGHT_CHILD;
-			cursor->current_page_id = crumb.page_id;
-		}
-
-		result = cursor_push(cursor);
-		if( result != BTREE_OK )
-			goto end;
+		move(cursor, &nv);
 
 		if( !node_is_leaf(nv_node(&nv)) )
 		{
 			result = read_cell_page(
 				cursor, nv_node(&nv), cursor->current_key_index.index);
+			if( result != BTREE_OK )
+				goto end;
+
+			result = cursor_push(cursor);
 			if( result != BTREE_OK )
 				goto end;
 		}
@@ -307,6 +511,18 @@ end:
 	noderc_release_n(cursor_rcer(cursor), 1, &nv);
 
 	return result;
+}
+
+enum btree_e
+cursor_traverse_largest(struct Cursor* cursor)
+{
+	return cursor_traverse_by_mover(cursor, &move_to_end);
+}
+
+enum btree_e
+cursor_traverse_smallest(struct Cursor* cursor)
+{
+	return cursor_traverse_by_mover(cursor, &move_to_begin);
 }
 
 enum btree_e
@@ -493,6 +709,12 @@ struct BTree*
 cursor_tree(struct Cursor* cursor)
 {
 	return cursor->tree;
+}
+
+enum btree_type_e
+cursor_tree_type(struct Cursor* cursor)
+{
+	return cursor->tree->type;
 }
 
 struct Pager*

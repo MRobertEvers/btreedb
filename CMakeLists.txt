@@ -46,6 +46,7 @@ add_executable(test
     src/btree_utils_test.c
     src/btree_alg_test.c
     src/btree_overflow_test.c
+    src/btree_cursor_test.c
     src/serialization_test.c
     src/schema_test.c
     src/noderc.c
