@@ -25,7 +25,7 @@ struct TestRecord
 };
 
 int
-cursor_iter_test(void)
+cursor_iter_ibtree_test(void)
 {
 	char const* db_name = "iter_test.db";
 	int result = 1;
@@ -103,7 +103,7 @@ cursor_iter_test(void)
 		{.key = 10, .data = rick, .size = sizeof(rick)},		 // 20
 		{.key = 11, .data = woally, .size = sizeof(woally)},	 // 21
 		{.key = 12, .data = hoosin, .size = sizeof(hoosin)},	 // 22
-		{.key = 13, .data = sybian, .size = sizeof(sybian)},	 // 23
+		{.key = 17, .data = sybian, .size = sizeof(sybian)},	 // 23
 		{.key = 16, .data = trillian, .size = sizeof(trillian)}, // 24
 		{.key = 55, .data = coxes, .size = sizeof(coxes)},		 // 25
 	};
@@ -120,7 +120,10 @@ cursor_iter_test(void)
 		ibtree_insert(tree, test->data, test->size);
 	}
 
-	char buf[120] = {0};
+	char buf2[120] = {0};
+	char buf1[120] = {0};
+	char* next_buf = buf1;
+	char* prev_buf = NULL;
 	cursor = cursor_create(tree);
 	noderc_acquire(cursor_rcer(cursor), &nv);
 
@@ -131,14 +134,20 @@ cursor_iter_test(void)
 			noderc_reinit_read(
 				cursor_rcer(cursor), &nv, cursor->current_page_id);
 
-		memset(buf, 0x00, sizeof(buf));
+		memset(next_buf, 0x00, sizeof(buf1));
 		btree_node_read_at(
 			tree,
 			nv_node(&nv),
 			cursor->current_key_index.index,
-			buf,
-			sizeof(buf));
-		dbg_print_buffer(buf, strnlen(buf, sizeof(buf)));
+			next_buf,
+			sizeof(buf1));
+		// dbg_print_buffer(buf, strnlen(buf, sizeof(buf)));
+
+		if( prev_buf != NULL && memcmp(prev_buf, next_buf, sizeof(buf1)) >= 0 )
+			goto fail;
+
+		prev_buf = next_buf;
+		next_buf = next_buf == buf1 ? buf2 : buf1;
 
 		btresult = cursor_iter_next(cursor);
 	}
@@ -154,7 +163,7 @@ fail:
 }
 
 int
-cursor_iter_test2(void)
+cursor_iter_btree_test(void)
 {
 	char const* db_name = "iter_test2.db";
 	int result = 1;
@@ -231,7 +240,7 @@ cursor_iter_test2(void)
 		{.key = 10, .data = rick, .size = sizeof(rick)},		 // 20
 		{.key = 11, .data = woally, .size = sizeof(woally)},	 // 21
 		{.key = 12, .data = hoosin, .size = sizeof(hoosin)},	 // 22
-		{.key = 13, .data = sybian, .size = sizeof(sybian)},	 // 23
+		{.key = 17, .data = sybian, .size = sizeof(sybian)},	 // 23
 		{.key = 16, .data = trillian, .size = sizeof(trillian)}, // 24
 		{.key = 55, .data = coxes, .size = sizeof(coxes)},		 // 25
 	};
@@ -248,7 +257,9 @@ cursor_iter_test2(void)
 		btree_insert(tree, test->key, test->data, test->size);
 	}
 
-	char buf[120] = {0};
+	char buf1[120] = {0};
+	struct TestRecord* prev_rec = NULL;
+	struct TestRecord* curr_rec = NULL;
 	cursor = cursor_create(tree);
 	noderc_acquire(cursor_rcer(cursor), &nv);
 
@@ -259,14 +270,34 @@ cursor_iter_test2(void)
 			noderc_reinit_read(
 				cursor_rcer(cursor), &nv, cursor->current_page_id);
 
-		memset(buf, 0x00, sizeof(buf));
+		memset(buf1, 0x00, sizeof(buf1));
 		btree_node_read_at(
 			tree,
 			nv_node(&nv),
 			cursor->current_key_index.index,
-			buf,
-			sizeof(buf));
-		dbg_print_buffer(buf, strnlen(buf, sizeof(buf)));
+			buf1,
+			sizeof(buf1));
+		// dbg_print_buffer(buf, strnlen(buf, sizeof(buf)));
+
+		bool found = false;
+		for( int i = 0; i < sizeof(records) / sizeof(records[0]); i++ )
+		{
+			struct TestRecord* rec = &records[i];
+			if( memcmp(buf1, rec->data, rec->size) == 0 )
+			{
+				curr_rec = rec;
+				found = true;
+				break;
+			}
+		}
+
+		if( !found )
+			goto fail;
+
+		if( prev_rec != NULL && prev_rec->key >= curr_rec->key )
+			goto fail;
+
+		prev_rec = curr_rec;
 
 		btresult = cursor_iter_next(cursor);
 	}

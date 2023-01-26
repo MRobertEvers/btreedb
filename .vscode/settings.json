@@ -27,6 +27,10 @@
         "ibtree_alg.h": "c",
         "noderc.h": "c",
         "buffer_writer.h": "c",
-        "btree_op_select.h": "c"
+        "btree_op_select.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "vector": "c"
     },
 }

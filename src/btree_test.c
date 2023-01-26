@@ -474,7 +474,7 @@ btree_test_deep_tree(void)
 		{.key = 10, .data = rick, .size = sizeof(rick)},		 // 20
 		{.key = 11, .data = woally, .size = sizeof(woally)},	 // 21
 		{.key = 12, .data = hoosin, .size = sizeof(hoosin)},	 // 22
-		{.key = 13, .data = sybian, .size = sizeof(sybian)},	 // 23
+		{.key = 17, .data = sybian, .size = sizeof(sybian)},	 // 23
 		{.key = 16, .data = trillian, .size = sizeof(trillian)}, // 24
 		{.key = 55, .data = coxes, .size = sizeof(coxes)},		 // 25
 	};
