@@ -17,6 +17,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/test",
             "cwd": "${workspaceRoot}",
+        },
+        {
+            "name": "Debug SQL Main",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sql_main",
+            "cwd": "${workspaceRoot}",
         }
     ]
 }

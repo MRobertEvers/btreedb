@@ -1,0 +1,14 @@
+#ifndef TOKEN_H_
+#define TOKEN_H_
+
+enum sql_token_e
+{
+	SQL_CREATE_INVAL = 0,
+	SQL_CREATE_TABLE,
+	SQL_INSERT_LITERAL,
+	SQL_NAMED_LITERAL,
+	SQL_KEYWORD_LITERAL,
+	SQL_COMMA,
+};
+
+#endif
