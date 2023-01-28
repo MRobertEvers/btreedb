@@ -11,7 +11,7 @@ enum sql_literalstr_type_e
 	SQL_LITERALSTR_TYPE_INT,
 };
 
-struct SQLLiteralValue
+struct SQLLiteralStr
 {
 	struct SQLString* value;
 	enum sql_literalstr_type_e type;

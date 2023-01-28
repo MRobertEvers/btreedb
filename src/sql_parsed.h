@@ -15,7 +15,7 @@ struct SQLParsedInsert
 	struct SQLString* table_name;
 	struct SQLString* columns[5];
 	u32 ncolumns;
-	struct SQLLiteralValue values[5];
+	struct SQLLiteralStr values[5];
 	u32 nvalues;
 };
 

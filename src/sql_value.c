@@ -8,7 +8,7 @@
 
 enum sql_e
 sql_value_acquire_eval(
-	struct SQLValue* value, struct SQLLiteralValue const* sql_value)
+	struct SQLValue* value, struct SQLLiteralStr const* sql_value)
 {
 	switch( sql_value->type )
 	{

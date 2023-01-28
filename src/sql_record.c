@@ -18,7 +18,7 @@ sql_record_emplace_literal_c(
 	char const* value,
 	enum sql_literalstr_type_e type)
 {
-	struct SQLLiteralValue literal = {
+	struct SQLLiteralStr literal = {
 		.type = type, .value = sql_string_create_from_cstring(value)};
 
 	// TODO: Error check
@@ -34,7 +34,7 @@ sql_record_emplace_literal(
 	struct SQLString const* value,
 	enum sql_literalstr_type_e type)
 {
-	struct SQLLiteralValue literal = {
+	struct SQLLiteralStr literal = {
 		.type = type, .value = sql_string_copy(value)};
 
 	sql_value_acquire_eval(&record->values[record->nvalues], &literal);
