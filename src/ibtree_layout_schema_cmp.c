@@ -1,6 +1,8 @@
-#include "schema.h"
+#include "ibtree_layout_schema_cmp.h"
 
 #include "btree_node_debug.h"
+#include "ibtree_layout_schema.h"
+#include "ibtree_layout_schema_ctx.h"
 #include "serialization.h"
 
 #include <assert.h>
@@ -40,7 +42,7 @@ struct KeyBytes
 
 static u32
 consume_varsize_bytes(
-	struct SchemaCompareContext* ctx, struct Comparison* cmp, u32 lwnd)
+	struct IBTLSCompareContext* ctx, struct Comparison* cmp, u32 lwnd)
 {
 	byte* cmp_ptr = cmp->cmp_wnd;
 	struct VarsizeKeyState* keystate = &ctx->varkeys[ctx->curr_key];
@@ -65,7 +67,7 @@ consume_varsize_bytes(
 }
 
 static u32
-configure_fixed_key(struct SchemaCompareContext* ctx, struct Comparison* cmp)
+configure_fixed_key(struct IBTLSCompareContext* ctx, struct Comparison* cmp)
 {
 	ctx->varkeys[ctx->curr_key].key_size = ctx->rkeys[ctx->curr_key].rkey_size;
 	ctx->varkeys[ctx->curr_key].ready = true;
@@ -74,7 +76,7 @@ configure_fixed_key(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 }
 
 struct KeyBytes
-cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
+cmpbytes(struct IBTLSCompareContext* ctx, struct Comparison* cmp)
 {
 	// ctx
 	struct KeyBytes bytes = {0};
@@ -105,11 +107,11 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 	// bytes.
 	switch( ctx->schema.key_definitions[ctx->curr_key].type )
 	{
-	case SCHEMA_KEY_TYPE_VARSIZE:
+	case IBTLSK_TYPE_VARSIZE:
 		// Yes lwnd = , not +=
 		lwnd = consume_varsize_bytes(ctx, cmp, lwnd);
 		break;
-	case SCHEMA_KEY_TYPE_FIXED:
+	case IBTLSK_TYPE_FIXED:
 		configure_fixed_key(ctx, cmp);
 		break;
 	default:
@@ -138,7 +140,7 @@ cmpbytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
 }
 
 struct KeyBytes
-keybytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
+keybytes(struct IBTLSCompareContext* ctx, struct Comparison* cmp)
 {
 	struct KeyBytes bytes = {0};
 	struct VarsizeKeyState* cmp_keystate = &ctx->varkeys[ctx->curr_key];
@@ -165,8 +167,7 @@ keybytes(struct SchemaCompareContext* ctx, struct Comparison* cmp)
  * @param cmp
  */
 static void
-initialize_rkey_offsets(
-	struct SchemaCompareContext* ctx, struct Comparison* cmp)
+initialize_rkey_offsets(struct IBTLSCompareContext* ctx, struct Comparison* cmp)
 {
 	byte* rptr = cmp->payload;
 	u32 offset = 0;
@@ -181,7 +182,7 @@ initialize_rkey_offsets(
 		struct RKeyState* keystate = &ctx->rkeys[i];
 
 		memset(keystate, 0x00, sizeof(*keystate));
-		if( ctx->schema.key_definitions[i].type == SCHEMA_KEY_TYPE_VARSIZE )
+		if( ctx->schema.key_definitions[i].type == IBTLSK_TYPE_VARSIZE )
 		{
 			rkey_size = 0;
 			ser_read_32bit_le(&rkey_size, rptr);
@@ -206,14 +207,14 @@ initialize_rkey_offsets(
 }
 
 static void
-init_if_not(struct SchemaCompareContext* ctx, struct Comparison* cmp)
+init_if_not(struct IBTLSCompareContext* ctx, struct Comparison* cmp)
 {
 	if( !ctx->initted )
 		initialize_rkey_offsets(ctx, cmp);
 }
 
 int
-schema_compare(
+ibtls_compare(
 	void* compare_context,
 	void* cmp_window,
 	u32 cmp_window_size,
@@ -224,8 +225,8 @@ schema_compare(
 	u32* out_bytes_compared,
 	u32* out_key_size_remaining)
 {
-	struct SchemaCompareContext* ctx =
-		(struct SchemaCompareContext*)compare_context;
+	struct IBTLSCompareContext* ctx =
+		(struct IBTLSCompareContext*)compare_context;
 
 	struct Comparison cmp = {
 		.cmp_wnd = cmp_window,
@@ -312,11 +313,11 @@ schema_compare(
 }
 
 void
-schema_reset_compare(void* compare_context)
+ibtls_reset_compare(void* compare_context)
 {
 	// Pass
-	struct SchemaCompareContext* ctx =
-		(struct SchemaCompareContext*)compare_context;
+	struct IBTLSCompareContext* ctx =
+		(struct IBTLSCompareContext*)compare_context;
 
 	memset(ctx->varkeys, 0x00, sizeof(*ctx->varkeys) * ctx->nvarkeys);
 	ctx->curr_key = 0;

@@ -1,5 +1,5 @@
-#ifndef SCHEMA_H_
-#define SCHEMA_H_
+#ifndef IBTREE_LAYOUT_SCHEMA_CMP_H_
+#define IBTREE_LAYOUT_SCHEMA_CMP_H_
 
 #include "btint.h"
 
@@ -54,83 +54,6 @@
  * [ 0x04, 0x00, 0x00, 0x00, 'w', 'i', 'l', 'l' ]
  */
 
-enum payload_compare_type_e
-{
-	PAYLOAD_COMPARE_TYPE_INVALID = 0,
-	// We are comparing two records
-	PAYLOAD_COMPARE_TYPE_RECORD,
-	// We are comparing records with a key. I.e. We just have the key bytes.
-	PAYLOAD_COMPARE_TYPE_KEY
-};
-
-enum schema_key_type_e
-{
-	SCHEMA_KEY_TYPE_INVALID = 0,
-	SCHEMA_KEY_TYPE_FIXED,
-	SCHEMA_KEY_TYPE_VARSIZE,
-};
-
-struct SchemaKeyDefinition
-{
-	enum schema_key_type_e type;
-	// Only used if SCHEMA_KEY_TYPE_FIXED
-	u32 size;
-};
-
-/**
- * @brief Stores information about the key bytes offset and then the types of
- * keys.
- *
- */
-struct Schema
-{
-	u32 key_offset;
-
-	struct SchemaKeyDefinition key_definitions[4];
-	u8 nkey_definitions;
-};
-
-/**
- * @brief Used to store information about windowed streaming varkeys.
- *
- * Since the compare key bytes come in windows, this must store relevant state
- * across windows.
- */
-struct VarsizeKeyState
-{
-	byte len_bytes[sizeof(u32)];
-	u8 len_len;
-	u32 key_size;
-	bool ready;
-	// We keep track of the total size of this key already read
-	// because we need to find the same offset in the key buffer.
-	u32 consumed_size;
-};
-
-/**
- * @brief Lookup information for comparable offsets in the rkey.
- *
- * Reminder! The rkey must be entirely in memory.
- */
-struct RKeyState
-{
-	// Offset of this key in the key buffer.
-	u32 rkey_size;
-	u32 rkey_offset;
-};
-
-struct SchemaCompareContext
-{
-	bool initted;
-	enum payload_compare_type_e type;
-	struct Schema schema;
-	struct VarsizeKeyState varkeys[4];
-	struct RKeyState rkeys[4];
-	u8 nvarkeys;
-
-	u8 curr_key;
-};
-
 /**
  * @brief A btree compare function.
  *
@@ -145,7 +68,7 @@ struct SchemaCompareContext
  * @param out_key_size_remaining
  * @return int
  */
-int schema_compare(
+int ibtls_compare(
 	void* compare_context,
 	void* cmp_window,
 	u32 cmp_window_size,
@@ -161,6 +84,6 @@ int schema_compare(
  *
  * @param compare_context
  */
-void schema_reset_compare(void* compare_context);
+void ibtls_reset_compare(void* compare_context);
 
 #endif

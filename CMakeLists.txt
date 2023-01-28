@@ -27,7 +27,7 @@ add_executable(db
     src/btree_overflow.c
     src/serialization.c
     src/noderc.c
-    src/schema.c
+    src/ibtree_layout_schema_cmp.c
     src/buffer_writer.c
 )
 
@@ -59,9 +59,20 @@ add_executable(sql_main
     src/btree_overflow.c
     src/serialization.c
     src/noderc.c
-    src/schema.c
+    src/ibtree_layout_schema_cmp.c
     src/buffer_writer.c
+    src/btree_factory.c
+    src/sql_dt.c
+    src/sql_ibtree.c
+    src/sql_literal.c
+    src/sql_parse@flex.c
+    src/sql_parsegen.c
+    src/sql_record.c
+    src/sql_string.c
+    src/sql_table.c
+    src/sqldb_table.c
     bison/sql_lexer.c
+    bison/sql_lexer_utils.c
 )
 
 add_executable(test
@@ -94,7 +105,7 @@ add_executable(test
     src/btree_node_reader.c
     src/btree_overflow.c
     src/serialization.c
-    src/schema.c
+    src/ibtree_layout_schema_cmp.c
     src/buffer_writer.c
 )
 

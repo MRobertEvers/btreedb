@@ -179,6 +179,30 @@ bison/sql_lexer.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/bison/sql_lexer.c.s
 .PHONY : bison/sql_lexer.c.s
 
+bison/sql_lexer_utils.o: bison/sql_lexer_utils.c.o
+.PHONY : bison/sql_lexer_utils.o
+
+# target to build an object file
+bison/sql_lexer_utils.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/bison/sql_lexer_utils.c.o
+.PHONY : bison/sql_lexer_utils.c.o
+
+bison/sql_lexer_utils.i: bison/sql_lexer_utils.c.i
+.PHONY : bison/sql_lexer_utils.i
+
+# target to preprocess a source file
+bison/sql_lexer_utils.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/bison/sql_lexer_utils.c.i
+.PHONY : bison/sql_lexer_utils.c.i
+
+bison/sql_lexer_utils.s: bison/sql_lexer_utils.c.s
+.PHONY : bison/sql_lexer_utils.s
+
+# target to generate assembly for a file
+bison/sql_lexer_utils.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/bison/sql_lexer_utils.c.s
+.PHONY : bison/sql_lexer_utils.c.s
+
 src/btree.o: src/btree.c.o
 .PHONY : src/btree.o
 
@@ -376,6 +400,30 @@ src/btree_defs.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_defs.c.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_defs.c.s
 .PHONY : src/btree_defs.c.s
+
+src/btree_factory.o: src/btree_factory.c.o
+.PHONY : src/btree_factory.o
+
+# target to build an object file
+src/btree_factory.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_factory.c.o
+.PHONY : src/btree_factory.c.o
+
+src/btree_factory.i: src/btree_factory.c.i
+.PHONY : src/btree_factory.i
+
+# target to preprocess a source file
+src/btree_factory.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_factory.c.i
+.PHONY : src/btree_factory.c.i
+
+src/btree_factory.s: src/btree_factory.c.s
+.PHONY : src/btree_factory.s
+
+# target to generate assembly for a file
+src/btree_factory.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_factory.c.s
+.PHONY : src/btree_factory.c.s
 
 src/btree_node.o: src/btree_node.c.o
 .PHONY : src/btree_node.o
@@ -749,6 +797,36 @@ src/ibtree_alg.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_alg.c.s
 .PHONY : src/ibtree_alg.c.s
 
+src/ibtree_layout_schema_cmp.o: src/ibtree_layout_schema_cmp.c.o
+.PHONY : src/ibtree_layout_schema_cmp.o
+
+# target to build an object file
+src/ibtree_layout_schema_cmp.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_layout_schema_cmp.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/ibtree_layout_schema_cmp.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_layout_schema_cmp.c.o
+.PHONY : src/ibtree_layout_schema_cmp.c.o
+
+src/ibtree_layout_schema_cmp.i: src/ibtree_layout_schema_cmp.c.i
+.PHONY : src/ibtree_layout_schema_cmp.i
+
+# target to preprocess a source file
+src/ibtree_layout_schema_cmp.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_layout_schema_cmp.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/ibtree_layout_schema_cmp.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_layout_schema_cmp.c.i
+.PHONY : src/ibtree_layout_schema_cmp.c.i
+
+src/ibtree_layout_schema_cmp.s: src/ibtree_layout_schema_cmp.c.s
+.PHONY : src/ibtree_layout_schema_cmp.s
+
+# target to generate assembly for a file
+src/ibtree_layout_schema_cmp.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/ibtree_layout_schema_cmp.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/ibtree_layout_schema_cmp.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ibtree_layout_schema_cmp.c.s
+.PHONY : src/ibtree_layout_schema_cmp.c.s
+
 src/ibtree_test.o: src/ibtree_test.c.o
 .PHONY : src/ibtree_test.o
 
@@ -941,36 +1019,6 @@ src/pager_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/pager_test.c.s
 .PHONY : src/pager_test.c.s
 
-src/schema.o: src/schema.c.o
-.PHONY : src/schema.o
-
-# target to build an object file
-src/schema.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/schema.c.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.o
-.PHONY : src/schema.c.o
-
-src/schema.i: src/schema.c.i
-.PHONY : src/schema.i
-
-# target to preprocess a source file
-src/schema.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/schema.c.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.i
-.PHONY : src/schema.c.i
-
-src/schema.s: src/schema.c.s
-.PHONY : src/schema.s
-
-# target to generate assembly for a file
-src/schema.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/schema.c.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/schema.c.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/schema.c.s
-.PHONY : src/schema.c.s
-
 src/schema_test.o: src/schema_test.c.o
 .PHONY : src/schema_test.o
 
@@ -1049,6 +1097,78 @@ src/serialization_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization_test.c.s
 .PHONY : src/serialization_test.c.s
 
+src/sql_dt.o: src/sql_dt.c.o
+.PHONY : src/sql_dt.o
+
+# target to build an object file
+src/sql_dt.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.o
+.PHONY : src/sql_dt.c.o
+
+src/sql_dt.i: src/sql_dt.c.i
+.PHONY : src/sql_dt.i
+
+# target to preprocess a source file
+src/sql_dt.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.i
+.PHONY : src/sql_dt.c.i
+
+src/sql_dt.s: src/sql_dt.c.s
+.PHONY : src/sql_dt.s
+
+# target to generate assembly for a file
+src/sql_dt.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.s
+.PHONY : src/sql_dt.c.s
+
+src/sql_ibtree.o: src/sql_ibtree.c.o
+.PHONY : src/sql_ibtree.o
+
+# target to build an object file
+src/sql_ibtree.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_ibtree.c.o
+.PHONY : src/sql_ibtree.c.o
+
+src/sql_ibtree.i: src/sql_ibtree.c.i
+.PHONY : src/sql_ibtree.i
+
+# target to preprocess a source file
+src/sql_ibtree.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_ibtree.c.i
+.PHONY : src/sql_ibtree.c.i
+
+src/sql_ibtree.s: src/sql_ibtree.c.s
+.PHONY : src/sql_ibtree.s
+
+# target to generate assembly for a file
+src/sql_ibtree.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_ibtree.c.s
+.PHONY : src/sql_ibtree.c.s
+
+src/sql_literal.o: src/sql_literal.c.o
+.PHONY : src/sql_literal.o
+
+# target to build an object file
+src/sql_literal.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.o
+.PHONY : src/sql_literal.c.o
+
+src/sql_literal.i: src/sql_literal.c.i
+.PHONY : src/sql_literal.i
+
+# target to preprocess a source file
+src/sql_literal.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.i
+.PHONY : src/sql_literal.c.i
+
+src/sql_literal.s: src/sql_literal.c.s
+.PHONY : src/sql_literal.s
+
+# target to generate assembly for a file
+src/sql_literal.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.s
+.PHONY : src/sql_literal.c.s
+
 src/sql_main.o: src/sql_main.c.o
 .PHONY : src/sql_main.o
 
@@ -1072,6 +1192,150 @@ src/sql_main.s: src/sql_main.c.s
 src/sql_main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_main.c.s
 .PHONY : src/sql_main.c.s
+
+src/sql_parse@flex.o: src/sql_parse@flex.c.o
+.PHONY : src/sql_parse@flex.o
+
+# target to build an object file
+src/sql_parse@flex.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse@flex.c.o
+.PHONY : src/sql_parse@flex.c.o
+
+src/sql_parse@flex.i: src/sql_parse@flex.c.i
+.PHONY : src/sql_parse@flex.i
+
+# target to preprocess a source file
+src/sql_parse@flex.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse@flex.c.i
+.PHONY : src/sql_parse@flex.c.i
+
+src/sql_parse@flex.s: src/sql_parse@flex.c.s
+.PHONY : src/sql_parse@flex.s
+
+# target to generate assembly for a file
+src/sql_parse@flex.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse@flex.c.s
+.PHONY : src/sql_parse@flex.c.s
+
+src/sql_parsegen.o: src/sql_parsegen.c.o
+.PHONY : src/sql_parsegen.o
+
+# target to build an object file
+src/sql_parsegen.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsegen.c.o
+.PHONY : src/sql_parsegen.c.o
+
+src/sql_parsegen.i: src/sql_parsegen.c.i
+.PHONY : src/sql_parsegen.i
+
+# target to preprocess a source file
+src/sql_parsegen.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsegen.c.i
+.PHONY : src/sql_parsegen.c.i
+
+src/sql_parsegen.s: src/sql_parsegen.c.s
+.PHONY : src/sql_parsegen.s
+
+# target to generate assembly for a file
+src/sql_parsegen.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsegen.c.s
+.PHONY : src/sql_parsegen.c.s
+
+src/sql_record.o: src/sql_record.c.o
+.PHONY : src/sql_record.o
+
+# target to build an object file
+src/sql_record.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_record.c.o
+.PHONY : src/sql_record.c.o
+
+src/sql_record.i: src/sql_record.c.i
+.PHONY : src/sql_record.i
+
+# target to preprocess a source file
+src/sql_record.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_record.c.i
+.PHONY : src/sql_record.c.i
+
+src/sql_record.s: src/sql_record.c.s
+.PHONY : src/sql_record.s
+
+# target to generate assembly for a file
+src/sql_record.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_record.c.s
+.PHONY : src/sql_record.c.s
+
+src/sql_string.o: src/sql_string.c.o
+.PHONY : src/sql_string.o
+
+# target to build an object file
+src/sql_string.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_string.c.o
+.PHONY : src/sql_string.c.o
+
+src/sql_string.i: src/sql_string.c.i
+.PHONY : src/sql_string.i
+
+# target to preprocess a source file
+src/sql_string.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_string.c.i
+.PHONY : src/sql_string.c.i
+
+src/sql_string.s: src/sql_string.c.s
+.PHONY : src/sql_string.s
+
+# target to generate assembly for a file
+src/sql_string.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_string.c.s
+.PHONY : src/sql_string.c.s
+
+src/sql_table.o: src/sql_table.c.o
+.PHONY : src/sql_table.o
+
+# target to build an object file
+src/sql_table.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_table.c.o
+.PHONY : src/sql_table.c.o
+
+src/sql_table.i: src/sql_table.c.i
+.PHONY : src/sql_table.i
+
+# target to preprocess a source file
+src/sql_table.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_table.c.i
+.PHONY : src/sql_table.c.i
+
+src/sql_table.s: src/sql_table.c.s
+.PHONY : src/sql_table.s
+
+# target to generate assembly for a file
+src/sql_table.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_table.c.s
+.PHONY : src/sql_table.c.s
+
+src/sqldb_table.o: src/sqldb_table.c.o
+.PHONY : src/sqldb_table.o
+
+# target to build an object file
+src/sqldb_table.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table.c.o
+.PHONY : src/sqldb_table.c.o
+
+src/sqldb_table.i: src/sqldb_table.c.i
+.PHONY : src/sqldb_table.i
+
+# target to preprocess a source file
+src/sqldb_table.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table.c.i
+.PHONY : src/sqldb_table.c.i
+
+src/sqldb_table.s: src/sqldb_table.c.s
+.PHONY : src/sqldb_table.s
+
+# target to generate assembly for a file
+src/sqldb_table.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table.c.s
+.PHONY : src/sqldb_table.c.s
 
 src/test.o: src/test.c.o
 .PHONY : src/test.o
@@ -1111,6 +1375,9 @@ help:
 	@echo "... bison/sql_lexer.o"
 	@echo "... bison/sql_lexer.i"
 	@echo "... bison/sql_lexer.s"
+	@echo "... bison/sql_lexer_utils.o"
+	@echo "... bison/sql_lexer_utils.i"
+	@echo "... bison/sql_lexer_utils.s"
 	@echo "... src/btree.o"
 	@echo "... src/btree.i"
 	@echo "... src/btree.s"
@@ -1132,6 +1399,9 @@ help:
 	@echo "... src/btree_defs.o"
 	@echo "... src/btree_defs.i"
 	@echo "... src/btree_defs.s"
+	@echo "... src/btree_factory.o"
+	@echo "... src/btree_factory.i"
+	@echo "... src/btree_factory.s"
 	@echo "... src/btree_node.o"
 	@echo "... src/btree_node.i"
 	@echo "... src/btree_node.s"
@@ -1171,6 +1441,9 @@ help:
 	@echo "... src/ibtree_alg.o"
 	@echo "... src/ibtree_alg.i"
 	@echo "... src/ibtree_alg.s"
+	@echo "... src/ibtree_layout_schema_cmp.o"
+	@echo "... src/ibtree_layout_schema_cmp.i"
+	@echo "... src/ibtree_layout_schema_cmp.s"
 	@echo "... src/ibtree_test.o"
 	@echo "... src/ibtree_test.i"
 	@echo "... src/ibtree_test.s"
@@ -1192,9 +1465,6 @@ help:
 	@echo "... src/pager_test.o"
 	@echo "... src/pager_test.i"
 	@echo "... src/pager_test.s"
-	@echo "... src/schema.o"
-	@echo "... src/schema.i"
-	@echo "... src/schema.s"
 	@echo "... src/schema_test.o"
 	@echo "... src/schema_test.i"
 	@echo "... src/schema_test.s"
@@ -1204,9 +1474,36 @@ help:
 	@echo "... src/serialization_test.o"
 	@echo "... src/serialization_test.i"
 	@echo "... src/serialization_test.s"
+	@echo "... src/sql_dt.o"
+	@echo "... src/sql_dt.i"
+	@echo "... src/sql_dt.s"
+	@echo "... src/sql_ibtree.o"
+	@echo "... src/sql_ibtree.i"
+	@echo "... src/sql_ibtree.s"
+	@echo "... src/sql_literal.o"
+	@echo "... src/sql_literal.i"
+	@echo "... src/sql_literal.s"
 	@echo "... src/sql_main.o"
 	@echo "... src/sql_main.i"
 	@echo "... src/sql_main.s"
+	@echo "... src/sql_parse@flex.o"
+	@echo "... src/sql_parse@flex.i"
+	@echo "... src/sql_parse@flex.s"
+	@echo "... src/sql_parsegen.o"
+	@echo "... src/sql_parsegen.i"
+	@echo "... src/sql_parsegen.s"
+	@echo "... src/sql_record.o"
+	@echo "... src/sql_record.i"
+	@echo "... src/sql_record.s"
+	@echo "... src/sql_string.o"
+	@echo "... src/sql_string.i"
+	@echo "... src/sql_string.s"
+	@echo "... src/sql_table.o"
+	@echo "... src/sql_table.i"
+	@echo "... src/sql_table.s"
+	@echo "... src/sqldb_table.o"
+	@echo "... src/sqldb_table.i"
+	@echo "... src/sqldb_table.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

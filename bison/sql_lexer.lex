@@ -6,18 +6,22 @@
 #include "sql_lexer_types.h"
 %}
 
-named_character [0-9a-zA-Z]
+name_character [0-9a-zA-Z_]
 digit		[0-9]
 int_const	{digit}+
-quoted_literal {named_character}+ 
-sql_literal {named_character}+ 
+quoted_literal {name_character}+ 
+sql_literal {name_character}+ 
 
 %%
 
-"CREATE TABLE"		{ return SQL_CREATE_TABLE; }
-"INSERT INTO"		{ return SQL_INSERT_LITERAL; }
-\"{quoted_literal}\"		{  return SQL_NAMED_LITERAL; }
-{sql_literal}		{  return SQL_KEYWORD_LITERAL; }
+\'[^']+\'		{  return SQL_STRING_LITERAL; }
+\"{quoted_literal}\"		{  return SQL_QUOTED_IDENTIFIER; }
+{int_const} {  return SQL_INT_LITERAL; }
+"CREATE TABLE"		{ return SQL_CREATE_TABLE_KW; }
+"INSERT INTO"		{ return SQL_INSERT_KW; }
+"VALUES"		{ return SQL_VALUES_KW; }
+{sql_literal}		{  return SQL_IDENTIFIER; }
 ","		{  return SQL_COMMA; }
-\(|\) /* do nothing */ { yytext += 1;}
+\(   { return SQL_OPEN_PAREN; } 
+\)   { return SQL_CLOSE_PAREN; }
 [ \n\r\n]  /* do nothing */ { yytext += 1;}

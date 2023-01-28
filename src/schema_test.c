@@ -7,9 +7,11 @@
 #include "btree_op_select.h"
 #include "buffer_writer.h"
 #include "ibtree.h"
+#include "ibtree_layout_schema.h"
+#include "ibtree_layout_schema_cmp.h"
+#include "ibtree_layout_schema_ctx.h"
 #include "noderc.h"
 #include "pager_ops_cstd.h"
-#include "schema.h"
 #include "serialization.h"
 
 #include <assert.h>
@@ -84,19 +86,18 @@ schema_compare_test(void)
 	noderc_init(&rcer, pager);
 
 	btree_alloc(&tree);
-	ibtree_init(tree, pager, &rcer, 1, &schema_compare, &schema_reset_compare);
+	ibtree_init(tree, pager, &rcer, 1, &ibtls_compare, &ibtls_reset_compare);
 
-	struct Schema schema = {
+	struct IBTreeLayoutSchema schema = {
 		.key_offset = 4,
 	};
 
 	schema.nkey_definitions = 2;
-	struct SchemaKeyDefinition key_one_def = {
-		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	struct IBTLSKeyDef key_one_def = {.type = IBTLSK_TYPE_VARSIZE, .size = 0};
 	schema.key_definitions[0] = key_one_def;
 	schema.key_definitions[1] = key_one_def;
 
-	struct SchemaCompareContext ctx = {
+	struct IBTLSCompareContext ctx = {
 		.schema = schema,
 		.curr_key = 0,
 		.initted = false,
@@ -227,19 +228,18 @@ schema_comparer_test(void)
 	noderc_init(&rcer, pager);
 
 	btree_alloc(&tree);
-	ibtree_init(tree, pager, &rcer, 1, &schema_compare, &schema_reset_compare);
+	ibtree_init(tree, pager, &rcer, 1, &ibtls_compare, &ibtls_reset_compare);
 
-	struct Schema schema = {
+	struct IBTreeLayoutSchema schema = {
 		.key_offset = 4,
 	};
 
 	schema.nkey_definitions = 2;
-	struct SchemaKeyDefinition key_one_def = {
-		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	struct IBTLSKeyDef key_one_def = {.type = IBTLSK_TYPE_VARSIZE, .size = 0};
 	schema.key_definitions[0] = key_one_def;
 	schema.key_definitions[1] = key_one_def;
 
-	struct SchemaCompareContext ctx = {
+	struct IBTLSCompareContext ctx = {
 		.schema = schema,
 		.curr_key = 0,
 		.initted = false,
@@ -277,8 +277,8 @@ schema_comparer_test(void)
 	u32 nbytes_compared = 0;
 	u32 nkey_bytes_remaining = 0;
 	u32 window_size = 1;
-	schema_reset_compare(&ctx);
-	int compare_result = schema_compare(
+	ibtls_reset_compare(&ctx);
+	int compare_result = ibtls_compare(
 		&ctx,
 		window,
 		window_size,
@@ -294,7 +294,7 @@ schema_comparer_test(void)
 		goto fail;
 
 	window_size = 17;
-	compare_result = schema_compare(
+	compare_result = ibtls_compare(
 		&ctx,
 		window + ntotal_bytes_compared,
 		window_size,
@@ -311,7 +311,7 @@ schema_comparer_test(void)
 		goto fail;
 
 	window_size = 8;
-	compare_result = schema_compare(
+	compare_result = ibtls_compare(
 		&ctx,
 		window + ntotal_bytes_compared,
 		window_size,
@@ -328,7 +328,7 @@ schema_comparer_test(void)
 		goto fail;
 
 	window_size = r1len - ntotal_bytes_compared;
-	compare_result = schema_compare(
+	compare_result = ibtls_compare(
 		&ctx,
 		window + ntotal_bytes_compared,
 		window_size,

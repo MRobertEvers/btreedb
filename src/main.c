@@ -3,9 +3,11 @@
 #include "btree_op_select.h"
 #include "buffer_writer.h"
 #include "ibtree.h"
+#include "ibtree_layout_schema.h"
+#include "ibtree_layout_schema_cmp.h"
+#include "ibtree_layout_schema_ctx.h"
 #include "noderc.h"
 #include "pager_ops_cstd.h"
-#include "schema.h"
 #include "serialization.h"
 
 #include <assert.h>
@@ -79,18 +81,17 @@ main()
 	noderc_init(&rcer, pager);
 
 	btree_alloc(&tree);
-	ibtree_init(tree, pager, &rcer, 1, &schema_compare, &schema_reset_compare);
+	ibtree_init(tree, pager, &rcer, 1, &ibtls_compare, &ibtls_reset_compare);
 
-	struct Schema schema = {
+	struct IBTreeLayoutSchema schema = {
 		.key_offset = 4,
 	};
 
 	schema.nkey_definitions = 1;
-	struct SchemaKeyDefinition key_one_def = {
-		.type = SCHEMA_KEY_TYPE_VARSIZE, .size = 0};
+	struct IBTLSKeyDef key_one_def = {.type = IBTLSK_TYPE_VARSIZE, .size = 0};
 	schema.key_definitions[0] = key_one_def;
 
-	struct SchemaCompareContext ctx = {
+	struct IBTLSCompareContext ctx = {
 		.schema = schema,
 		.curr_key = 0,
 		.initted = false,
