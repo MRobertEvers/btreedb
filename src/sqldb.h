@@ -2,11 +2,9 @@
 #define SQLDB_H_
 
 #include "sql_defs.h"
+#include "sqldb_defs.h"
 
-struct SQLDB
-{};
-
-enum sql_e sqldb_create(struct SQLDB** out_sqldb);
+enum sql_e sqldb_create(struct SQLDB** out_sqldb, char const* filename);
 
 // TODO: Not sure if this belongs here.
 // TODO: RecordRC

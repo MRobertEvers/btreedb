@@ -70,6 +70,7 @@
         "btree_factory.h": "c",
         "ibtree.h": "c",
         "sql_parsegen.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "sql_defs.h": "c"
     },
 }
