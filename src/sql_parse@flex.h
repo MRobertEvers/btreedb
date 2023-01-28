@@ -1,5 +1,5 @@
-#ifndef SQL_PARSE @FLEX_H_
-#define SQL_PARSE @FLEX_H_
+#ifndef SQL_PARSE__FLEX_H_
+#define SQL_PARSE__FLEX_H_
 
 #include "sql_lexer_types.h"
 

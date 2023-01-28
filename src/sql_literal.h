@@ -18,9 +18,9 @@ struct SQLLiteralValue
 };
 
 int sql_literal_array_serialize(
-	struct SQLLiteralValue** vals, u32 nvals, void* buf, u32 size);
+	struct SQLLiteralValue* vals, u32 nvals, void* buf, u32 size);
 
 int sql_literal_serialize(struct SQLLiteralValue* val, void* buf, u32 size);
-u32 sql_literal_array_ser_size(struct SQLLiteralValue** vals, u32 nvals);
+u32 sql_literal_array_ser_size(struct SQLLiteralValue* vals, u32 nvals);
 
 #endif

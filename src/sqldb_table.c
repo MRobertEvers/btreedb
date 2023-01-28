@@ -24,7 +24,7 @@ sqldb_table_prepare_record(
 	if( schema_pkey_ind == -1 )
 	{
 		sql_record_emplace_literal_c(record, "1", SQL_LITERAL_TYPE_INT);
-		emplace_schema_column(schema, &tab->columns[schema_pkey_ind]);
+		emplace_schema_column(schema, &tab->columns[pkey_ind]);
 	}
 
 	return SQL_OK;

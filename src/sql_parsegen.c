@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 static int
-find_primary_key(struct SQLParsedCreateTable* parsed)
+find_primary_key(struct SQLParsedCreateTable const* parsed)
 {
 	bool has_primary_key = false;
 	for( int i = 0; i < parsed->ncolumns; i++ )
@@ -72,4 +72,6 @@ sql_parsegen_record_from_insert(
 		out_record->values[i].value = sql_string_copy(insert->values[i].value);
 	}
 	out_record->nvalues = insert->ncolumns;
+
+	return SQL_OK;
 }

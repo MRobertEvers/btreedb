@@ -196,7 +196,7 @@ parse_create_table(struct Lexer* lex, bool* success)
 		create_table.columns[create_table.ncolumns].is_primary_key = false;
 
 		create_table.ncolumns += 1;
-	} while( next(lex) != SQL_COMMA && create_table.ncolumns < 4 );
+	} while( next(lex) == SQL_COMMA && create_table.ncolumns < 4 );
 
 	if( current(lex) != SQL_CLOSE_PAREN )
 		goto fail;

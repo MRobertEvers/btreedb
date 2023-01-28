@@ -3,6 +3,7 @@
 #include "sql_main.h"
 
 #include "btree_factory.h"
+#include "btree_node_debug.h"
 #include "ibtree.h"
 #include "serialization.h"
 #include "sql_ibtree.h"
@@ -48,6 +49,8 @@ main()
 	// Serialize record
 	struct SQLSerializedRecord serred;
 	sql_ibtree_serialize_record(&table, &record_schema, &record, &serred);
+
+	dbg_print_buffer(serred.buf, serred.size);
 
 	// Insert
 	ibtree_insert(tree, serred.buf, serred.size);

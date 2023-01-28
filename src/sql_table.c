@@ -11,7 +11,7 @@ sql_column_init(
 {
 	col->name = sql_string_create_from_cstring(name);
 	col->type = type;
-	col->is_primary_key = false;
+	col->is_primary_key = primary;
 }
 
 void

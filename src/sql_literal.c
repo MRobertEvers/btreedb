@@ -8,7 +8,7 @@
 
 int
 sql_literal_array_serialize(
-	struct SQLLiteralValue** vals, u32 nvals, void* buf, u32 buf_size)
+	struct SQLLiteralValue* vals, u32 nvals, void* buf, u32 buf_size)
 {
 	byte* ptr = buf;
 	u32 written = 0;
@@ -16,7 +16,7 @@ sql_literal_array_serialize(
 	{
 		// TODO: Bounds checking
 		written +=
-			sql_literal_serialize(vals[i], ptr + written, buf_size - written);
+			sql_literal_serialize(&vals[i], ptr + written, buf_size - written);
 	}
 
 	return written;
@@ -36,7 +36,7 @@ sql_literal_serialize(struct SQLLiteralValue* val, void* buf, u32 size)
 		break;
 	case SQL_LITERAL_TYPE_INT:
 	{
-		int i = atoi(val->value);
+		int i = atoi(sql_string_raw(val->value));
 		ser_write_32bit_le(ptr, i);
 		ptr += 4;
 	}
@@ -51,12 +51,12 @@ sql_literal_serialize(struct SQLLiteralValue* val, void* buf, u32 size)
 }
 
 u32
-sql_literal_array_ser_size(struct SQLLiteralValue** vals, u32 nvals)
+sql_literal_array_ser_size(struct SQLLiteralValue* vals, u32 nvals)
 {
 	u32 size = 0;
 	for( int i = 0; i < nvals; i++ )
 	{
-		struct SQLLiteralValue* val = vals[i];
+		struct SQLLiteralValue* val = &vals[i];
 		switch( val->type )
 		{
 		case SQL_LITERAL_TYPE_STRING:

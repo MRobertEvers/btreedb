@@ -11,7 +11,7 @@ enum sql_token_e
 	SQL_STRING_LITERAL,	   // 5
 	SQL_INT_LITERAL,	   // 6
 	SQL_IDENTIFIER,		   // 7
-	SQL_COMMA,
+	SQL_COMMA,			   // 8
 	SQL_OPEN_PAREN,
 	SQL_CLOSE_PAREN,
 };
