@@ -22,6 +22,6 @@ bool sql_string_equals(struct SQLString const* l, struct SQLString const* r);
 char const* sql_string_raw(struct SQLString const* l);
 u32 sql_string_len(struct SQLString const* l);
 
-void sql_string_free(struct SQLString*);
+void sql_string_destroy(struct SQLString*);
 
 #endif

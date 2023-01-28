@@ -25,7 +25,7 @@ sql_record_emplace_literal_c(
 	sql_value_acquire_eval(&record->values[record->nvalues], &literal);
 	record->nvalues += 1;
 
-	sql_string_free(literal.value);
+	sql_string_destroy(literal.value);
 }
 
 void
@@ -40,5 +40,5 @@ sql_record_emplace_literal(
 	sql_value_acquire_eval(&record->values[record->nvalues], &literal);
 	record->nvalues += 1;
 
-	sql_string_free(literal.value);
+	sql_string_destroy(literal.value);
 }

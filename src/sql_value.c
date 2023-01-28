@@ -36,7 +36,7 @@ sql_value_release(struct SQLValue* value)
 	switch( value->type )
 	{
 	case SQL_VALUE_TYPE_STRING:
-		sql_string_free(value->value.string);
+		sql_string_destroy(value->value.string);
 		break;
 	case SQL_VALUE_TYPE_INT:
 		break;

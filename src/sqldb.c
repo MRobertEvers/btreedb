@@ -39,5 +39,5 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 	sqldb_seq_tbl_next(sqldb, str, &seq);
 	btree_insert(sqldb->meta.tb_table_definitions, seq, buffer, ser_size);
 
-	sql_string_free(str);
+	sql_string_destroy(str);
 }

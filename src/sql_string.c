@@ -76,7 +76,7 @@ sql_string_len(struct SQLString const* l)
 }
 
 void
-sql_string_free(struct SQLString* str)
+sql_string_destroy(struct SQLString* str)
 {
 	free(str);
 }
