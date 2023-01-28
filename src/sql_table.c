@@ -3,13 +3,27 @@
 #include <string.h>
 
 void
-sql_column_init(
+sql_column_init_c(
 	struct SQLTableColumn* col,
 	char const* name,
 	enum sql_dt_e type,
 	bool primary)
 {
+	// TODO: Free
 	col->name = sql_string_create_from_cstring(name);
+	col->type = type;
+	col->is_primary_key = primary;
+}
+
+void
+sql_column_init(
+	struct SQLTableColumn* col,
+	struct SQLString* name,
+	enum sql_dt_e type,
+	bool primary)
+{
+	// TODO: Free
+	col->name = sql_string_copy(name);
 	col->type = type;
 	col->is_primary_key = primary;
 }
@@ -38,8 +52,18 @@ sql_table_add_column(struct SQLTable* tbl, struct SQLTableColumn* col)
 }
 
 void
-sql_table_emplace_column(
+sql_table_emplace_column_c(
 	struct SQLTable* tbl, char const* name, enum sql_dt_e type, bool primary)
+{
+	sql_column_init_c(&tbl->columns[tbl->ncolumns++], name, type, primary);
+}
+
+void
+sql_table_emplace_column(
+	struct SQLTable* tbl,
+	struct SQLString* name,
+	enum sql_dt_e type,
+	bool primary)
 {
 	sql_column_init(&tbl->columns[tbl->ncolumns++], name, type, primary);
 }

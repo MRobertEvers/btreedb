@@ -25,8 +25,10 @@ struct OpSelection
 	u32 key_size;
 };
 
+// Table table
 enum btree_e btree_op_select_acquire_tbl(
 	struct BTree* tree, struct OpSelection* op, u32 key, void* cmp_ctx);
+// Index table
 enum btree_e btree_op_select_acquire_index(
 	struct BTree* tree,
 	struct OpSelection* op,

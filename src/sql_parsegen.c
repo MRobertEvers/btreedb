@@ -1,5 +1,7 @@
 #include "sql_parsegen.h"
 
+#include "sql_value.h"
+
 #include <stdbool.h>
 
 static int
@@ -26,7 +28,7 @@ sql_parsegen_table_from_create_table(
 
 	if( pkey_ind == -1 )
 	{
-		sql_table_emplace_column(out_tbl, "id", SQL_DT_INT, true);
+		sql_table_emplace_column_c(out_tbl, "id", SQL_DT_INT, true);
 	}
 
 	// TODO: Put pkey in the front.
@@ -61,6 +63,7 @@ sql_parsegen_record_from_insert(
 	struct SQLRecordSchema* schema,
 	struct SQLRecord* out_record)
 {
+	enum sql_e result = SQL_OK;
 	// TODO: Multiple values.
 	if( insert->ncolumns != insert->nvalues )
 		return SQL_ERR_INVALID_SQL;
@@ -68,10 +71,14 @@ sql_parsegen_record_from_insert(
 	out_record->schema = schema;
 	for( int i = 0; i < insert->ncolumns; i++ )
 	{
-		out_record->values[i].type = insert->values[i].type;
-		out_record->values[i].value = sql_string_copy(insert->values[i].value);
+		// TODO: Better error handling. Free.
+		// Free the strings.
+		result =
+			sql_value_acquire_eval(&out_record->values[i], &insert->values[i]);
+		if( result != SQL_OK )
+			goto end;
 	}
 	out_record->nvalues = insert->ncolumns;
-
+end:
 	return SQL_OK;
 }

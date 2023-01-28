@@ -118,5 +118,6 @@ struct BTreeNodeRC* cursor_rcer(struct Cursor* cursor);
 struct BTree* cursor_tree(struct Cursor* cursor);
 enum btree_type_e cursor_tree_type(struct Cursor* cursor);
 struct Pager* cursor_pager(struct Cursor* cursor);
+struct ChildListIndex* cursor_curr_ind(struct Cursor* cursor);
 
 #endif

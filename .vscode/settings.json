@@ -71,6 +71,14 @@
         "ibtree.h": "c",
         "sql_parsegen.h": "c",
         "assert.h": "c",
-        "sql_defs.h": "c"
+        "sql_defs.h": "c",
+        "page.h": "c",
+        "cstddef": "c",
+        "sqldb_meta_tbls.h": "c",
+        "sql_literalstr.h": "c",
+        "btree_op_update.h": "c",
+        "string.h": "c",
+        "sql_table.h": "c",
+        "sqldb_defs.h": "c"
     },
 }

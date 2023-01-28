@@ -14,10 +14,16 @@ sql_record_schema_indexof(
 
 void
 sql_record_emplace_literal_c(
-	struct SQLRecord* record, char const* value, enum sql_literal_type_e type)
+	struct SQLRecord* record,
+	char const* value,
+	enum sql_literalstr_type_e type)
 {
-	record->values[record->nvalues].type = type;
-	record->values[record->nvalues].value =
-		sql_string_create_from_cstring(value);
+	struct SQLLiteralValue literal = {
+		.type = type, .value = sql_string_create_from_cstring(value)};
+
+	// TODO: Error check
+	sql_value_acquire_eval(&record->values[record->nvalues], &literal);
 	record->nvalues += 1;
+
+	sql_string_free(literal.value);
 }

@@ -19,6 +19,7 @@ add_executable(db
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_update.c
     src/btree_op_select.c
     src/btree_node_debug.c
     src/btree_cell.c
@@ -51,6 +52,7 @@ add_executable(sql_main
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_update.c
     src/btree_op_select.c
     src/btree_node_debug.c
     src/btree_cell.c
@@ -64,12 +66,15 @@ add_executable(sql_main
     src/btree_factory.c
     src/sql_dt.c
     src/sql_ibtree.c
-    src/sql_literal.c
+    src/sql_literalstr.c
+    src/sql_value.c
     src/sql_parse@flex.c
     src/sql_parsegen.c
     src/sql_record.c
     src/sql_string.c
     src/sql_table.c
+    src/sqldb.c
+    src/sqldb_meta_tbls.c
     src/sqldb_table.c
     bison/sql_lexer.c
     bison/sql_lexer_utils.c
@@ -98,6 +103,7 @@ add_executable(test
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_update.c
     src/btree_op_select.c
     src/btree_node_debug.c
     src/btree_cell.c

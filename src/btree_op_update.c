@@ -1,20 +1,21 @@
-#include "btree_op_select.h"
+#include "btree_op_update.h"
 
 #include "btree_cursor.h"
 #include "btree_node.h"
 #include "btree_node_reader.h"
+#include "btree_node_writer.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 enum btree_e
-btree_op_select_acquire_tbl(
-	struct BTree* tree, struct OpSelection* op, u32 key, void* cmp_ctx)
+btree_op_update_acquire_tbl(
+	struct BTree* tree, struct OpUpdate* op, u32 key, void* cmp_ctx)
 {
 	assert(tree->type == BTREE_TBL);
 
-	memset(op, 0x00, sizeof(struct OpSelection));
+	memset(op, 0x00, sizeof(struct OpUpdate));
 
 	op->cursor = cursor_create_ex(tree, cmp_ctx);
 
@@ -23,22 +24,22 @@ btree_op_select_acquire_tbl(
 	op->key = (byte*)&op->sm_key_buf;
 	op->key_size = sizeof(key);
 	op->data_size = 0;
-	op->step = OP_SELECTION_STEP_INIT;
+	op->step = OP_UPDATE_STEP_INIT;
 
 	return BTREE_OK;
 }
 
 enum btree_e
-btree_op_select_acquire_index(
+btree_op_update_acquire_index(
 	struct BTree* tree,
-	struct OpSelection* op,
+	struct OpUpdate* op,
 	byte* key,
 	u32 key_size,
 	void* cmp_ctx)
 {
 	assert(tree->type == BTREE_INDEX);
 
-	memset(op, 0x00, sizeof(struct OpSelection));
+	memset(op, 0x00, sizeof(struct OpUpdate));
 
 	op->cursor = cursor_create_ex(tree, cmp_ctx);
 
@@ -47,14 +48,14 @@ btree_op_select_acquire_index(
 	op->key = key;
 	op->key_size = key_size;
 	op->data_size = 0;
-	op->step = OP_SELECTION_STEP_INIT;
+	op->step = OP_UPDATE_STEP_INIT;
+
 	return BTREE_OK;
 }
 
 enum btree_e
-btree_op_select_prepare(struct OpSelection* op)
+btree_op_update_prepare(struct OpUpdate* op)
 {
-	assert(op->step == OP_SELECTION_STEP_PREPARED);
 	enum btree_e result = BTREE_OK;
 	char found;
 	struct NodeView nv = {0};
@@ -71,7 +72,7 @@ btree_op_select_prepare(struct OpSelection* op)
 	if( !found )
 	{
 		result = BTREE_ERR_KEY_NOT_FOUND;
-		op->step = OP_SELECTION_STEP_NOT_FOUND;
+		op->step = OP_UPDATE_STEP_NOT_FOUND;
 		goto end;
 	}
 
@@ -90,13 +91,13 @@ btree_op_select_prepare(struct OpSelection* op)
 end:
 	noderc_release(cursor_rcer(cursor), &nv);
 
-	op->step = OP_SELECTION_STEP_PREPARED;
+	op->step = OP_UPDATE_STEP_PREPARED;
 	op->last_status = result;
 	return result;
 }
 
 enum btree_e
-btree_op_select_commit(struct OpSelection* op, void* buffer, u32 buffer_size)
+btree_op_update_preview(struct OpUpdate* op, void* buffer, u32 buffer_size)
 {
 	enum btree_e result = BTREE_OK;
 	struct NodeView nv = {0};
@@ -121,31 +122,76 @@ btree_op_select_commit(struct OpSelection* op, void* buffer, u32 buffer_size)
 end:
 	noderc_release(cursor_rcer(cursor), &nv);
 
-	op->step = OP_SELECTION_STEP_DONE;
 	op->last_status = result;
 	return result;
 }
 
 enum btree_e
-btree_op_select_release(struct OpSelection* op)
+btree_op_update_commit(struct OpUpdate* op, byte* payload, u32 payload_size)
+{
+	// TODO: Validate the the payload key maintains key value
+	assert(op->step == OP_UPDATE_STEP_PREPARED);
+
+	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+	struct Cursor* cursor = op->cursor;
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_read_current(cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
+	assert(cursor->current_key_index.mode == KLIM_INDEX);
+
+	result =
+		btree_node_remove(nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	u32 key = node_key_at(nv_node(&nv), cursor_curr_ind(cursor)->index);
+	struct InsertionIndex insert_index = {
+		.mode = KLIM_INDEX, .index = cursor_curr_ind(cursor)->index};
+	result = btree_node_write_at(
+		nv_node(&nv),
+		cursor_pager(cursor),
+		&insert_index,
+		key,
+		payload,
+		payload_size);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
+	op->step = OP_UPDATE_STEP_DONE;
+	op->last_status = result;
+	return result;
+}
+
+enum btree_e
+btree_op_update_release(struct OpUpdate* op)
 {
 	assert(op != NULL);
-	memset(op, 0x00, sizeof(struct OpSelection));
+	memset(op, 0x00, sizeof(struct OpUpdate));
 
 	if( op->cursor )
 		cursor_destroy(op->cursor);
 
 	op->cursor = NULL;
-	op->step = OP_SELECTION_STEP_DONE;
+	op->step = OP_UPDATE_STEP_DONE;
 	return BTREE_OK;
 }
 
 u32
-op_select_size(struct OpSelection* op)
+op_update_size(struct OpUpdate* op)
 {
 	assert(
-		op->step != OP_SELECTION_STEP_INIT &&
-		op->step != OP_SELECTION_STEP_UNINIT &&
-		op->step != OP_SELECTION_STEP_NOT_FOUND);
+		op->step != OP_UPDATE_STEP_INIT && op->step != OP_UPDATE_STEP_UNINIT &&
+		op->step != OP_UPDATE_STEP_NOT_FOUND);
 	return op->data_size;
 }

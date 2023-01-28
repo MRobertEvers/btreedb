@@ -252,6 +252,7 @@ bool node_is_leaf_set(struct BTreeNode* node, bool is_leaf);
 u32 node_num_keys(struct BTreeNode* node);
 u32 node_right_child(struct BTreeNode* node);
 u32 node_right_child_set(struct BTreeNode* node, u32 right_child);
+u32 node_flags_at(struct BTreeNode* node, u32 index);
 u32 node_key_at(struct BTreeNode* node, u32 index);
 u32 node_key_at_set(struct BTreeNode* node, u32 index, u32 key);
 

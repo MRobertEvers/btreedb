@@ -575,6 +575,36 @@ src/btree_op_select.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_select.c.s
 .PHONY : src/btree_op_select.c.s
 
+src/btree_op_update.o: src/btree_op_update.c.o
+.PHONY : src/btree_op_update.o
+
+# target to build an object file
+src/btree_op_update.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_update.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_update.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_update.c.o
+.PHONY : src/btree_op_update.c.o
+
+src/btree_op_update.i: src/btree_op_update.c.i
+.PHONY : src/btree_op_update.i
+
+# target to preprocess a source file
+src/btree_op_update.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_update.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_update.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_update.c.i
+.PHONY : src/btree_op_update.c.i
+
+src/btree_op_update.s: src/btree_op_update.c.s
+.PHONY : src/btree_op_update.s
+
+# target to generate assembly for a file
+src/btree_op_update.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/db.dir/build.make CMakeFiles/db.dir/src/btree_op_update.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_update.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_op_update.c.s
+.PHONY : src/btree_op_update.c.s
+
 src/btree_overflow.o: src/btree_overflow.c.o
 .PHONY : src/btree_overflow.o
 
@@ -1145,29 +1175,29 @@ src/sql_ibtree.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_ibtree.c.s
 .PHONY : src/sql_ibtree.c.s
 
-src/sql_literal.o: src/sql_literal.c.o
-.PHONY : src/sql_literal.o
+src/sql_literalstr.o: src/sql_literalstr.c.o
+.PHONY : src/sql_literalstr.o
 
 # target to build an object file
-src/sql_literal.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.o
-.PHONY : src/sql_literal.c.o
+src/sql_literalstr.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literalstr.c.o
+.PHONY : src/sql_literalstr.c.o
 
-src/sql_literal.i: src/sql_literal.c.i
-.PHONY : src/sql_literal.i
+src/sql_literalstr.i: src/sql_literalstr.c.i
+.PHONY : src/sql_literalstr.i
 
 # target to preprocess a source file
-src/sql_literal.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.i
-.PHONY : src/sql_literal.c.i
+src/sql_literalstr.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literalstr.c.i
+.PHONY : src/sql_literalstr.c.i
 
-src/sql_literal.s: src/sql_literal.c.s
-.PHONY : src/sql_literal.s
+src/sql_literalstr.s: src/sql_literalstr.c.s
+.PHONY : src/sql_literalstr.s
 
 # target to generate assembly for a file
-src/sql_literal.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literal.c.s
-.PHONY : src/sql_literal.c.s
+src/sql_literalstr.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_literalstr.c.s
+.PHONY : src/sql_literalstr.c.s
 
 src/sql_main.o: src/sql_main.c.o
 .PHONY : src/sql_main.o
@@ -1313,6 +1343,78 @@ src/sql_table.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_table.c.s
 .PHONY : src/sql_table.c.s
 
+src/sql_value.o: src/sql_value.c.o
+.PHONY : src/sql_value.o
+
+# target to build an object file
+src/sql_value.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_value.c.o
+.PHONY : src/sql_value.c.o
+
+src/sql_value.i: src/sql_value.c.i
+.PHONY : src/sql_value.i
+
+# target to preprocess a source file
+src/sql_value.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_value.c.i
+.PHONY : src/sql_value.c.i
+
+src/sql_value.s: src/sql_value.c.s
+.PHONY : src/sql_value.s
+
+# target to generate assembly for a file
+src/sql_value.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_value.c.s
+.PHONY : src/sql_value.c.s
+
+src/sqldb.o: src/sqldb.c.o
+.PHONY : src/sqldb.o
+
+# target to build an object file
+src/sqldb.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb.c.o
+.PHONY : src/sqldb.c.o
+
+src/sqldb.i: src/sqldb.c.i
+.PHONY : src/sqldb.i
+
+# target to preprocess a source file
+src/sqldb.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb.c.i
+.PHONY : src/sqldb.c.i
+
+src/sqldb.s: src/sqldb.c.s
+.PHONY : src/sqldb.s
+
+# target to generate assembly for a file
+src/sqldb.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb.c.s
+.PHONY : src/sqldb.c.s
+
+src/sqldb_meta_tbls.o: src/sqldb_meta_tbls.c.o
+.PHONY : src/sqldb_meta_tbls.o
+
+# target to build an object file
+src/sqldb_meta_tbls.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_meta_tbls.c.o
+.PHONY : src/sqldb_meta_tbls.c.o
+
+src/sqldb_meta_tbls.i: src/sqldb_meta_tbls.c.i
+.PHONY : src/sqldb_meta_tbls.i
+
+# target to preprocess a source file
+src/sqldb_meta_tbls.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_meta_tbls.c.i
+.PHONY : src/sqldb_meta_tbls.c.i
+
+src/sqldb_meta_tbls.s: src/sqldb_meta_tbls.c.s
+.PHONY : src/sqldb_meta_tbls.s
+
+# target to generate assembly for a file
+src/sqldb_meta_tbls.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_meta_tbls.c.s
+.PHONY : src/sqldb_meta_tbls.c.s
+
 src/sqldb_table.o: src/sqldb_table.c.o
 .PHONY : src/sqldb_table.o
 
@@ -1417,6 +1519,9 @@ help:
 	@echo "... src/btree_op_select.o"
 	@echo "... src/btree_op_select.i"
 	@echo "... src/btree_op_select.s"
+	@echo "... src/btree_op_update.o"
+	@echo "... src/btree_op_update.i"
+	@echo "... src/btree_op_update.s"
 	@echo "... src/btree_overflow.o"
 	@echo "... src/btree_overflow.i"
 	@echo "... src/btree_overflow.s"
@@ -1480,9 +1585,9 @@ help:
 	@echo "... src/sql_ibtree.o"
 	@echo "... src/sql_ibtree.i"
 	@echo "... src/sql_ibtree.s"
-	@echo "... src/sql_literal.o"
-	@echo "... src/sql_literal.i"
-	@echo "... src/sql_literal.s"
+	@echo "... src/sql_literalstr.o"
+	@echo "... src/sql_literalstr.i"
+	@echo "... src/sql_literalstr.s"
 	@echo "... src/sql_main.o"
 	@echo "... src/sql_main.i"
 	@echo "... src/sql_main.s"
@@ -1501,6 +1606,15 @@ help:
 	@echo "... src/sql_table.o"
 	@echo "... src/sql_table.i"
 	@echo "... src/sql_table.s"
+	@echo "... src/sql_value.o"
+	@echo "... src/sql_value.i"
+	@echo "... src/sql_value.s"
+	@echo "... src/sqldb.o"
+	@echo "... src/sqldb.i"
+	@echo "... src/sqldb.s"
+	@echo "... src/sqldb_meta_tbls.o"
+	@echo "... src/sqldb_meta_tbls.i"
+	@echo "... src/sqldb_meta_tbls.s"
 	@echo "... src/sqldb_table.o"
 	@echo "... src/sqldb_table.i"
 	@echo "... src/sqldb_table.s"

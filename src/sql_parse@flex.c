@@ -34,17 +34,17 @@ leng(struct Lexer* lexer)
 	return yyget_leng(*lexer->scanner);
 }
 
-static enum sql_literal_type_e
+static enum sql_literalstr_type_e
 get_data_type_from_sql_type(enum sql_token_e tok_type)
 {
 	switch( tok_type )
 	{
 	case SQL_INT_LITERAL:
-		return SQL_LITERAL_TYPE_INT;
+		return SQL_LITERALSTR_TYPE_INT;
 	case SQL_STRING_LITERAL:
-		return SQL_LITERAL_TYPE_STRING;
+		return SQL_LITERALSTR_TYPE_STRING;
 	default:
-		return SQL_LITERAL_TYPE_INVAL;
+		return SQL_LITERALSTR_TYPE_INVAL;
 	}
 }
 

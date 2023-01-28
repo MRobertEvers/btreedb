@@ -24,6 +24,14 @@ enum btree_e btree_node_write(
 	void* data,
 	u32 data_size);
 
+enum btree_e btree_node_write_at(
+	struct BTreeNode* node,
+	struct Pager* pager,
+	struct InsertionIndex* insertion_index,
+	u32 key,
+	void* data,
+	u32 data_size);
+
 enum writer_ex_mode_e
 {
 	WRITER_EX_MODE_RAW,

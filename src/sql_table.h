@@ -22,17 +22,27 @@ struct SQLTable
 	struct SQLString* table_name;
 };
 
-void sql_column_init(
+void sql_column_init_c(
 	struct SQLTableColumn* col,
 	char const* name,
+	enum sql_dt_e type,
+	bool primary);
+void sql_column_init(
+	struct SQLTableColumn* col,
+	struct SQLString* name,
 	enum sql_dt_e type,
 	bool primary);
 void sql_column_move(struct SQLTableColumn* l, struct SQLTableColumn* r);
 
 void sql_table_init_empty(struct SQLTable* tbl, char const* name);
 void sql_table_add_column(struct SQLTable* tbl, struct SQLTableColumn* col);
-void sql_table_emplace_column(
+void sql_table_emplace_column_c(
 	struct SQLTable* tbl, char const* name, enum sql_dt_e type, bool primary);
+void sql_table_emplace_column(
+	struct SQLTable* tbl,
+	struct SQLString* name,
+	enum sql_dt_e type,
+	bool primary);
 
 int sql_table_find_primary_key(struct SQLTable* tbl);
 

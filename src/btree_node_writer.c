@@ -43,6 +43,26 @@ btree_node_write(
 }
 
 enum btree_e
+btree_node_write_at(
+	struct BTreeNode* node,
+	struct Pager* pager,
+	struct InsertionIndex* insertion_index,
+	u32 key,
+	void* data,
+	u32 data_size)
+{
+	return btree_node_write_ex(
+		node,
+		pager,
+		insertion_index,
+		key,
+		0,
+		data,
+		data_size,
+		WRITER_EX_MODE_RAW);
+}
+
+enum btree_e
 btree_node_write_ex(
 	struct BTreeNode* node,
 	struct Pager* pager,

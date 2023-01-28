@@ -3,10 +3,15 @@
 
 #include "btree_defs.h"
 
-struct SQLDB
+struct SQLDBMetaTables
 {
 	struct BTree* tb_table_definitions;
 	struct BTree* tb_sequences;
+};
+
+struct SQLDB
+{
+	struct SQLDBMetaTables meta;
 };
 
 #endif

@@ -86,13 +86,13 @@ sql_ibtree_serialize_record(
 	if( schema_pkey_ind == -1 )
 		return SQL_ERR_RECORD_MISSING_PKEY;
 
-	u32 size = sql_literal_array_ser_size(&record->values, record->nvalues);
+	u32 size = sql_value_array_ser_size(&record->values, record->nvalues);
 
 	byte* buffer = (byte*)malloc(size);
 
 	byte* ptr = buffer;
 	u32 written = 0;
-	written += sql_literal_serialize(
+	written += sql_value_serialize(
 		&record->values[schema_pkey_ind], ptr, size - written);
 
 	for( int i = 0; i < record->nvalues; i++ )
@@ -100,7 +100,7 @@ sql_ibtree_serialize_record(
 		if( i == schema_pkey_ind )
 			continue;
 		// TODO: Bounds checking
-		written += sql_literal_serialize(
+		written += sql_value_serialize(
 			&record->values[i], ptr + written, size - written);
 	}
 

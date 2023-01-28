@@ -2,8 +2,8 @@
 #define SQL_RECORD_H_
 
 #include "btint.h"
-#include "sql_literal.h"
 #include "sql_string.h"
+#include "sql_value.h"
 
 // Column names for records; multiple records may reference this.
 /**
@@ -20,7 +20,7 @@ struct SQLRecordSchema
 struct SQLRecord
 {
 	struct SQLRecordSchema* schema;
-	struct SQLLiteralValue values[8];
+	struct SQLValue values[8];
 	u32 nvalues;
 };
 
@@ -28,6 +28,6 @@ int sql_record_schema_indexof(
 	struct SQLRecordSchema* schema, struct SQLString* column_name);
 
 void sql_record_emplace_literal_c(
-	struct SQLRecord* schema, char const* value, enum sql_literal_type_e);
+	struct SQLRecord* schema, char const* value, enum sql_literalstr_type_e);
 
 #endif

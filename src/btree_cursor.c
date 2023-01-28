@@ -722,3 +722,9 @@ cursor_pager(struct Cursor* cursor)
 {
 	return cursor->tree->pager;
 }
+
+struct ChildListIndex*
+cursor_curr_ind(struct Cursor* cursor)
+{
+	return &cursor->current_key_index;
+}

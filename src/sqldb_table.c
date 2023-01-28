@@ -23,7 +23,7 @@ sqldb_table_prepare_record(
 		sql_record_schema_indexof(schema, tab->columns[pkey_ind].name);
 	if( schema_pkey_ind == -1 )
 	{
-		sql_record_emplace_literal_c(record, "1", SQL_LITERAL_TYPE_INT);
+		sql_record_emplace_literal_c(record, "1", SQL_LITERALSTR_TYPE_INT);
 		emplace_schema_column(schema, &tab->columns[pkey_ind]);
 	}
 

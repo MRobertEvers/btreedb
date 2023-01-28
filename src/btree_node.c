@@ -903,6 +903,12 @@ node_right_child_set(struct BTreeNode* node, u32 right_child)
 }
 
 u32
+node_flags_at(struct BTreeNode* node, u32 index)
+{
+	return node->keys[index].flags;
+}
+
+u32
 node_key_at(struct BTreeNode* node, u32 index)
 {
 	return node->keys[index].key;
