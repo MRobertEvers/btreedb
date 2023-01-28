@@ -70,9 +70,12 @@ sqldb_meta_serialize_table_def_size(struct SQLTable* table)
 {
 	u32 size = 0;
 
-	size += 4;
+	size += 4; // table id
+
+	// name
 	size += 4 + sql_string_len(table->table_name);
 
+	// Col array
 	u32 sizeof_col_array = 0;
 	for( int i = 0; i < table->ncolumns; i++ )
 	{
@@ -93,17 +96,10 @@ sqldb_meta_serialize_table_def(struct SQLTable* table, void* buf, u32 buf_size)
 	byte* ptr = buf;
 	// sql_value_array_ser_size()
 	// TODO: Table id
-	ptr += sql_value_serialize_int(1, buf, ptr - start);
+	ptr += sql_value_serialize_int(1, ptr, ptr - start);
 	ptr += sql_value_serialize_string(table->table_name, ptr, ptr - start);
 
-	u32 sizeof_col_array = 0;
-	for( int i = 0; i < table->ncolumns; i++ )
-	{
-		// +4 for sizeof string. +1 for type
-		sizeof_col_array += sql_string_len(table->columns[i].name) + 4 + 1;
-	}
-
-	ptr += sql_value_serialize_int(sizeof_col_array, buf, ptr - start);
+	ptr += sql_value_serialize_int(table->ncolumns, ptr, ptr - start);
 	for( int i = 0; i < table->ncolumns; i++ )
 	{
 		*ptr = table->columns[i].type;
