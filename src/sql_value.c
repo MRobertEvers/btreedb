@@ -95,8 +95,8 @@ sql_value_array_ser_size(struct SQLValue* vals, u32 nvals)
 	return size;
 }
 
-int
-sql_string_ser(struct SQLString* val, void* buf, u32 size)
+static int
+sql_string_ser(struct SQLString const* val, void* buf, u32 size)
 {
 	byte* ptr = buf;
 	ser_write_32bit_le(ptr, sql_string_len(val));
@@ -116,7 +116,7 @@ sql_value_serialize_int(int val, void* buf, u32 buf_size)
 }
 
 int
-sql_value_serialize_string(struct SQLString* str, void* buf, u32 buf_size)
+sql_value_serialize_string(struct SQLString const* str, void* buf, u32 buf_size)
 {
 	return sql_string_ser(str, buf, buf_size);
 }

@@ -30,4 +30,9 @@ int sql_record_schema_indexof(
 void sql_record_emplace_literal_c(
 	struct SQLRecord* schema, char const* value, enum sql_literalstr_type_e);
 
+void sql_record_emplace_literal(
+	struct SQLRecord* record,
+	struct SQLString const* lit,
+	enum sql_literalstr_type_e);
+
 #endif

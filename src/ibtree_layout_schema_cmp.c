@@ -16,6 +16,21 @@ min(int left, int right)
 	return left < right ? left : right;
 }
 
+void
+ibtls_init_compare_context_from_schema(
+	struct IBTLSCompareContext* out_context,
+	struct IBTreeLayoutSchema* schema,
+	enum payload_compare_type_e type)
+{
+	struct IBTLSCompareContext ctx = {
+		.schema = *schema,
+		.curr_key = 0,
+		.initted = false,
+		.type = PAYLOAD_COMPARE_TYPE_KEY};
+
+	*out_context = ctx;
+}
+
 struct Comparison
 {
 	void* cmp_wnd;
@@ -302,6 +317,9 @@ ibtls_compare(
 		else if( cmp_remaining )
 			// The stored bytes are longer than the key
 			return 1;
+		else
+			// They are both done.
+			return 0;
 
 		// There are remaining bytes for both keys. Wait for caller to call
 		// again.

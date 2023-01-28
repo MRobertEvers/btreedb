@@ -34,7 +34,8 @@ enum sql_e sql_value_acquire_eval(
 enum sql_e sql_value_release(struct SQLValue* value);
 
 int sql_value_serialize_int(int, void* buf, u32 buf_size);
-int sql_value_serialize_string(struct SQLString* str, void* buf, u32 buf_size);
+int sql_value_serialize_string(
+	struct SQLString const* str, void* buf, u32 buf_size);
 int sql_value_array_serialize(
 	struct SQLValue* vals, u32 nvals, void* buf, u32 size);
 u32 sql_value_array_ser_size(struct SQLValue* vals, u32 nvals);

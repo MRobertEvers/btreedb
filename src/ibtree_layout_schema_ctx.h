@@ -4,6 +4,8 @@
 #include "btint.h"
 #include "ibtree_layout_schema.h"
 
+#include <stdbool.h>
+
 enum payload_compare_type_e
 {
 	PAYLOAD_COMPARE_TYPE_INVALID = 0,

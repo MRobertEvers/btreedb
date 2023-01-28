@@ -18,9 +18,9 @@ struct SQLString* sql_string_create_from_cstring(char const* s);
 struct SQLString* sql_string_copy(struct SQLString const* l);
 void sql_string_move(struct SQLString* l, struct SQLString* r);
 
-bool sql_string_equals(struct SQLString* l, struct SQLString* r);
-char* sql_string_raw(struct SQLString* l);
-u32 sql_string_len(struct SQLString* l);
+bool sql_string_equals(struct SQLString const* l, struct SQLString const* r);
+char const* sql_string_raw(struct SQLString const* l);
+u32 sql_string_len(struct SQLString const* l);
 
 void sql_string_free(struct SQLString*);
 

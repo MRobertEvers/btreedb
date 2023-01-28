@@ -1415,6 +1415,30 @@ src/sqldb_meta_tbls.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_meta_tbls.c.s
 .PHONY : src/sqldb_meta_tbls.c.s
 
+src/sqldb_seq_tbl.o: src/sqldb_seq_tbl.c.o
+.PHONY : src/sqldb_seq_tbl.o
+
+# target to build an object file
+src/sqldb_seq_tbl.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_seq_tbl.c.o
+.PHONY : src/sqldb_seq_tbl.c.o
+
+src/sqldb_seq_tbl.i: src/sqldb_seq_tbl.c.i
+.PHONY : src/sqldb_seq_tbl.i
+
+# target to preprocess a source file
+src/sqldb_seq_tbl.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_seq_tbl.c.i
+.PHONY : src/sqldb_seq_tbl.c.i
+
+src/sqldb_seq_tbl.s: src/sqldb_seq_tbl.c.s
+.PHONY : src/sqldb_seq_tbl.s
+
+# target to generate assembly for a file
+src/sqldb_seq_tbl.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_seq_tbl.c.s
+.PHONY : src/sqldb_seq_tbl.c.s
+
 src/sqldb_table.o: src/sqldb_table.c.o
 .PHONY : src/sqldb_table.o
 
@@ -1615,6 +1639,9 @@ help:
 	@echo "... src/sqldb_meta_tbls.o"
 	@echo "... src/sqldb_meta_tbls.i"
 	@echo "... src/sqldb_meta_tbls.s"
+	@echo "... src/sqldb_seq_tbl.o"
+	@echo "... src/sqldb_seq_tbl.i"
+	@echo "... src/sqldb_seq_tbl.s"
 	@echo "... src/sqldb_table.o"
 	@echo "... src/sqldb_table.i"
 	@echo "... src/sqldb_table.s"

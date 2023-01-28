@@ -27,3 +27,18 @@ sql_record_emplace_literal_c(
 
 	sql_string_free(literal.value);
 }
+
+void
+sql_record_emplace_literal(
+	struct SQLRecord* record,
+	struct SQLString const* value,
+	enum sql_literalstr_type_e type)
+{
+	struct SQLLiteralValue literal = {
+		.type = type, .value = sql_string_copy(value)};
+
+	sql_value_acquire_eval(&record->values[record->nvalues], &literal);
+	record->nvalues += 1;
+
+	sql_string_free(literal.value);
+}

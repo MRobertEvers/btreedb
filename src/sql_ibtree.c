@@ -27,6 +27,22 @@ convert_to_schema_type(enum sql_dt_e dt)
 	return IBTLSK_TYPE_INVALID;
 }
 
+static enum sql_value_type_e
+convert_to_value_type(enum sql_dt_e dt)
+{
+	switch( dt )
+	{
+	case SQL_DT_INT:
+		return SQL_VALUE_TYPE_INT;
+	case SQL_DT_STRING:
+		return SQL_VALUE_TYPE_STRING;
+	default:
+		assert(0);
+	}
+
+	return SQL_VALUE_TYPE_INVAL;
+}
+
 static void
 emplace_schema_def(struct IBTLSKeyDef* def, struct SQLTableColumn* col)
 {
@@ -72,14 +88,22 @@ find_pkey_in_schema(
 }
 
 enum sql_e
+sql_ibtree_serialize_record_size(struct SQLRecord* record)
+{
+	return sql_value_array_ser_size(record->values, record->nvalues);
+}
+
+enum sql_e
 sql_ibtree_serialize_record(
 	struct SQLTable* tbl,
-	struct SQLRecordSchema* schema,
+
 	struct SQLRecord* record,
 	struct SQLSerializedRecord* out_serialized)
 {
 	int pkey_ind = find_primary_key(tbl);
 	assert(pkey_ind != -1);
+
+	struct SQLRecordSchema* schema = record->schema;
 
 	int schema_pkey_ind =
 		find_pkey_in_schema(schema, tbl->columns[pkey_ind].name);
@@ -106,6 +130,52 @@ sql_ibtree_serialize_record(
 
 	out_serialized->buf = buffer;
 	out_serialized->size = size;
+
+	return SQL_OK;
+}
+
+enum sql_e
+sql_ibtree_deserialize_record(
+	struct SQLTable* tbl,
+	struct SQLRecordSchema* out_schema,
+	struct SQLRecord* out_record,
+	void* buf,
+	u32 size)
+{
+	byte* start = buf;
+	byte* ptr = buf;
+
+	int pkey_ind = sql_table_find_primary_key(tbl);
+	assert(pkey_ind != -1);
+
+	// First col is always pkey
+	ptr += sql_value_deserialize_as(
+		&out_record->values[out_record->nvalues],
+		convert_to_value_type(tbl->columns[pkey_ind].type),
+		ptr,
+		size - (ptr - start));
+	out_record->nvalues += 1;
+
+	out_schema->columns[0] = sql_string_copy(tbl->columns[pkey_ind].name);
+	out_schema->ncolumns += 1;
+
+	for( int i = 0; i < tbl->ncolumns; i++ )
+	{
+		if( i == pkey_ind )
+			continue;
+		ptr += sql_value_deserialize_as(
+			&out_record->values[out_record->nvalues],
+			convert_to_value_type(tbl->columns[i].type),
+			ptr,
+			size - (ptr - start));
+		out_record->nvalues += 1;
+
+		out_schema->columns[out_schema->ncolumns] =
+			sql_string_copy(tbl->columns[i].name);
+		out_schema->ncolumns += 1;
+	}
+
+	out_record->schema = out_schema;
 
 	return SQL_OK;
 }

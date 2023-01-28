@@ -18,7 +18,7 @@ sql_string_create(u32 capacity)
 	struct SQLString* str = (struct SQLString*)buf;
 
 	// Cute trick to get a pointer just passed the end of the struct.
-	str->ptr = &str[1];
+	str->ptr = (char*)&str[1];
 	str->capacity = capacity;
 	str->size = 0;
 
@@ -58,19 +58,19 @@ sql_string_move(struct SQLString* l, struct SQLString* r)
 }
 
 bool
-sql_string_equals(struct SQLString* l, struct SQLString* r)
+sql_string_equals(struct SQLString const* l, struct SQLString const* r)
 {
 	return l->size == r->size && memcmp(l->ptr, r->ptr, l->size) == 0;
 }
 
-char*
-sql_string_raw(struct SQLString* l)
+char const*
+sql_string_raw(struct SQLString const* l)
 {
 	return l->ptr;
 }
 
 u32
-sql_string_len(struct SQLString* l)
+sql_string_len(struct SQLString const* l)
 {
 	return l->size;
 }

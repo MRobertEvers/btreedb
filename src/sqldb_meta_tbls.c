@@ -3,6 +3,7 @@
 #include "btree_factory.h"
 #include "serialization.h"
 #include "sql_value.h"
+#include "sqldb_seq_tbl.h"
 
 enum sql_e
 sqldb_meta_tables_create(
@@ -13,7 +14,7 @@ sqldb_meta_tables_create(
 	// TODO: Free
 	sqldb_meta->tb_table_definitions =
 		btree_factory_create_ex(pager, BTREE_TBL, 1);
-	sqldb_meta->tb_sequences = btree_factory_create_ex(pager, BTREE_INDEX, 2);
+	sqldb_meta->tb_sequences = sqldb_seq_tbl_create(pager);
 
 	// TODO: Error
 

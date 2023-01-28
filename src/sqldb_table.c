@@ -11,20 +11,17 @@ emplace_schema_column(
 }
 
 enum sql_e
-sqldb_table_prepare_record(
-	struct SQLTable* tab,
-	struct SQLRecordSchema* schema,
-	struct SQLRecord* record)
+sqldb_table_prepare_record(struct SQLTable* tab, struct SQLRecord* record)
 {
 	int pkey_ind = sql_table_find_primary_key(tab);
 	assert(pkey_ind != -1);
 
 	int schema_pkey_ind =
-		sql_record_schema_indexof(schema, tab->columns[pkey_ind].name);
+		sql_record_schema_indexof(record->schema, tab->columns[pkey_ind].name);
 	if( schema_pkey_ind == -1 )
 	{
 		sql_record_emplace_literal_c(record, "1", SQL_LITERALSTR_TYPE_INT);
-		emplace_schema_column(schema, &tab->columns[pkey_ind]);
+		emplace_schema_column(record->schema, &tab->columns[pkey_ind]);
 	}
 
 	return SQL_OK;

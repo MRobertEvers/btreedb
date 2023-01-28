@@ -2,6 +2,8 @@
 #define IBTREE_LAYOUT_SCHEMA_CMP_H_
 
 #include "btint.h"
+#include "ibtree_layout_schema.h"
+#include "ibtree_layout_schema_ctx.h"
 
 #include <stdbool.h>
 
@@ -53,6 +55,11 @@
  * # During Lookup: PAYLOAD_COMPARE_TYPE_KEY
  * [ 0x04, 0x00, 0x00, 0x00, 'w', 'i', 'l', 'l' ]
  */
+
+void ibtls_init_compare_context_from_schema(
+	struct IBTLSCompareContext* out_context,
+	struct IBTreeLayoutSchema* schema,
+	enum payload_compare_type_e type);
 
 /**
  * @brief A btree compare function.

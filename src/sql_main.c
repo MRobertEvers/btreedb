@@ -45,11 +45,11 @@ temp()
 		&insert_parse.parse.insert, &record_schema);
 	sql_parsegen_record_from_insert(
 		&insert_parse.parse.insert, &record_schema, &record);
-	sqldb_table_prepare_record(&table, &record_schema, &record);
+	sqldb_table_prepare_record(&table, &record);
 
 	// Serialize record
 	struct SQLSerializedRecord serred;
-	sql_ibtree_serialize_record(&table, &record_schema, &record, &serred);
+	sql_ibtree_serialize_record(&table, &record, &serred);
 
 	dbg_print_buffer(serred.buf, serred.size);
 
@@ -79,6 +79,7 @@ main()
 	struct SQLDB* db = NULL;
 	sqldb_create(&db, "sql_db.db");
 
+	sqldb_create_table(db, &table);
 	sqldb_create_table(db, &table);
 
 	// Prepare record

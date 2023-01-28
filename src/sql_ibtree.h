@@ -11,19 +11,21 @@
 enum sql_e sql_ibtree_create_ibt_layout_schema(
 	struct SQLTable* tbl, struct IBTreeLayoutSchema* out_schema);
 
-enum sql_e sql_ibtree_create_ibt_layout_schema(
-	struct SQLTable* tbl, struct IBTreeLayoutSchema* out_schema);
-
 struct SQLSerializedRecord
 {
 	void* buf;
 	u32 size;
 };
 
+enum sql_e sql_ibtree_serialize_record_size(struct SQLRecord*);
 enum sql_e sql_ibtree_serialize_record(
+	struct SQLTable*, struct SQLRecord*, struct SQLSerializedRecord*);
+
+enum sql_e sql_ibtree_deserialize_record(
 	struct SQLTable*,
 	struct SQLRecordSchema*,
 	struct SQLRecord*,
-	struct SQLSerializedRecord*);
+	void* buf,
+	u32 size);
 
 #endif

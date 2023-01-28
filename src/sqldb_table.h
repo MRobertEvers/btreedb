@@ -8,7 +8,6 @@
 #include "sql_table.h"
 
 // TODO: Modifies both schema and record
-enum sql_e sqldb_table_prepare_record(
-	struct SQLTable*, struct SQLRecordSchema*, struct SQLRecord*);
+enum sql_e sqldb_table_prepare_record(struct SQLTable*, struct SQLRecord*);
 
 #endif
