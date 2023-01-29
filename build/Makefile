@@ -1223,6 +1223,30 @@ src/sql_main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_main.c.s
 .PHONY : src/sql_main.c.s
 
+src/sql_parse.o: src/sql_parse.c.o
+.PHONY : src/sql_parse.o
+
+# target to build an object file
+src/sql_parse.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse.c.o
+.PHONY : src/sql_parse.c.o
+
+src/sql_parse.i: src/sql_parse.c.i
+.PHONY : src/sql_parse.i
+
+# target to preprocess a source file
+src/sql_parse.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse.c.i
+.PHONY : src/sql_parse.c.i
+
+src/sql_parse.s: src/sql_parse.c.s
+.PHONY : src/sql_parse.s
+
+# target to generate assembly for a file
+src/sql_parse.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse.c.s
+.PHONY : src/sql_parse.c.s
+
 src/sql_parse@flex.o: src/sql_parse@flex.c.o
 .PHONY : src/sql_parse@flex.o
 
@@ -1246,6 +1270,30 @@ src/sql_parse@flex.s: src/sql_parse@flex.c.s
 src/sql_parse@flex.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parse@flex.c.s
 .PHONY : src/sql_parse@flex.c.s
+
+src/sql_parsed.o: src/sql_parsed.c.o
+.PHONY : src/sql_parsed.o
+
+# target to build an object file
+src/sql_parsed.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsed.c.o
+.PHONY : src/sql_parsed.c.o
+
+src/sql_parsed.i: src/sql_parsed.c.i
+.PHONY : src/sql_parsed.i
+
+# target to preprocess a source file
+src/sql_parsed.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsed.c.i
+.PHONY : src/sql_parsed.c.i
+
+src/sql_parsed.s: src/sql_parsed.c.s
+.PHONY : src/sql_parsed.s
+
+# target to generate assembly for a file
+src/sql_parsed.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_parsed.c.s
+.PHONY : src/sql_parsed.c.s
 
 src/sql_parsegen.o: src/sql_parsegen.c.o
 .PHONY : src/sql_parsegen.o
@@ -1639,9 +1687,15 @@ help:
 	@echo "... src/sql_main.o"
 	@echo "... src/sql_main.i"
 	@echo "... src/sql_main.s"
+	@echo "... src/sql_parse.o"
+	@echo "... src/sql_parse.i"
+	@echo "... src/sql_parse.s"
 	@echo "... src/sql_parse@flex.o"
 	@echo "... src/sql_parse@flex.i"
 	@echo "... src/sql_parse@flex.s"
+	@echo "... src/sql_parsed.o"
+	@echo "... src/sql_parsed.i"
+	@echo "... src/sql_parsed.s"
 	@echo "... src/sql_parsegen.o"
 	@echo "... src/sql_parsegen.i"
 	@echo "... src/sql_parsegen.s"

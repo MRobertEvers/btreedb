@@ -1,6 +1,7 @@
 #include "sql_parse@flex.h"
 
 #include "sql_parse.h"
+#include "sql_parsed.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,27 +48,6 @@ get_data_type_from_sql_type(enum sql_token_e tok_type)
 	default:
 		return SQL_LITERALSTR_TYPE_INVAL;
 	}
-}
-
-static void
-cleanup_insert(struct SQLParsedInsert* insert)
-{
-	if( insert->table_name )
-		sql_string_destroy(insert->table_name);
-
-	for( int i = 0; i < insert->ncolumns; i++ )
-	{
-		if( insert->columns[i] )
-			sql_string_destroy(insert->columns[i]);
-	}
-
-	for( int i = 0; i < insert->nvalues; i++ )
-	{
-		if( insert->values[i].value )
-			sql_string_destroy(insert->values[i].value);
-	}
-
-	memset(insert, 0x00, sizeof(*insert));
 }
 
 static struct SQLParsedInsert
@@ -132,7 +112,7 @@ end:
 
 fail:
 	success = false;
-	cleanup_insert(&insert);
+	sql_parsed_insert_cleanup(&insert);
 	goto end;
 }
 
@@ -145,21 +125,6 @@ get_data_type(char const* s)
 		return SQL_DT_INT;
 	else
 		return SQL_DT_INVAL;
-}
-
-static void
-cleanup_create_table(struct SQLParsedCreateTable* tbl)
-{
-	if( tbl->table_name )
-		sql_string_destroy(tbl->table_name);
-
-	for( int i = 0; i < tbl->ncolumns; i++ )
-	{
-		if( tbl->columns[i].name )
-			sql_string_destroy(tbl->columns[i].name);
-	}
-
-	memset(tbl, 0x00, sizeof(*tbl));
 }
 
 static struct SQLParsedCreateTable
@@ -206,12 +171,12 @@ end:
 	return create_table;
 fail:
 	success = false;
-	cleanup_create_table(&create_table);
+	sql_parsed_create_table_cleanup(&create_table);
 	goto end;
 }
 
 struct SQLParse*
-sql_parse(struct SQLString const* str)
+sql_parse_create(struct SQLString const* str)
 {
 	struct SQLParse* parse = (struct SQLParse*)malloc(sizeof(struct SQLParse));
 	struct Lexer lexer = {0};
@@ -252,22 +217,4 @@ cleanup:
 	yylex_destroy(scanner);
 
 	return parse;
-}
-
-void
-sql_parse_release(struct SQLParse* parse)
-{
-	switch( parse->type )
-	{
-	case SQL_PARSE_INSERT:
-		cleanup_insert(&parse->parse.insert);
-		break;
-	case SQL_PARSE_CREATE_TABLE:
-		cleanup_create_table(&parse->parse.insert);
-		break;
-	case SQL_PARSE_INVALID:
-		break;
-	}
-
-	free(parse);
 }

@@ -69,6 +69,8 @@ add_executable(sql_main
     src/sql_literalstr.c
     src/sql_value.c
     src/sql_parse@flex.c
+    src/sql_parse.c
+    src/sql_parsed.c
     src/sql_parsegen.c
     src/sql_record.c
     src/sql_string.c

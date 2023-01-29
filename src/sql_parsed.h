@@ -38,4 +38,7 @@ struct SQLParsedCreateTable
 	u32 ncolumns;
 };
 
+void sql_parsed_insert_cleanup(struct SQLParsedInsert* insert);
+void sql_parsed_create_table_cleanup(struct SQLParsedCreateTable* insert);
+
 #endif

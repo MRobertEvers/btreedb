@@ -34,18 +34,18 @@ temp()
 
 	// Parse
 	struct SQLParse* tabparse =
-		sql_parse(sql_string_create_from_cstring(create_tab_string));
+		sql_parse_create(sql_string_create_from_cstring(create_tab_string));
 
 	// Create table struct
 	sql_parsegen_table_from_create_table(&tabparse->parse.create_table, &table);
 
 	// Prepare record
 	struct SQLParse* insert_parse =
-		sql_parse(sql_string_create_from_cstring(insert_into_string));
+		sql_parse_create(sql_string_create_from_cstring(insert_into_string));
 	sql_parsegen_record_schema_from_insert(
-		&insert_parse->parse.insert, &record_schema);
+		&insert_parse->parse.insert, record_schema);
 	sql_parsegen_record_from_insert(
-		&insert_parse->parse.insert, &record_schema, record);
+		&insert_parse->parse.insert, record_schema, record);
 	sqldb_table_prepare_record(&table, record);
 
 	// Serialize record
@@ -56,6 +56,8 @@ temp()
 
 	// Insert
 	ibtree_insert(tree, serred.buf, serred.size);
+
+	return 0;
 }
 
 int
@@ -71,11 +73,11 @@ main()
 
 	// Parse
 	struct SQLString* input = sql_string_create_from_cstring(create_tab_string);
-	struct SQLParse* tabparse = sql_parse(input);
+	struct SQLParse* tabparse = sql_parse_create(input);
 
 	// Create table struct
 	sql_parsegen_table_from_create_table(&tabparse->parse.create_table, table);
-	sql_parse_release(tabparse);
+	sql_parse_destroy(tabparse);
 	sql_string_destroy(input);
 
 	struct SQLDB* db = NULL;
