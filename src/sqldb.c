@@ -36,15 +36,15 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 	u32 ser_size = sqldb_meta_serialize_table_def_size(table);
 	byte* buffer = (byte*)malloc(ser_size);
 
-	result = sqldb_meta_serialize_table_def(table, buffer, ser_size);
-	if( result != SQL_OK )
-		goto end;
-	dbg_print_buffer(buffer, ser_size);
-
 	str = sql_string_create_from_cstring("tables");
 	result = sqldb_seq_tbl_next(sqldb, str, &seq);
 	if( result != SQL_OK )
 		goto end;
+
+	result = sqldb_meta_serialize_table_def(table, seq, buffer, ser_size);
+	if( result != SQL_OK )
+		goto end;
+	dbg_print_buffer(buffer, ser_size);
 
 	result =
 		sqlbt_err(btree_insert(sqldb->tb_tables.tree, seq, buffer, ser_size));

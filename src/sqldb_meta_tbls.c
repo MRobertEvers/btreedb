@@ -87,14 +87,13 @@ sqldb_meta_serialize_table_def_size(struct SQLTable* table)
 }
 
 enum sql_e
-sqldb_meta_serialize_table_def(struct SQLTable* table, void* buf, u32 buf_size)
+sqldb_meta_serialize_table_def(
+	struct SQLTable* table, int table_id, void* buf, u32 buf_size)
 {
 	// TODO: Bounds checks.
 	byte* start = buf;
 	byte* ptr = buf;
-	// sql_value_array_ser_size()
-	// TODO: Table id
-	ptr += sql_value_serialize_int(1, ptr, ptr - start);
+	ptr += sql_value_serialize_int(table_id, ptr, ptr - start);
 	ptr += sql_value_serialize_string(table->table_name, ptr, ptr - start);
 
 	ptr += sql_value_serialize_int(table->ncolumns, ptr, ptr - start);
