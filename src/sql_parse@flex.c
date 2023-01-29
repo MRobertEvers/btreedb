@@ -2,6 +2,7 @@
 
 #include "sql_parse.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 struct Lexer
@@ -209,10 +210,10 @@ fail:
 	goto end;
 }
 
-struct SQLParse
-sql_parse(struct SQLString* str)
+struct SQLParse*
+sql_parse(struct SQLString const* str)
 {
-	struct SQLParse parse = {0};
+	struct SQLParse* parse = (struct SQLParse*)malloc(sizeof(struct SQLParse));
 	struct Lexer lexer = {0};
 	bool parse_success = true;
 
@@ -227,21 +228,21 @@ sql_parse(struct SQLString* str)
 	switch( next(&lexer) )
 	{
 	case SQL_INSERT_KW:
-		parse.parse.insert = parse_insert(&lexer, &parse_success);
-		parse.type = SQL_PARSE_INSERT;
+		parse->parse.insert = parse_insert(&lexer, &parse_success);
+		parse->type = SQL_PARSE_INSERT;
 		break;
 	case SQL_CREATE_TABLE_KW:
-		parse.parse.create_table = parse_create_table(&lexer, &parse_success);
-		parse.type = SQL_PARSE_CREATE_TABLE;
+		parse->parse.create_table = parse_create_table(&lexer, &parse_success);
+		parse->type = SQL_PARSE_CREATE_TABLE;
 		break;
 	default:
-		parse.type = SQL_PARSE_INVALID;
+		parse->type = SQL_PARSE_INVALID;
 		goto cleanup;
 	}
 
 	if( !parse_success )
 	{
-		parse.type = SQL_PARSE_INVALID;
+		parse->type = SQL_PARSE_INVALID;
 	}
 
 cleanup:
@@ -251,4 +252,22 @@ cleanup:
 	yylex_destroy(scanner);
 
 	return parse;
+}
+
+void
+sql_parse_release(struct SQLParse* parse)
+{
+	switch( parse->type )
+	{
+	case SQL_PARSE_INSERT:
+		cleanup_insert(&parse->parse.insert);
+		break;
+	case SQL_PARSE_CREATE_TABLE:
+		cleanup_create_table(&parse->parse.insert);
+		break;
+	case SQL_PARSE_INVALID:
+		break;
+	}
+
+	free(parse);
 }

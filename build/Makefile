@@ -1343,6 +1343,30 @@ src/sql_table.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_table.c.s
 .PHONY : src/sql_table.c.s
 
+src/sql_utils.o: src/sql_utils.c.o
+.PHONY : src/sql_utils.o
+
+# target to build an object file
+src/sql_utils.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_utils.c.o
+.PHONY : src/sql_utils.c.o
+
+src/sql_utils.i: src/sql_utils.c.i
+.PHONY : src/sql_utils.i
+
+# target to preprocess a source file
+src/sql_utils.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_utils.c.i
+.PHONY : src/sql_utils.c.i
+
+src/sql_utils.s: src/sql_utils.c.s
+.PHONY : src/sql_utils.s
+
+# target to generate assembly for a file
+src/sql_utils.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_utils.c.s
+.PHONY : src/sql_utils.c.s
+
 src/sql_value.o: src/sql_value.c.o
 .PHONY : src/sql_value.o
 
@@ -1630,6 +1654,9 @@ help:
 	@echo "... src/sql_table.o"
 	@echo "... src/sql_table.i"
 	@echo "... src/sql_table.s"
+	@echo "... src/sql_utils.o"
+	@echo "... src/sql_utils.i"
+	@echo "... src/sql_utils.s"
 	@echo "... src/sql_value.o"
 	@echo "... src/sql_value.i"
 	@echo "... src/sql_value.s"

@@ -1,5 +1,39 @@
 #include "sql_record.h"
 
+#include <stdlib.h>
+#include <string.h>
+
+struct SQLRecordSchema*
+sql_record_schema_create(void)
+{
+	struct SQLRecordSchema* rs =
+		(struct SQLRecordSchema*)malloc(sizeof(struct SQLRecordSchema));
+	memset(rs, 0x00, sizeof(*rs));
+	return rs;
+}
+
+void
+sql_record_schema_destroy(struct SQLRecordSchema* rs)
+{
+	if( rs )
+		free(rs);
+}
+
+struct SQLRecord*
+sql_record_create(void)
+{
+	struct SQLRecord* record =
+		(struct SQLRecord*)malloc(sizeof(struct SQLRecord));
+	memset(record, 0x00, sizeof(*record));
+	return record;
+}
+void
+sql_record_destroy(struct SQLRecord* record)
+{
+	if( record )
+		free(record);
+}
+
 int
 sql_record_schema_indexof(
 	struct SQLRecordSchema* schema, struct SQLString* column_name)
@@ -10,6 +44,14 @@ sql_record_schema_indexof(
 			return i;
 	}
 	return -1;
+}
+
+void
+sql_record_schema_emplace_colname_c(
+	struct SQLRecordSchema* schema, char const* value)
+{
+	schema->columns[schema->ncolumns] = sql_string_create_from_cstring(value);
+	schema->ncolumns += 1;
 }
 
 void
@@ -41,4 +83,12 @@ sql_record_emplace_literal(
 	record->nvalues += 1;
 
 	sql_string_destroy(literal.value);
+}
+
+void
+sql_record_emplace_number(struct SQLRecord* record, int val)
+{
+	record->values[record->nvalues].type = SQL_VALUE_TYPE_INT;
+	record->values[record->nvalues].value.num.num = val;
+	record->nvalues += 1;
 }

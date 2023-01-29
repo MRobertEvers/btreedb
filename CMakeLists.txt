@@ -77,6 +77,7 @@ add_executable(sql_main
     src/sqldb_meta_tbls.c
     src/sqldb_seq_tbl.c
     src/sqldb_table.c
+    src/sql_utils.c
     bison/sql_lexer.c
     bison/sql_lexer_utils.c
 )

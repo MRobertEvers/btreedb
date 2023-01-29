@@ -20,7 +20,8 @@ struct SQLParse
 	} parse;
 };
 
-struct SQLParse sql_parse(struct SQLString* str);
+struct SQLParse* sql_parse(struct SQLString const* str);
+void sql_parse_release(struct SQLParse* parse);
 
 // TODO: Parse release
 

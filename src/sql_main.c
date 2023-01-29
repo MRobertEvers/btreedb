@@ -29,27 +29,28 @@ temp()
 		"INSERT INTO \"billy\" (\"name\", \"age\") VALUES (\'herby_werby\', 9)";
 
 	struct SQLTable table = {0};
-	struct SQLRecord record = {0};
-	struct SQLRecordSchema record_schema = {0};
+	struct SQLRecord* record = sql_record_create();
+	struct SQLRecordSchema* record_schema = sql_record_schema_create();
+
 	// Parse
-	struct SQLParse tabparse =
+	struct SQLParse* tabparse =
 		sql_parse(sql_string_create_from_cstring(create_tab_string));
 
 	// Create table struct
-	sql_parsegen_table_from_create_table(&tabparse.parse.create_table, &table);
+	sql_parsegen_table_from_create_table(&tabparse->parse.create_table, &table);
 
 	// Prepare record
-	struct SQLParse insert_parse =
+	struct SQLParse* insert_parse =
 		sql_parse(sql_string_create_from_cstring(insert_into_string));
 	sql_parsegen_record_schema_from_insert(
-		&insert_parse.parse.insert, &record_schema);
+		&insert_parse->parse.insert, &record_schema);
 	sql_parsegen_record_from_insert(
-		&insert_parse.parse.insert, &record_schema, &record);
-	sqldb_table_prepare_record(&table, &record);
+		&insert_parse->parse.insert, &record_schema, record);
+	sqldb_table_prepare_record(&table, record);
 
 	// Serialize record
 	struct SQLSerializedRecord serred;
-	sql_ibtree_serialize_record(&table, &record, &serred);
+	sql_ibtree_serialize_record_acquire(&serred, &table, record);
 
 	dbg_print_buffer(serred.buf, serred.size);
 
@@ -66,21 +67,22 @@ main()
 	char insert_into_string[] =
 		"INSERT INTO \"billy\" (\"name\", \"age\") VALUES (\'herby_werby\', 9)";
 
-	struct SQLTable table = {0};
-	struct SQLRecord record = {0};
-	struct SQLRecordSchema record_schema = {0};
+	struct SQLTable* table = sql_table_create();
+
 	// Parse
-	struct SQLParse tabparse =
-		sql_parse(sql_string_create_from_cstring(create_tab_string));
+	struct SQLString* input = sql_string_create_from_cstring(create_tab_string);
+	struct SQLParse* tabparse = sql_parse(input);
 
 	// Create table struct
-	sql_parsegen_table_from_create_table(&tabparse.parse.create_table, &table);
+	sql_parsegen_table_from_create_table(&tabparse->parse.create_table, table);
+	sql_parse_release(tabparse);
+	sql_string_destroy(input);
 
 	struct SQLDB* db = NULL;
 	sqldb_create(&db, "sql_db.db");
 
-	sqldb_create_table(db, &table);
-	sqldb_create_table(db, &table);
+	sqldb_create_table(db, table);
+	sqldb_create_table(db, table);
 
 	// Prepare record
 	// struct SQLParse insert_parse =

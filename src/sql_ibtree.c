@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int
 find_primary_key(struct SQLTable* tbl)
@@ -94,11 +95,10 @@ sql_ibtree_serialize_record_size(struct SQLRecord* record)
 }
 
 enum sql_e
-sql_ibtree_serialize_record(
+sql_ibtree_serialize_record_acquire(
+	struct SQLSerializedRecord* out_serialized,
 	struct SQLTable* tbl,
-
-	struct SQLRecord* record,
-	struct SQLSerializedRecord* out_serialized)
+	struct SQLRecord* record)
 {
 	int pkey_ind = find_primary_key(tbl);
 	assert(pkey_ind != -1);
@@ -132,6 +132,15 @@ sql_ibtree_serialize_record(
 	out_serialized->size = size;
 
 	return SQL_OK;
+}
+
+void
+sql_ibtree_serialize_record_release(struct SQLSerializedRecord* sr)
+{
+	if( sr->buf )
+		free(sr->buf);
+
+	memset(sr, 0x00, sizeof(*sr));
 }
 
 enum sql_e

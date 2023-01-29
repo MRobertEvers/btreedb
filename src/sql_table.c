@@ -1,5 +1,7 @@
 #include "sql_table.h"
 
+#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 void
@@ -38,11 +40,31 @@ sql_column_move(struct SQLTableColumn* l, struct SQLTableColumn* r)
 	memset(l, 0x00, sizeof(*l));
 }
 
-void
+static void
 sql_table_init_empty(struct SQLTable* tbl, char const* name)
 {
+	assert(tbl->table_name == NULL);
 	memset(tbl, 0x00, sizeof(struct SQLTable));
 	tbl->table_name = sql_string_create_from_cstring(name);
+}
+
+struct SQLTable*
+sql_table_create()
+{
+	struct SQLTable* table = (struct SQLTable*)malloc(sizeof(struct SQLTable));
+	memset(table, 0x00, sizeof(*table));
+	return table;
+}
+
+void
+sql_table_destroy(struct SQLTable* table)
+{
+	sql_string_destroy(table->table_name);
+	for( int i = 0; i < table->ncolumns; i++ )
+	{
+		sql_string_destroy(table->columns[i].name);
+	}
+	free(table);
 }
 
 void

@@ -24,8 +24,17 @@ struct SQLRecord
 	u32 nvalues;
 };
 
+struct SQLRecordSchema* sql_record_schema_create(void);
+void sql_record_schema_destroy(struct SQLRecordSchema*);
+
+struct SQLRecord* sql_record_create(void);
+void sql_record_destroy(struct SQLRecord*);
+
 int sql_record_schema_indexof(
 	struct SQLRecordSchema* schema, struct SQLString* column_name);
+
+void sql_record_schema_emplace_colname_c(
+	struct SQLRecordSchema* schema, char const* value);
 
 void sql_record_emplace_literal_c(
 	struct SQLRecord* schema, char const* value, enum sql_literalstr_type_e);
@@ -34,5 +43,7 @@ void sql_record_emplace_literal(
 	struct SQLRecord* record,
 	struct SQLString const* lit,
 	enum sql_literalstr_type_e);
+
+void sql_record_emplace_number(struct SQLRecord*, int);
 
 #endif

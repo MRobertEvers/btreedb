@@ -2,16 +2,18 @@
 #define SQLDB_DEFS_H_
 
 #include "btree_defs.h"
+#include "sql_table.h"
 
-struct SQLDBMetaTables
+struct SQLDBMetaTable
 {
-	struct BTree* tb_table_definitions;
-	struct BTree* tb_sequences;
+	struct BTree* tree;
+	struct SQLTable* table;
 };
 
 struct SQLDB
 {
-	struct SQLDBMetaTables meta;
+	struct SQLDBMetaTable tb_tables;
+	struct SQLDBMetaTable tb_sequences;
 };
 
 #endif

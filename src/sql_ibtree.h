@@ -18,8 +18,9 @@ struct SQLSerializedRecord
 };
 
 enum sql_e sql_ibtree_serialize_record_size(struct SQLRecord*);
-enum sql_e sql_ibtree_serialize_record(
-	struct SQLTable*, struct SQLRecord*, struct SQLSerializedRecord*);
+enum sql_e sql_ibtree_serialize_record_acquire(
+	struct SQLSerializedRecord*, struct SQLTable*, struct SQLRecord*);
+void sql_ibtree_serialize_record_release(struct SQLSerializedRecord*);
 
 enum sql_e sql_ibtree_deserialize_record(
 	struct SQLTable*,
