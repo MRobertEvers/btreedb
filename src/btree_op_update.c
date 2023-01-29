@@ -25,6 +25,7 @@ btree_op_update_acquire_tbl(
 	op->key_size = sizeof(key);
 	op->data_size = 0;
 	op->step = OP_UPDATE_STEP_INIT;
+	op->initialized = true;
 
 	return BTREE_OK;
 }
@@ -49,6 +50,7 @@ btree_op_update_acquire_index(
 	op->key_size = key_size;
 	op->data_size = 0;
 	op->step = OP_UPDATE_STEP_INIT;
+	op->initialized = true;
 
 	return BTREE_OK;
 }

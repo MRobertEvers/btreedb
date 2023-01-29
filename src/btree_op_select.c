@@ -24,6 +24,7 @@ btree_op_select_acquire_tbl(
 	op->key_size = sizeof(key);
 	op->data_size = 0;
 	op->step = OP_SELECTION_STEP_INIT;
+	op->initialized = true;
 
 	return BTREE_OK;
 }
@@ -48,13 +49,15 @@ btree_op_select_acquire_index(
 	op->key_size = key_size;
 	op->data_size = 0;
 	op->step = OP_SELECTION_STEP_INIT;
+	op->initialized = true;
+
 	return BTREE_OK;
 }
 
 enum btree_e
 btree_op_select_prepare(struct OpSelection* op)
 {
-	assert(op->step == OP_SELECTION_STEP_PREPARED);
+	assert(op->step == OP_SELECTION_STEP_INIT);
 	enum btree_e result = BTREE_OK;
 	char found;
 	struct NodeView nv = {0};

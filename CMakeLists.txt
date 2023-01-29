@@ -52,6 +52,7 @@ add_executable(sql_main
     src/btree_alg.c
     src/ibtree_alg.c
     src/btree_cursor.c
+    src/btree_op_scan.c
     src/btree_op_update.c
     src/btree_op_select.c
     src/btree_node_debug.c

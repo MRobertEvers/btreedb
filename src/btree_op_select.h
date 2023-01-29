@@ -13,6 +13,7 @@ enum op_selection_step_e
 	OP_SELECTION_STEP_NOT_FOUND,
 	OP_SELECTION_STEP_DONE
 };
+
 struct OpSelection
 {
 	enum btree_e last_status;
