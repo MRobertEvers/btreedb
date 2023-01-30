@@ -46,4 +46,7 @@ void sql_record_emplace_literal(
 
 void sql_record_emplace_number(struct SQLRecord*, int);
 
+// -1 is no row id
+int sql_record_row_id(struct SQLRecord*);
+
 #endif

@@ -74,15 +74,13 @@ btree_op_update_prepare(struct OpUpdate* op)
 	if( !found )
 	{
 		result = BTREE_ERR_KEY_NOT_FOUND;
-		op->step = OP_UPDATE_STEP_NOT_FOUND;
+		op->not_found = true;
 		goto end;
 	}
 
 	result = cursor_read_current(cursor, &nv);
 	if( result != BTREE_OK )
 		goto end;
-
-	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
 
 	u32 ind = cursor->current_key_index.index;
 	result = btree_node_payload_size_at(
@@ -105,6 +103,9 @@ btree_op_update_preview(struct OpUpdate* op, void* buffer, u32 buffer_size)
 	struct NodeView nv = {0};
 	struct Cursor* cursor = op->cursor;
 
+	if( op->not_found )
+		return BTREE_OK;
+
 	result = noderc_acquire(cursor_rcer(cursor), &nv);
 	if( result != BTREE_OK )
 		goto end;
@@ -112,8 +113,6 @@ btree_op_update_preview(struct OpUpdate* op, void* buffer, u32 buffer_size)
 	result = cursor_read_current(cursor, &nv);
 	if( result != BTREE_OK )
 		goto end;
-
-	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
 
 	u32 ind = cursor->current_key_index.index;
 	result = btree_node_read_at(
@@ -146,15 +145,17 @@ btree_op_update_commit(struct OpUpdate* op, byte* payload, u32 payload_size)
 	if( result != BTREE_OK )
 		goto end;
 
-	assert(cursor->current_key_index.index != node_num_keys(nv_node(&nv)));
-	assert(cursor->current_key_index.mode == KLIM_INDEX);
+	if( !op->not_found )
+	{
+		result = btree_node_remove(
+			nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
+		if( result != BTREE_OK )
+			goto end;
+	}
 
-	result =
-		btree_node_remove(nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
-	if( result != BTREE_OK )
-		goto end;
-
-	u32 key = node_key_at(nv_node(&nv), cursor_curr_ind(cursor)->index);
+	u32 key = op->not_found
+				  ? op->sm_key_buf
+				  : node_key_at(nv_node(&nv), cursor_curr_ind(cursor)->index);
 	struct InsertionIndex insert_index = {
 		.mode = KLIM_INDEX, .index = cursor_curr_ind(cursor)->index};
 	result = btree_node_write_at(
@@ -175,7 +176,7 @@ end:
 	return result;
 }
 
-enum btree_e
+void
 btree_op_update_release(struct OpUpdate* op)
 {
 	assert(op != NULL);
@@ -186,14 +187,12 @@ btree_op_update_release(struct OpUpdate* op)
 	op->cursor = NULL;
 	memset(op, 0x00, sizeof(struct OpUpdate));
 	op->step = OP_UPDATE_STEP_DONE;
-	return BTREE_OK;
 }
 
 u32
 op_update_size(struct OpUpdate* op)
 {
 	assert(
-		op->step != OP_UPDATE_STEP_INIT && op->step != OP_UPDATE_STEP_UNINIT &&
-		op->step != OP_UPDATE_STEP_NOT_FOUND);
+		op->step != OP_UPDATE_STEP_INIT && op->step != OP_UPDATE_STEP_UNINIT);
 	return op->data_size;
 }

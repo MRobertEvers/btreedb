@@ -29,7 +29,7 @@ enum sql_e sqldb_table_tbl_serialize_table_def_size(struct SQLTable* table);
  * @return enum sql_e
  */
 enum sql_e sqldb_table_tbl_serialize_table_def(
-	struct SQLTable* table, int table_id, void* buf, u32 buf_size);
+	struct SQLTable* table, void* buf, u32 buf_size);
 
 enum sql_e sqldb_table_tbl_deserialize_table_def(
 	void* buf, u32 buf_size, struct SQLTable* out_table);

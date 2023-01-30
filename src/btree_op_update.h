@@ -11,13 +11,13 @@ enum op_update_step_e
 	OP_UPDATE_STEP_UNINIT = 0,
 	OP_UPDATE_STEP_INIT,
 	OP_UPDATE_STEP_PREPARED,
-	OP_UPDATE_STEP_NOT_FOUND,
 	OP_UPDATE_STEP_DONE
 };
 struct OpUpdate
 {
 	enum btree_e last_status;
 	bool initialized;
+	bool not_found;
 	u32 data_size;
 	struct Cursor* cursor;
 	enum op_update_step_e step;
@@ -44,7 +44,7 @@ btree_op_update_preview(struct OpUpdate* op, void* buffer, u32 buffer_size);
 enum btree_e
 btree_op_update_commit(struct OpUpdate* op, byte* payload, u32 payload_size);
 
-enum btree_e btree_op_update_release(struct OpUpdate* op);
+void btree_op_update_release(struct OpUpdate* op);
 
 u32 op_update_size(struct OpUpdate* op);
 

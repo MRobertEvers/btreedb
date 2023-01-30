@@ -90,5 +90,6 @@ sql_record_emplace_number(struct SQLRecord* record, int val)
 {
 	record->values[record->nvalues].type = SQL_VALUE_TYPE_INT;
 	record->values[record->nvalues].value.num.num = val;
+	record->values[record->nvalues].value.num.width = 4;
 	record->nvalues += 1;
 }

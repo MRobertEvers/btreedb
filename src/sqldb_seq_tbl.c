@@ -62,7 +62,10 @@ tb_seq_ctx(void)
 
 static enum sql_e
 read_and_update_sequence(
-	struct SQLDB* db, struct SQLString const* sequence_name, int* out_next)
+	struct SQLDB* db,
+	struct SQLString const* sequence_name,
+	int set_val, // Nonzero
+	int* out_next)
 {
 	enum sql_e result = SQL_OK;
 	struct SQLRecordSchema* record_schema = NULL;
@@ -111,7 +114,11 @@ read_and_update_sequence(
 		if( result != SQL_OK )
 			goto end;
 
-		record->values[1].value.num.num += 1;
+		if( set_val != 0 )
+			record->values[1].value.num.num = set_val;
+		else
+			record->values[1].value.num.num += 1;
+
 		*out_next = record->values[1].value.num.num;
 
 		result = sql_ibtree_serialize_record_acquire(&serred, tbl, record);
@@ -190,11 +197,27 @@ sqldb_seq_tbl_next(
 {
 	enum sql_e result = SQL_OK;
 
-	result = read_and_update_sequence(db, sequence_name, out_next);
+	*out_next = 0;
+	result = read_and_update_sequence(db, sequence_name, 0, out_next);
 	if( result == SQL_ERR_NOT_FOUND )
 	{
 		*out_next = 1;
 		result = create_sequence(db, sequence_name, out_next);
+	}
+
+	return result;
+}
+
+enum sql_e
+sqldb_seq_tbl_set(
+	struct SQLDB* db, struct SQLString const* sequence_name, int seq)
+{
+	enum sql_e result = SQL_OK;
+
+	result = read_and_update_sequence(db, sequence_name, seq, &seq);
+	if( result == SQL_ERR_NOT_FOUND )
+	{
+		result = create_sequence(db, sequence_name, &seq);
 	}
 
 	return result;

@@ -78,14 +78,16 @@ sqldb_table_tbl_find(
 			goto end;
 
 		if( sql_string_equals(table->table_name, name) )
+
 		{
 			*out_table = *table;
+			table = NULL;
+			// sql_table_move(&out_table, &table);
 			break;
 		}
 
 		sql_table_destroy(table);
-		if( result != SQL_OK )
-			goto end;
+		table = NULL;
 
 		result = sqlbt_err(btree_op_scan_next(&scan));
 		if( result != SQL_OK )
@@ -102,6 +104,7 @@ end:
 
 // Meta table columns
 // table_name (string)
+// first page
 // columns  (string) As Array of type,name
 
 enum sql_e
@@ -115,11 +118,16 @@ sqldb_table_tbl_deserialize_table_def(
 	struct SQLValue value = {0};
 	ptr +=
 		sql_value_deserialize_as(&value, SQL_VALUE_TYPE_INT, ptr, ptr - start);
+	out_table->meta.table_id = value.value.num.num;
 
 	ptr += sql_value_deserialize_as(
 		&value, SQL_VALUE_TYPE_STRING, ptr, ptr - start);
 
 	sql_string_move(&out_table->table_name, &value.value.string);
+
+	ptr +=
+		sql_value_deserialize_as(&value, SQL_VALUE_TYPE_INT, ptr, ptr - start);
+	out_table->meta.root_page = value.value.num.num;
 
 	ptr +=
 		sql_value_deserialize_as(&value, SQL_VALUE_TYPE_INT, ptr, ptr - start);
@@ -144,8 +152,6 @@ sqldb_table_tbl_deserialize_table_def(
 	out_table->ncolumns = column_array_len;
 
 end:
-	if( value.value.string != NULL && value.type == SQL_DT_STRING )
-		sql_string_destroy(value.value.string);
 
 	return SQL_OK;
 }
@@ -175,13 +181,14 @@ sqldb_table_tbl_serialize_table_def_size(struct SQLTable* table)
 
 enum sql_e
 sqldb_table_tbl_serialize_table_def(
-	struct SQLTable* table, int table_id, void* buf, u32 buf_size)
+	struct SQLTable* table, void* buf, u32 buf_size)
 {
 	// TODO: Bounds checks.
 	byte* start = buf;
 	byte* ptr = buf;
-	ptr += sql_value_serialize_int(table_id, ptr, ptr - start);
+	ptr += sql_value_serialize_int(table->meta.table_id, ptr, ptr - start);
 	ptr += sql_value_serialize_string(table->table_name, ptr, ptr - start);
+	ptr += sql_value_serialize_int(table->meta.root_page, ptr, ptr - start);
 
 	ptr += sql_value_serialize_int(table->ncolumns, ptr, ptr - start);
 	for( int i = 0; i < table->ncolumns; i++ )

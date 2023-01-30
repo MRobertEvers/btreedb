@@ -11,5 +11,7 @@ struct SQLDBMetaTable sqldb_seq_tbl_create(struct Pager* pager);
 
 enum sql_e sqldb_seq_tbl_next(
 	struct SQLDB* db, struct SQLString const* sequence_name, int* out_next);
+enum sql_e sqldb_seq_tbl_set(
+	struct SQLDB* db, struct SQLString const* sequence_name, int seq);
 
 #endif

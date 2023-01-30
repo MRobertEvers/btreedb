@@ -283,3 +283,32 @@ pager_write_page(struct Pager* pager, struct Page* page)
 
 	return PAGER_OK;
 }
+
+enum pager_e
+pager_extend(struct Pager* pager, u32* out_page_id)
+{
+	enum pager_e result = PAGER_OK;
+	struct Page* page = NULL;
+
+	result = page_create(pager, &page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = pager_write_page(pager, page);
+	if( result != PAGER_OK )
+		goto end;
+
+	*out_page_id = page->page_id;
+
+end:
+	if( page )
+		page_destroy(pager, page);
+	return result;
+}
+
+enum pager_e
+pager_next_unused(struct Pager* pager, u32* out_page_id)
+{
+	*out_page_id = pager->max_page + 1;
+	return PAGER_OK;
+}

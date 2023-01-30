@@ -8,10 +8,8 @@
 #include <stdlib.h>
 
 enum sql_e
-sqldb_meta_tables_create(struct SQLDB* sqldb, char const* filename)
+sqldb_meta_tables_create(struct SQLDB* sqldb, struct Pager* pager)
 {
-	struct Pager* pager = btree_factory_pager_create(filename);
-
 	sqldb->tb_tables = (struct SQLDBMetaTable){
 		.table = NULL, .tree = btree_factory_create_ex(pager, BTREE_TBL, 1)};
 	sqldb->tb_sequences = sqldb_seq_tbl_create(pager);

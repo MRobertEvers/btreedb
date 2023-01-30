@@ -30,15 +30,20 @@ sql_column_init(
 	col->is_primary_key = primary;
 }
 
-void
-sql_column_move(struct SQLTableColumn* l, struct SQLTableColumn* r)
-{
-	sql_string_move(&l->name, &r->name);
-	l->type = r->type;
-	l->is_primary_key = r->is_primary_key;
+// void
+// sql_column_move(struct SQLTableColumn** l, struct SQLTableColumn** r)
+// {
+// 	if( *l != NULL )
+// 		sql_table_destroy(*l);
 
-	memset(r, 0x00, sizeof(*r));
-}
+// 	*l = sql_c
+
+// 	sql_string_move(&(*l)->name, &(*l)->name);
+// 	l->type = r->type;
+// 	l->is_primary_key = r->is_primary_key;
+
+// 	memset(r, 0x00, sizeof(*r));
+// }
 
 static void
 sql_table_init_empty(struct SQLTable* tbl, char const* name)
@@ -53,6 +58,7 @@ sql_table_create()
 {
 	struct SQLTable* table = (struct SQLTable*)malloc(sizeof(struct SQLTable));
 	memset(table, 0x00, sizeof(*table));
+
 	return table;
 }
 
@@ -61,6 +67,7 @@ sql_table_destroy(struct SQLTable* table)
 {
 	if( !table )
 		return;
+
 	sql_string_destroy(table->table_name);
 	for( int i = 0; i < table->ncolumns; i++ )
 	{
@@ -70,10 +77,21 @@ sql_table_destroy(struct SQLTable* table)
 }
 
 void
-sql_table_add_column(struct SQLTable* tbl, struct SQLTableColumn* col)
+sql_table_move(struct SQLTable** l, struct SQLTable** r)
 {
-	sql_column_move(&tbl->columns[tbl->ncolumns++], col);
+	if( *l != NULL )
+		sql_table_destroy(*l);
+
+	*l = *r;
+
+	*r = NULL;
 }
+
+// void
+// sql_table_add_column(struct SQLTable* tbl, struct SQLTableColumn* col)
+// {
+// 	sql_column_move(&tbl->columns[tbl->ncolumns++], col);
+// }
 
 void
 sql_table_emplace_column_c(
