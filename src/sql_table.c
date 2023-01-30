@@ -33,11 +33,11 @@ sql_column_init(
 void
 sql_column_move(struct SQLTableColumn* l, struct SQLTableColumn* r)
 {
-	sql_string_move(l->name, r->name);
-	r->type = l->type;
-	r->is_primary_key = l->is_primary_key;
+	sql_string_move(&l->name, &r->name);
+	l->type = r->type;
+	l->is_primary_key = r->is_primary_key;
 
-	memset(l, 0x00, sizeof(*l));
+	memset(r, 0x00, sizeof(*r));
 }
 
 static void
@@ -59,6 +59,8 @@ sql_table_create()
 void
 sql_table_destroy(struct SQLTable* table)
 {
+	if( !table )
+		return;
 	sql_string_destroy(table->table_name);
 	for( int i = 0; i < table->ncolumns; i++ )
 	{

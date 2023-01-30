@@ -11,7 +11,9 @@
 #include "sql_parse.h"
 #include "sql_parsegen.h"
 #include "sqldb.h"
+#include "sqldb_interpret.h"
 #include "sqldb_table.h"
+#include "sqldb_table_tbl.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -65,45 +67,27 @@ main()
 {
 	remove("sql_db.db");
 	char create_tab_string[] =
-		"CREATE TABLE \"billy\" ( \"name\" STRING, \"age\" INT )";
-	char insert_into_string[] =
-		"INSERT INTO \"billy\" (\"name\", \"age\") VALUES (\'herby_werby\', 9)";
+		"CREATE TABLE \"my_table\" ( \"name\" STRING, \"age\" INT )";
+	char insert_into_string[] = "INSERT INTO \"my_table\" (\"name\", \"age\") "
+								"VALUES (\'herby_werby\', 9)";
 
+	struct SQLDB* db = NULL;
 	struct SQLTable* table = sql_table_create();
 
 	// Parse
 	struct SQLString* input = sql_string_create_from_cstring(create_tab_string);
 	struct SQLParse* tabparse = sql_parse_create(input);
 
-	// Create table struct
-	sql_parsegen_table_from_create_table(&tabparse->parse.create_table, table);
-	sql_parse_destroy(tabparse);
-	sql_string_destroy(input);
-
-	struct SQLDB* db = NULL;
 	sqldb_create(&db, "sql_db.db");
 
-	sqldb_create_table(db, table);
-	sqldb_create_table(db, table);
+	sqldb_interpret(db, tabparse);
 
-	// Prepare record
-	// struct SQLParse insert_parse =
-	// 	sql_parse(sql_string_create_from_cstring(insert_into_string));
-	// sql_parsegen_record_schema_from_insert(
-	// 	&insert_parse.parse.insert, &record_schema);
-	// sql_parsegen_record_from_insert(
-	// 	&insert_parse.parse.insert, &record_schema, &record);
-	// sqldb_table_prepare_record(&table, &record_schema, &record);
+	struct SQLString* name = sql_string_create_from_cstring("\"my_table\"");
+	sqldb_table_tbl_find(db, name, table);
 
-	// // Serialize record
-	// struct SQLSerializedRecord serred;
-	// sql_ibtree_serialize_record(&table, &record_schema, &record,
-	// &serred);
-
-	// dbg_print_buffer(serred.buf, serred.size);
-
-	// // Insert
-	// ibtree_insert(tree, serred.buf, serred.size);
-
+end:
+	sql_table_destroy(table);
+	sql_parse_destroy(tabparse);
+	sql_string_destroy(input);
 	return 0;
 }

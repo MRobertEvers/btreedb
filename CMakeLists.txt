@@ -77,8 +77,10 @@ add_executable(sql_main
     src/sql_string.c
     src/sql_table.c
     src/sqldb.c
+    src/sqldb_interpret.c
     src/sqldb_meta_tbls.c
     src/sqldb_seq_tbl.c
+    src/sqldb_table_tbl.c
     src/sqldb_table.c
     src/sql_utils.c
     bison/sql_lexer.c

@@ -545,6 +545,30 @@ src/btree_node_writer.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/btree_node_writer.c.s
 .PHONY : src/btree_node_writer.c.s
 
+src/btree_op_scan.o: src/btree_op_scan.c.o
+.PHONY : src/btree_op_scan.o
+
+# target to build an object file
+src/btree_op_scan.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_scan.c.o
+.PHONY : src/btree_op_scan.c.o
+
+src/btree_op_scan.i: src/btree_op_scan.c.i
+.PHONY : src/btree_op_scan.i
+
+# target to preprocess a source file
+src/btree_op_scan.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_scan.c.i
+.PHONY : src/btree_op_scan.c.i
+
+src/btree_op_scan.s: src/btree_op_scan.c.s
+.PHONY : src/btree_op_scan.s
+
+# target to generate assembly for a file
+src/btree_op_scan.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/btree_op_scan.c.s
+.PHONY : src/btree_op_scan.c.s
+
 src/btree_op_select.o: src/btree_op_select.c.o
 .PHONY : src/btree_op_select.o
 
@@ -1463,6 +1487,30 @@ src/sqldb.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb.c.s
 .PHONY : src/sqldb.c.s
 
+src/sqldb_interpret.o: src/sqldb_interpret.c.o
+.PHONY : src/sqldb_interpret.o
+
+# target to build an object file
+src/sqldb_interpret.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_interpret.c.o
+.PHONY : src/sqldb_interpret.c.o
+
+src/sqldb_interpret.i: src/sqldb_interpret.c.i
+.PHONY : src/sqldb_interpret.i
+
+# target to preprocess a source file
+src/sqldb_interpret.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_interpret.c.i
+.PHONY : src/sqldb_interpret.c.i
+
+src/sqldb_interpret.s: src/sqldb_interpret.c.s
+.PHONY : src/sqldb_interpret.s
+
+# target to generate assembly for a file
+src/sqldb_interpret.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_interpret.c.s
+.PHONY : src/sqldb_interpret.c.s
+
 src/sqldb_meta_tbls.o: src/sqldb_meta_tbls.c.o
 .PHONY : src/sqldb_meta_tbls.o
 
@@ -1534,6 +1582,30 @@ src/sqldb_table.s: src/sqldb_table.c.s
 src/sqldb_table.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table.c.s
 .PHONY : src/sqldb_table.c.s
+
+src/sqldb_table_tbl.o: src/sqldb_table_tbl.c.o
+.PHONY : src/sqldb_table_tbl.o
+
+# target to build an object file
+src/sqldb_table_tbl.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table_tbl.c.o
+.PHONY : src/sqldb_table_tbl.c.o
+
+src/sqldb_table_tbl.i: src/sqldb_table_tbl.c.i
+.PHONY : src/sqldb_table_tbl.i
+
+# target to preprocess a source file
+src/sqldb_table_tbl.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table_tbl.c.i
+.PHONY : src/sqldb_table_tbl.c.i
+
+src/sqldb_table_tbl.s: src/sqldb_table_tbl.c.s
+.PHONY : src/sqldb_table_tbl.s
+
+# target to generate assembly for a file
+src/sqldb_table_tbl.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sqldb_table_tbl.c.s
+.PHONY : src/sqldb_table_tbl.c.s
 
 src/test.o: src/test.c.o
 .PHONY : src/test.o
@@ -1612,6 +1684,9 @@ help:
 	@echo "... src/btree_node_writer.o"
 	@echo "... src/btree_node_writer.i"
 	@echo "... src/btree_node_writer.s"
+	@echo "... src/btree_op_scan.o"
+	@echo "... src/btree_op_scan.i"
+	@echo "... src/btree_op_scan.s"
 	@echo "... src/btree_op_select.o"
 	@echo "... src/btree_op_select.i"
 	@echo "... src/btree_op_select.s"
@@ -1717,6 +1792,9 @@ help:
 	@echo "... src/sqldb.o"
 	@echo "... src/sqldb.i"
 	@echo "... src/sqldb.s"
+	@echo "... src/sqldb_interpret.o"
+	@echo "... src/sqldb_interpret.i"
+	@echo "... src/sqldb_interpret.s"
 	@echo "... src/sqldb_meta_tbls.o"
 	@echo "... src/sqldb_meta_tbls.i"
 	@echo "... src/sqldb_meta_tbls.s"
@@ -1726,6 +1804,9 @@ help:
 	@echo "... src/sqldb_table.o"
 	@echo "... src/sqldb_table.i"
 	@echo "... src/sqldb_table.s"
+	@echo "... src/sqldb_table_tbl.o"
+	@echo "... src/sqldb_table_tbl.i"
+	@echo "... src/sqldb_table_tbl.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

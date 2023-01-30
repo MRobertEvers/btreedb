@@ -12,5 +12,9 @@ enum sql_e sqldb_create(struct SQLDB** out_sqldb, char const* filename);
 // enum sql_e sqldb_prepare_record(struct SQLDB* sqldb, );
 
 enum sql_e sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table);
+enum sql_e sqldb_load_table(
+	struct SQLDB* sqldb, struct SQLString* name, struct SQLTable** out_table);
+
+// enum sql_e sqldb_insert(struct SQLDB* sqldb);
 
 #endif

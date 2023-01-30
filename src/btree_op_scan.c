@@ -1,8 +1,11 @@
 #include "btree_op_scan.h"
 
 #include "btree_cursor.h"
+#include "btree_node_reader.h"
 
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 enum btree_e
 btree_op_scan_acquire(struct BTree* tree, struct OpScan* op)
@@ -98,14 +101,31 @@ enum btree_e
 btree_op_scan_next(struct OpScan* op)
 {
 	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+
 	if( op->step != OP_SCAN_STEP_ITERATING )
+		goto end;
+
+	result = noderc_acquire(cursor_rcer(op->cursor), &nv);
+	if( result != BTREE_OK )
 		goto end;
 
 	result = cursor_iter_next(op->cursor);
 	if( result != BTREE_OK )
 		goto end;
 
+	result = cursor_read_current(op->cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	u32 ind = op->cursor->current_key_index.index;
+	result = btree_node_payload_size_at(
+		cursor_tree(op->cursor), nv_node(&nv), ind, &op->data_size);
+	if( result != BTREE_OK )
+		goto end;
+
 end:
+	noderc_release(cursor_rcer(op->cursor), &nv);
 	if( result == BTREE_ERR_ITER_DONE )
 	{
 		op->step = OP_SCAN_STEP_DONE;
@@ -115,10 +135,22 @@ end:
 	return result;
 }
 
-enum btree_e
+bool
 btree_op_scan_done(struct OpScan* op)
-{}
+{
+	return op->step == OP_SCAN_STEP_DONE;
+}
 
 enum btree_e
 btree_op_scan_release(struct OpScan* op)
-{}
+{
+	assert(op != NULL);
+
+	if( op->cursor )
+		cursor_destroy(op->cursor);
+
+	memset(op, 0x00, sizeof(struct OpScan));
+	op->cursor = NULL;
+	op->step = OP_SCAN_STEP_DONE;
+	return BTREE_OK;
+}

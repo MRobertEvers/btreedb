@@ -8,6 +8,7 @@
 #include "sql_utils.h"
 #include "sqldb_meta_tbls.h"
 #include "sqldb_seq_tbl.h"
+#include "sqldb_table_tbl.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,7 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 	struct SQLString* str = NULL;
 	int seq = 0;
 
-	u32 ser_size = sqldb_meta_serialize_table_def_size(table);
+	u32 ser_size = sqldb_table_tbl_serialize_table_def_size(table);
 	byte* buffer = (byte*)malloc(ser_size);
 
 	str = sql_string_create_from_cstring("tables");
@@ -41,7 +42,7 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 	if( result != SQL_OK )
 		goto end;
 
-	result = sqldb_meta_serialize_table_def(table, seq, buffer, ser_size);
+	result = sqldb_table_tbl_serialize_table_def(table, seq, buffer, ser_size);
 	if( result != SQL_OK )
 		goto end;
 	dbg_print_buffer(buffer, ser_size);
@@ -55,5 +56,13 @@ end:
 	sql_string_destroy(str);
 	if( buffer )
 		free(buffer);
+	return result;
+}
+
+enum sql_e
+sqldb_load_table(
+	struct SQLDB* sqldb, struct SQLString* name, struct SQLTable** out_table)
+{
+	enum sql_e result = SQL_OK;
 	return result;
 }

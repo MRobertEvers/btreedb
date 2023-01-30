@@ -79,6 +79,11 @@
         "btree_op_update.h": "c",
         "string.h": "c",
         "sql_table.h": "c",
-        "sqldb_defs.h": "c"
+        "sqldb_defs.h": "c",
+        "sql_ibtree.h": "c",
+        "sql_utils.h": "c",
+        "btree_op_scan.h": "c",
+        "sqldb_table_tbl.h": "c",
+        "sstream": "c"
     },
 }

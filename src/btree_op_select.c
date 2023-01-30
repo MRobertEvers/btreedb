@@ -133,12 +133,13 @@ enum btree_e
 btree_op_select_release(struct OpSelection* op)
 {
 	assert(op != NULL);
-	memset(op, 0x00, sizeof(struct OpSelection));
 
 	if( op->cursor )
 		cursor_destroy(op->cursor);
 
 	op->cursor = NULL;
+	memset(op, 0x00, sizeof(struct OpSelection));
+
 	op->step = OP_SELECTION_STEP_DONE;
 	return BTREE_OK;
 }

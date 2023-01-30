@@ -48,13 +48,14 @@ sql_string_copy(struct SQLString const* l)
 }
 
 void
-sql_string_move(struct SQLString* l, struct SQLString* r)
+sql_string_move(struct SQLString** l, struct SQLString** r)
 {
-	r->capacity = l->capacity;
-	r->size = l->capacity;
-	r->ptr = l->ptr;
+	if( *l != NULL )
+		sql_string_destroy(*l);
 
-	memset(l, 0x00, sizeof(struct SQLString));
+	*l = *r;
+
+	*r = NULL;
 }
 
 bool

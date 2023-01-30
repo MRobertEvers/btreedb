@@ -179,12 +179,12 @@ enum btree_e
 btree_op_update_release(struct OpUpdate* op)
 {
 	assert(op != NULL);
-	memset(op, 0x00, sizeof(struct OpUpdate));
 
 	if( op->cursor )
 		cursor_destroy(op->cursor);
 
 	op->cursor = NULL;
+	memset(op, 0x00, sizeof(struct OpUpdate));
 	op->step = OP_UPDATE_STEP_DONE;
 	return BTREE_OK;
 }

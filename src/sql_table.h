@@ -11,7 +11,7 @@ struct SQLTableColumn
 {
 	struct SQLString* name;
 	enum sql_dt_e type;
-	bool is_primary_key;
+	bool is_primary_key; // TODO: Autoincrement not implied
 };
 
 struct SQLTable

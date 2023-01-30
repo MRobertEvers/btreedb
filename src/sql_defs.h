@@ -11,6 +11,7 @@ enum sql_e
 	SQL_ERR_UNKNOWN,
 	SQL_ERR_TABLE_DNE,
 	SQL_ERR_NOT_FOUND,
+	SQL_ERR_SCAN_DONE,
 };
 
 #endif
