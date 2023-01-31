@@ -6,6 +6,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+static int
+str2int(const char* str, int len)
+{
+	int i;
+	int ret = 0;
+	for( i = 0; i < len; ++i )
+	{
+		ret = ret * 10 + (str[i] - '0');
+	}
+	return ret;
+}
 
 enum sql_e
 sql_value_acquire_eval(
@@ -18,7 +29,8 @@ sql_value_acquire_eval(
 		value->type = SQL_VALUE_TYPE_STRING;
 		break;
 	case SQL_LITERALSTR_TYPE_INT:
-		value->value.num.num = atoi(sql_string_raw(sql_value->value));
+		value->value.num.num = str2int(
+			sql_string_raw(sql_value->value), sql_string_len(sql_value->value));
 		value->value.num.width = 4;
 		value->type = SQL_VALUE_TYPE_INT;
 		break;

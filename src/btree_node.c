@@ -8,6 +8,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+// #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -524,6 +525,44 @@ btree_node_reset(struct BTreeNode* node)
 	return btree_node_init_from_page(node, node->page);
 }
 
+static enum btree_e
+gc_node(
+	struct BTreeNode* node,
+	int free_index,
+	int deleted_offset,
+	int deleted_size)
+{
+	struct CellData cell = {0};
+	// printf("Keys After: %u > %u\n", node->header->num_keys, deleted_offset);
+	// for( int i = 0; i < node->header->num_keys; i++ )
+	// {
+	// 	printf("%i: %u\n", i, node->keys[i].cell_offset);
+	// }
+	// printf("\n");
+
+	u32 shift_size = (deleted_size + sizeof(u32));
+	for( int i = 0; i < node->header->num_keys; i++ )
+	{
+		u32 offset = node->keys[i].cell_offset;
+		if( offset < deleted_offset )
+			continue;
+
+		btu_read_cell(node, free_index, &cell);
+		// printf("%u -> %u\n", offset, offset - shift_size);
+		byte* src = btu_calc_highwater_offset(node, offset);
+		byte* dest = btu_calc_highwater_offset(node, offset - shift_size);
+
+		memmove(
+			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
+		node->keys[i].cell_offset -= shift_size;
+	}
+
+	node->header->cell_high_water_offset -= deleted_size + sizeof(u32);
+	node->header->free_heap +=
+		btree_node_heap_required_for_insertion(deleted_size + sizeof(u32));
+	return BTREE_OK;
+}
+
 // /**
 //  * See header
 //  */
@@ -575,7 +614,17 @@ btree_node_remove(
 	}
 
 	index_number = index->index;
+	assert(index_number < node->header->num_keys);
 
+	// printf("Keys Before: %u: \n", node->header->num_keys);
+	// printf("Deleting: %u \n", index_number);
+	// for( int i = 0; i < node->header->num_keys; i++ )
+	// {
+	// 	printf("%i: %u\n", i, node->keys[i].cell_offset);
+	// }
+	// printf("\n");
+
+	int deleted_offset = node->keys[index_number].cell_offset;
 	btu_read_cell(node, index_number, &cell);
 	int deleted_inline_size = btree_cell_get_size(&cell);
 
@@ -601,20 +650,9 @@ btree_node_remove(
 
 	// Garbage collection in the heap.
 	// TODO: This is seriously flaky.
-	for( int i = index_number; i < node->header->num_keys; i++ )
-	{
-		u32 offset = node->keys[i].cell_offset;
-		btu_read_cell(node, index_number, &cell);
-		byte* src = btu_calc_highwater_offset(node, offset);
-		byte* dest = btu_calc_highwater_offset(
-			node, offset - (deleted_inline_size + sizeof(u32)));
-		memmove(
-			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
-	}
 
-	node->header->cell_high_water_offset -= deleted_inline_size + sizeof(u32);
-	node->header->free_heap += btree_node_heap_required_for_insertion(
-		deleted_inline_size + sizeof(u32));
+	if( node->header->num_keys > 0 )
+		gc_node(node, index_number, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }

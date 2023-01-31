@@ -70,8 +70,11 @@ cli()
 int
 main()
 {
+	// CREATE TABLE "c" ("age" INT, "name" STRING)
+	// CREATE TABLE "b" ("age" INT, "name" STRING)
 	// CREATE TABLE "a" ("age" INT, "name" STRING)
 	// INSERT INTO "a" ("name", "age") VALUES ('hello', 88)
+	// INSERT INTO "b" ("name", "age") VALUES ('hello', 88)
 	// SELECT * FROM "a"
 	remove("sql_db.db");
 	// char create_tab_string[] = "CREATE TABLE \"my_table\" (\"age\" INT )";
