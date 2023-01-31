@@ -36,9 +36,6 @@ end:
 	return result;
 }
 
-// static enum sql_e
-// insert_bt()
-
 static enum sql_e
 insert(struct SQLDB* db, struct SQLParsedInsert* insert)
 {
@@ -215,8 +212,6 @@ select(struct SQLDB* db, struct SQLParsedSelect* select)
 
 		if( match_where(record, &select->where) )
 		{
-			printf("Match\n");
-
 			for( int i = 0; i < record->nvalues; i++ )
 			{
 				printf(

@@ -16,6 +16,26 @@ emplace_schema_column(
 }
 
 enum sql_e
+verify_record(struct SQLDB* db, struct SQLTable* tab, struct SQLRecord* record)
+{
+	// Only column we don't need is the row id. "id".
+	bool missing_column = false;
+	for( int i = 0; i < tab->ncolumns && !missing_column; i++ )
+	{
+		struct SQLTableColumn* col = &tab->columns[i];
+		if( col->is_primary_key ) // TODO: This should be row id.
+			continue;
+
+		// TODO: Bad runtime
+		int i = sql_record_schema_indexof(record->schema, col->name);
+		if( i == -1 )
+			missing_column = true;
+	}
+
+	return missing_column ? SQL_ERR_BAD_RECORD : SQL_OK;
+}
+
+enum sql_e
 sqldb_table_prepare_record(
 	struct SQLDB* db,
 	struct SQLTable* tab,
@@ -23,6 +43,11 @@ sqldb_table_prepare_record(
 	u32* out_row_id)
 {
 	enum sql_e result = SQL_OK;
+
+	result = verify_record(db, tab, record);
+	if( result != SQL_OK )
+		goto end;
+
 	// TODO: This should be rowid key not pkey...
 	int pkey_ind = sql_table_find_primary_key(tab);
 	assert(pkey_ind != -1);

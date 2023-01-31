@@ -50,6 +50,7 @@ sqldb_table_tbl_find(
 	struct SQLDB* sqldb, struct SQLString* name, struct SQLTable* out_table)
 {
 	enum sql_e result = SQL_OK;
+	bool found = false;
 	struct ScanBuffer buffer = {0};
 	struct OpScan scan = {0};
 	struct SQLTable* table = NULL;
@@ -82,6 +83,7 @@ sqldb_table_tbl_find(
 		{
 			*out_table = *table;
 			table = NULL;
+			found = true;
 			// sql_table_move(&out_table, &table);
 			break;
 		}
@@ -98,6 +100,9 @@ end:
 	scanbuffer_free(&buffer);
 	sql_table_destroy(table);
 	btree_op_scan_release(&scan);
+
+	if( !found )
+		result = SQL_ERR_NOT_FOUND;
 
 	return result;
 }

@@ -46,6 +46,13 @@ btree_op_scan_prepare(struct OpScan* op)
 		goto end;
 
 	u32 ind = cursor->current_key_index.index;
+	if( node_num_keys(nv_node(&nv)) == ind )
+	{
+		op->data_size = 0;
+		result = BTREE_ERR_ITER_DONE;
+		goto end;
+	}
+
 	result = btree_node_payload_size_at(
 		cursor_tree(cursor), nv_node(&nv), ind, &op->data_size);
 	if( result != BTREE_OK )

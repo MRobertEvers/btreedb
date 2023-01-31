@@ -9,6 +9,7 @@
 
 // TODO: Modifies both schema and record
 // TODO: Rowid param is iffy
+
 enum sql_e sqldb_table_prepare_record(
 	struct SQLDB* db, struct SQLTable*, struct SQLRecord*, u32* out_row_id);
 

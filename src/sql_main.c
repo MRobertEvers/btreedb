@@ -21,44 +21,48 @@
 #include <string.h>
 
 int
-temp()
+cli()
 {
-	// remove("sql_db.db");
-	// struct BTree* tree = btree_factory_create("sql_db.db");
-	// char create_tab_string[] =
-	// 	"CREATE TABLE \"billy\" ( \"name\" STRING, \"age\" INT )";
-	// char insert_into_string[] =
-	// 	"INSERT INTO \"billy\" (\"name\", \"age\") VALUES (\'herby_werby\', 9)";
+	enum sql_e sqle = SQL_OK;
+	struct SQLDB* db = NULL;
+	struct SQLString* input = NULL;
+	struct SQLParse* parse = NULL;
+	char buf[0x2000] = {0};
+	u32 buf_len = 0;
+	char c = 0;
 
-	// struct SQLTable table = {0};
-	// struct SQLRecord* record = sql_record_create();
-	// struct SQLRecordSchema* record_schema = sql_record_schema_create();
+	sqle = sqldb_create(&db, "sql_db.db");
+	if( sqle != SQL_OK )
+	{
+		printf("Could not open database file.\n");
+		return -1;
+	}
 
-	// // Parse
-	// struct SQLParse* tabparse =
-	// 	sql_parse_create(sql_string_create_from_cstring(create_tab_string));
+	while( sqle == SQL_OK )
+	{
+		while( true )
+		{
+			c = getchar();
+			buf[buf_len++] = c;
 
-	// // Create table struct
-	// sql_parsegen_table_from_create_table(&tabparse->parse.create_table,
-	// &table);
+			if( c == '\n' )
+				break;
+		}
 
-	// // Prepare record
-	// struct SQLParse* insert_parse =
-	// 	sql_parse_create(sql_string_create_from_cstring(insert_into_string));
-	// sql_parsegen_record_schema_from_insert(
-	// 	&insert_parse->parse.insert, record_schema);
-	// sql_parsegen_record_from_insert(
-	// 	&insert_parse->parse.insert, record_schema, record);
-	// sqldb_table_prepare_record(&table, record);
+		input = sql_string_create_from(buf, buf_len);
+		parse = sql_parse_create(input);
 
-	// // Serialize record
-	// struct SQLSerializedRecord serred;
-	// sql_ibtree_serialize_record_acquire(&serred, &table, record);
+		sqle = sqldb_interpret(db, parse);
+		printf("Command result: %i\n", sqle);
 
-	// dbg_print_buffer(serred.buf, serred.size);
+		sql_parse_destroy(parse);
+		parse = NULL;
+		sql_string_destroy(input);
+		input = NULL;
 
-	// // Insert
-	// ibtree_insert(tree, serred.buf, serred.size);
+		memset(buf, 0x00, buf_len);
+		buf_len = 0;
+	}
 
 	return 0;
 }
@@ -66,47 +70,50 @@ temp()
 int
 main()
 {
-	remove("sql_db.db");
-	char create_tab_string[] =
-		"CREATE TABLE \"my_table\" ( \"name\" STRING, \"age\" INT )";
-	char insert_into_string[] = "INSERT INTO \"my_table\" (\"name\", \"age\") "
-								"VALUES (\'herby_werby\', 9)";
-	char select[] = "SELECT id, \"name\" FROM \"my_table\"";
-	char update[] = "UPDATE \"my_table\" SET \"age\" = 11 WHERE \"name\" = "
-					"\'herby_werby\'";
+	// 	remove("sql_db.db");
+	// 	char create_tab_string[] =
+	// 		"CREATE TABLE \"my_table\" ( \"name\" STRING, \"age\" INT )";
+	// 	char insert_into_string[] = "INSERT INTO \"my_table\" (\"name\",
+	// \"age\") " 								"VALUES (\'herby_werby\', 9)";
+	// char select[] = "SELECT id,
+	// \"name\" FROM \"my_table\""; 	char update[] = "UPDATE \"my_table\" SET
+	// \"age\" = 11 WHERE \"name\" = "
+	// 					"\'herby_werby\'";
 
-	struct SQLDB* db = NULL;
-	struct SQLTable* table = sql_table_create();
+	// 	struct SQLDB* db = NULL;
+	// 	struct SQLTable* table = sql_table_create();
 
-	// Parse
-	struct SQLString* input = sql_string_create_from_cstring(create_tab_string);
-	struct SQLParse* tabparse = sql_parse_create(input);
+	// 	// Parse
+	// 	struct SQLString* input =
+	// sql_string_create_from_cstring(create_tab_string); 	struct SQLParse*
+	// tabparse = sql_parse_create(input);
 
-	sqldb_create(&db, "sql_db.db");
+	// 	sqldb_create(&db, "sql_db.db");
 
-	sqldb_interpret(db, tabparse);
+	// 	sqldb_interpret(db, tabparse);
 
-	struct SQLString* insertinput =
-		sql_string_create_from_cstring(insert_into_string);
-	struct SQLParse* iparse = sql_parse_create(insertinput);
-	sqldb_interpret(db, iparse);
+	// 	struct SQLString* insertinput =
+	// 		sql_string_create_from_cstring(insert_into_string);
+	// 	struct SQLParse* iparse = sql_parse_create(insertinput);
+	// 	sqldb_interpret(db, iparse);
 
-	struct SQLString* selectinput = sql_string_create_from_cstring(select);
-	struct SQLParse* selectparse = sql_parse_create(selectinput);
-	sqldb_interpret(db, selectparse);
+	// 	struct SQLString* selectinput = sql_string_create_from_cstring(select);
+	// 	struct SQLParse* selectparse = sql_parse_create(selectinput);
+	// 	sqldb_interpret(db, selectparse);
 
-	struct SQLString* updateinput = sql_string_create_from_cstring(update);
-	struct SQLParse* updateparse = sql_parse_create(updateinput);
-	sqldb_interpret(db, updateparse);
+	// 	struct SQLString* updateinput = sql_string_create_from_cstring(update);
+	// 	struct SQLParse* updateparse = sql_parse_create(updateinput);
+	// 	sqldb_interpret(db, updateparse);
 
-	sqldb_interpret(db, selectparse);
+	// 	sqldb_interpret(db, selectparse);
 
-end:
-	sql_table_destroy(table);
-	sql_parse_destroy(iparse);
-	sql_parse_destroy(tabparse);
-	sql_parse_destroy(selectparse);
-	sql_string_destroy(input);
-	sql_string_destroy(insertinput);
-	return 0;
+	// end:
+	// 	sql_table_destroy(table);
+	// 	sql_parse_destroy(iparse);
+	// 	sql_parse_destroy(tabparse);
+	// 	sql_parse_destroy(selectparse);
+	// 	sql_string_destroy(input);
+	// 	sql_string_destroy(insertinput);
+
+	return cli();
 }

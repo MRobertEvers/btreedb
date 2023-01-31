@@ -59,7 +59,7 @@ parse_insert(struct Lexer* lex, bool* success)
 		goto end;
 
 	if( next(lex) != SQL_QUOTED_IDENTIFIER )
-		goto end;
+		goto fail;
 
 	insert.table_name = sql_string_create_from(text(lex), leng(lex));
 
@@ -183,7 +183,7 @@ parse_create_table(struct Lexer* lex, bool* success)
 			sql_string_create_from(text(lex), leng(lex));
 
 		if( next(lex) != SQL_IDENTIFIER )
-			goto end;
+			goto fail;
 
 		enum sql_dt_e dt = get_data_type(text(lex));
 		if( dt == SQL_DT_INVAL )
