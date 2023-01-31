@@ -88,7 +88,7 @@ find_pkey_in_schema(
 	return sql_record_schema_indexof(schema, pkey_string);
 }
 
-enum sql_e
+u32
 sql_ibtree_serialize_record_size(struct SQLRecord* record)
 {
 	return sql_value_array_ser_size(record->values, record->nvalues);

@@ -3,6 +3,7 @@
 #include "serialization.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +42,6 @@ sql_value_release(struct SQLValue* value)
 	case SQL_VALUE_TYPE_INT:
 		break;
 	case SQL_VALUE_TYPE_INVAL:
-		assert(0);
 		break;
 	}
 
@@ -106,6 +106,49 @@ sql_string_ser(struct SQLString const* val, void* buf, u32 size)
 	ptr += sql_string_len(val);
 
 	return ptr - ((byte*)buf);
+}
+
+bool
+sql_value_equals(struct SQLValue const* l, struct SQLValue const* r)
+{
+	if( l->type != r->type )
+		return false;
+
+	switch( l->type )
+	{
+	case SQL_VALUE_TYPE_INT:
+		return l->value.num.num == r->value.num.num;
+	case SQL_VALUE_TYPE_STRING:
+		return sql_string_equals(l, r);
+	default:
+		return false;
+	}
+}
+
+void
+sql_value_print(struct SQLValue const* r)
+{
+	switch( r->type )
+	{
+	case SQL_VALUE_TYPE_INT:
+		printf("%i", r->value.num.num);
+		break;
+	case SQL_VALUE_TYPE_STRING:
+		printf("%.*s", r->value.string->size, r->value.string->ptr);
+		break;
+	case SQL_VALUE_TYPE_INVAL:
+		break;
+	}
+}
+
+void
+sql_value_move(struct SQLValue* l, struct SQLValue* r)
+{
+	*l = *r;
+
+	memset(r, 0x00, sizeof(*r));
+
+	r->type = SQL_VALUE_TYPE_INVAL;
 }
 
 int

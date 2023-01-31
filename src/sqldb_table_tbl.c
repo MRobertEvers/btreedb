@@ -23,7 +23,7 @@ struct ScanBuffer
 	u32 size;
 };
 
-void
+static void
 scanbuffer_resize(struct ScanBuffer* buf, u32 min_size)
 {
 	if( buf->size < min_size )
@@ -38,7 +38,7 @@ scanbuffer_resize(struct ScanBuffer* buf, u32 min_size)
 	memset(buf->buffer, 0x00, buf->size);
 }
 
-void
+static void
 scanbuffer_free(struct ScanBuffer* buf)
 {
 	if( buf->buffer )
@@ -165,6 +165,8 @@ sqldb_table_tbl_serialize_table_def_size(struct SQLTable* table)
 
 	// name
 	size += 4 + sql_string_len(table->table_name);
+
+	size += 4; // page root
 
 	// Col array
 	u32 sizeof_col_array = 0;

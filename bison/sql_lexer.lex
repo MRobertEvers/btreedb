@@ -20,6 +20,13 @@ sql_literal {name_character}+
 "CREATE TABLE"		{ return SQL_CREATE_TABLE_KW; }
 "INSERT INTO"		{ return SQL_INSERT_KW; }
 "VALUES"		{ return SQL_VALUES_KW; }
+"SELECT"        { return SQL_SELECT_KW;}
+"UPDATE"         { return SQL_UPDATE_KW;}
+"WHERE" {return SQL_WHERE_KW;}
+"FROM" {return SQL_FROM_KW;}
+"SET" {return SQL_SET_KW;}
+"*" {return SQL_STAR_KW;}
+"=" {return SQL_EQUAL_KW;}
 {sql_literal}		{  return SQL_IDENTIFIER; }
 ","		{  return SQL_COMMA; }
 \(   { return SQL_OPEN_PAREN; } 

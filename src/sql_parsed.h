@@ -38,7 +38,52 @@ struct SQLParsedCreateTable
 	u32 ncolumns;
 };
 
-void sql_parsed_insert_cleanup(struct SQLParsedInsert* insert);
-void sql_parsed_create_table_cleanup(struct SQLParsedCreateTable* insert);
+/**
+ * @brief Where clause
+ *
+ * @param insert
+ */
+
+struct SQLParsedWhereClause
+{
+	// Assume equal for now
+	struct SQLString* field;
+	struct SQLLiteralStr value;
+};
+
+/**
+ * @brief Update
+ *
+ * @param insert
+ */
+
+struct SQLParsedUpdate
+{
+	struct SQLString* table_name;
+	struct SQLString* columns[5];
+	u32 ncolumns;
+	struct SQLLiteralStr values[5];
+	u32 nvalues;
+	struct SQLParsedWhereClause where;
+};
+
+/**
+ * @brief Select
+ *
+ * @param insert
+ */
+
+struct SQLParsedSelect
+{
+	struct SQLString* table_name;
+	struct SQLString* fields[5];
+	u32 nfields;
+	struct SQLParsedWhereClause where;
+};
+
+void sql_parsed_update_cleanup(struct SQLParsedUpdate*);
+void sql_parsed_select_cleanup(struct SQLParsedSelect*);
+void sql_parsed_insert_cleanup(struct SQLParsedInsert*);
+void sql_parsed_create_table_cleanup(struct SQLParsedCreateTable*);
 
 #endif

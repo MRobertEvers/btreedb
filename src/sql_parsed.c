@@ -2,6 +2,24 @@
 
 #include <string.h>
 
+static void
+where_clause_cleanup(struct SQLParsedWhereClause* where)
+{
+	//
+}
+
+void
+sql_parsed_update_cleanup(struct SQLParsedUpdate* update)
+{
+	//
+}
+
+void
+sql_parsed_select_cleanup(struct SQLParsedSelect* select)
+{
+	//
+}
+
 void
 sql_parsed_insert_cleanup(struct SQLParsedInsert* insert)
 {

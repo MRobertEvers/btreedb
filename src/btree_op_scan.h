@@ -31,6 +31,9 @@ btree_op_scan_current(struct OpScan* op, void* buffer, u32 buffer_size);
 
 enum btree_e btree_op_scan_next(struct OpScan* op);
 
+enum btree_e
+btree_op_scan_update(struct OpScan* op, void* payload, u32 payload_size);
+
 bool btree_op_scan_done(struct OpScan* op);
 
 enum btree_e btree_op_scan_release(struct OpScan* op);

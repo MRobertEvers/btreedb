@@ -8,6 +8,8 @@ enum sql_parse_e
 	SQL_PARSE_INVALID = 0,
 	SQL_PARSE_INSERT,
 	SQL_PARSE_CREATE_TABLE,
+	SQL_PARSE_SELECT,
+	SQL_PARSE_UPDATE,
 };
 
 struct SQLParse
@@ -17,6 +19,8 @@ struct SQLParse
 	{
 		struct SQLParsedInsert insert;
 		struct SQLParsedCreateTable create_table;
+		struct SQLParsedUpdate update;
+		struct SQLParsedSelect select;
 	} parse;
 };
 

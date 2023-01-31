@@ -71,6 +71,9 @@ main()
 		"CREATE TABLE \"my_table\" ( \"name\" STRING, \"age\" INT )";
 	char insert_into_string[] = "INSERT INTO \"my_table\" (\"name\", \"age\") "
 								"VALUES (\'herby_werby\', 9)";
+	char select[] = "SELECT id, \"name\" FROM \"my_table\"";
+	char update[] = "UPDATE \"my_table\" SET \"age\" = 11 WHERE \"name\" = "
+					"\'herby_werby\'";
 
 	struct SQLDB* db = NULL;
 	struct SQLTable* table = sql_table_create();
@@ -88,10 +91,21 @@ main()
 	struct SQLParse* iparse = sql_parse_create(insertinput);
 	sqldb_interpret(db, iparse);
 
+	struct SQLString* selectinput = sql_string_create_from_cstring(select);
+	struct SQLParse* selectparse = sql_parse_create(selectinput);
+	sqldb_interpret(db, selectparse);
+
+	struct SQLString* updateinput = sql_string_create_from_cstring(update);
+	struct SQLParse* updateparse = sql_parse_create(updateinput);
+	sqldb_interpret(db, updateparse);
+
+	sqldb_interpret(db, selectparse);
+
 end:
 	sql_table_destroy(table);
 	sql_parse_destroy(iparse);
 	sql_parse_destroy(tabparse);
+	sql_parse_destroy(selectparse);
 	sql_string_destroy(input);
 	sql_string_destroy(insertinput);
 	return 0;

@@ -1,7 +1,9 @@
 #include "btree_op_scan.h"
 
 #include "btree_cursor.h"
+#include "btree_node.h"
 #include "btree_node_reader.h"
+#include "btree_node_writer.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -131,6 +133,47 @@ end:
 		op->step = OP_SCAN_STEP_DONE;
 		result = BTREE_OK;
 	}
+	op->last_status = result;
+	return result;
+}
+
+enum btree_e
+btree_op_scan_update(struct OpScan* op, void* payload, u32 payload_size)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+	struct Cursor* cursor = op->cursor;
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_read_current(cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	// TODO: Check that we're looking at a record.
+	result =
+		btree_node_remove(nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
+	if( result != BTREE_OK )
+		goto end;
+
+	u32 key = node_key_at(nv_node(&nv), cursor_curr_ind(cursor)->index);
+	struct InsertionIndex insert_index = {
+		.mode = KLIM_INDEX, .index = cursor_curr_ind(cursor)->index};
+	result = btree_node_write_at(
+		nv_node(&nv),
+		cursor_pager(cursor),
+		&insert_index,
+		key,
+		payload,
+		payload_size);
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
 	op->last_status = result;
 	return result;
 }

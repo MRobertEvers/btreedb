@@ -9,7 +9,7 @@
 struct Lexer
 {
 	yyscan_t* scanner;
-	int tok;
+	enum sql_token_e tok;
 };
 
 static int
@@ -111,7 +111,7 @@ end:
 	return insert;
 
 fail:
-	success = false;
+	*success = false;
 	sql_parsed_insert_cleanup(&insert);
 	goto end;
 }
@@ -125,6 +125,37 @@ get_data_type(char const* s)
 		return SQL_DT_INT;
 	else
 		return SQL_DT_INVAL;
+}
+
+static struct SQLParsedWhereClause
+parse_where(struct Lexer* lex, bool* success)
+{
+	struct SQLParsedWhereClause where = {0};
+	if( current(lex) != SQL_WHERE_KW )
+		goto fail;
+
+	next(lex);
+	if( current(lex) != SQL_QUOTED_IDENTIFIER &&
+		current(lex) != SQL_IDENTIFIER )
+		goto fail;
+
+	where.field = sql_string_create_from(text(lex), leng(lex));
+
+	if( next(lex) != SQL_EQUAL_KW )
+		goto fail;
+
+	next(lex);
+	if( current(lex) != SQL_STRING_LITERAL && current(lex) != SQL_INT_LITERAL )
+		goto fail;
+
+	where.value.type = get_data_type_from_sql_type(current(lex));
+	where.value.value = sql_string_create_from(text(lex), leng(lex));
+
+end:
+	return where;
+fail:
+	*success = false;
+	goto end;
 }
 
 static struct SQLParsedCreateTable
@@ -170,8 +201,109 @@ parse_create_table(struct Lexer* lex, bool* success)
 end:
 	return create_table;
 fail:
-	success = false;
+	*success = false;
 	sql_parsed_create_table_cleanup(&create_table);
+	goto end;
+}
+
+static struct SQLParsedSelect
+parse_select(struct Lexer* lex, bool* success)
+{
+	struct SQLParsedSelect select = {0};
+
+	if( current(lex) != SQL_SELECT_KW )
+		goto fail;
+
+	do
+	{
+		next(lex);
+
+		if( current(lex) != SQL_QUOTED_IDENTIFIER &&
+			current(lex) != SQL_IDENTIFIER && current(lex) != SQL_STAR_KW )
+			goto fail;
+
+		select.fields[select.nfields] =
+			sql_string_create_from(text(lex), leng(lex));
+		select.nfields += 1;
+
+		next(lex);
+	} while( current(lex) == SQL_COMMA );
+
+	if( current(lex) != SQL_FROM_KW )
+		goto fail;
+
+	if( next(lex) != SQL_QUOTED_IDENTIFIER )
+		goto fail;
+
+	select.table_name = sql_string_create_from(text(lex), leng(lex));
+
+	if( next(lex) != SQL_WHERE_KW )
+		goto end;
+
+	select.where = parse_where(lex, success);
+end:
+	return select;
+fail:
+	*success = false;
+	sql_parsed_select_cleanup(&select);
+	goto end;
+}
+
+static struct SQLParsedUpdate
+parse_update(struct Lexer* lex, bool* success)
+{
+	struct SQLParsedUpdate update = {0};
+
+	if( current(lex) != SQL_UPDATE_KW )
+		goto fail;
+
+	if( next(lex) != SQL_QUOTED_IDENTIFIER )
+		goto fail;
+
+	update.table_name = sql_string_create_from(text(lex), leng(lex));
+
+	if( next(lex) != SQL_SET_KW )
+		goto fail;
+
+	do
+	{
+		next(lex);
+		if( current(lex) != SQL_QUOTED_IDENTIFIER &&
+			current(lex) != SQL_IDENTIFIER )
+			goto fail;
+
+		update.columns[update.ncolumns] =
+			sql_string_create_from(text(lex), leng(lex));
+		update.ncolumns += 1;
+
+		if( next(lex) != SQL_EQUAL_KW )
+			goto fail;
+
+		next(lex);
+		if( current(lex) != SQL_STRING_LITERAL &&
+			current(lex) != SQL_INT_LITERAL )
+			goto fail;
+
+		update.values[update.nvalues].type =
+			get_data_type_from_sql_type(current(lex));
+
+		update.values[update.nvalues].value =
+			sql_string_create_from(text(lex), leng(lex));
+
+		update.nvalues += 1;
+
+	} while( current(lex) == SQL_COMMA );
+
+	if( next(lex) != SQL_WHERE_KW )
+		goto end;
+
+	update.where = parse_where(lex, success);
+
+end:
+	return update;
+fail:
+	*success = false;
+	sql_parsed_update_cleanup(&update);
 	goto end;
 }
 
@@ -199,6 +331,14 @@ sql_parse_create(struct SQLString const* str)
 	case SQL_CREATE_TABLE_KW:
 		parse->parse.create_table = parse_create_table(&lexer, &parse_success);
 		parse->type = SQL_PARSE_CREATE_TABLE;
+		break;
+	case SQL_SELECT_KW:
+		parse->parse.select = parse_select(&lexer, &parse_success);
+		parse->type = SQL_PARSE_SELECT;
+		break;
+	case SQL_UPDATE_KW:
+		parse->parse.update = parse_update(&lexer, &parse_success);
+		parse->type = SQL_PARSE_UPDATE;
 		break;
 	default:
 		parse->type = SQL_PARSE_INVALID;
