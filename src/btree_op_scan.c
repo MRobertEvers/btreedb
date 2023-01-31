@@ -29,7 +29,6 @@ btree_op_scan_prepare(struct OpScan* op)
 {
 	assert(op->step == OP_SCAN_STEP_INIT);
 	enum btree_e result = BTREE_OK;
-	char found;
 	struct NodeView nv = {0};
 	struct Cursor* cursor = op->cursor;
 

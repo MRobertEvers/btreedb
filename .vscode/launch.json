@@ -24,6 +24,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/sql_main",
             "cwd": "${workspaceRoot}",
+            "env": {
+                "MallocCheckHeapStart": "0",
+                "MallocCheckHeapEach": "0",
+                "MallocStackLogging": "0"
+            }
         }
     ]
 }

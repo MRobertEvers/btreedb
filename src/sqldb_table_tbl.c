@@ -156,8 +156,6 @@ sqldb_table_tbl_deserialize_table_def(
 	}
 	out_table->ncolumns = column_array_len;
 
-end:
-
 	return SQL_OK;
 }
 

@@ -65,7 +65,6 @@ add_executable(sql_main
     src/ibtree_layout_schema_cmp.c
     src/buffer_writer.c
     src/btree_factory.c
-    src/sql_dt.c
     src/sql_ibtree.c
     src/sql_literalstr.c
     src/sql_value.c
@@ -86,6 +85,13 @@ add_executable(sql_main
     bison/sql_lexer.c
     bison/sql_lexer_utils.c
 )
+
+if(MSVC)
+  target_compile_options(sql_main PRIVATE /W4 /WX)
+else()
+  target_compile_options(sql_main PRIVATE -Wall -Wextra  -Wno-unused-function -Wpedantic -Werror -Wno-unused-parameter -Wno-newline-eof -Wno-sign-compare)
+endif()
+
 
 add_executable(test
     src/test.c

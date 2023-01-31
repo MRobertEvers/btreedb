@@ -1151,30 +1151,6 @@ src/serialization_test.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/serialization_test.c.s
 .PHONY : src/serialization_test.c.s
 
-src/sql_dt.o: src/sql_dt.c.o
-.PHONY : src/sql_dt.o
-
-# target to build an object file
-src/sql_dt.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.o
-.PHONY : src/sql_dt.c.o
-
-src/sql_dt.i: src/sql_dt.c.i
-.PHONY : src/sql_dt.i
-
-# target to preprocess a source file
-src/sql_dt.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.i
-.PHONY : src/sql_dt.c.i
-
-src/sql_dt.s: src/sql_dt.c.s
-.PHONY : src/sql_dt.s
-
-# target to generate assembly for a file
-src/sql_dt.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sql_main.dir/build.make CMakeFiles/sql_main.dir/src/sql_dt.c.s
-.PHONY : src/sql_dt.c.s
-
 src/sql_ibtree.o: src/sql_ibtree.c.o
 .PHONY : src/sql_ibtree.o
 
@@ -1750,9 +1726,6 @@ help:
 	@echo "... src/serialization_test.o"
 	@echo "... src/serialization_test.i"
 	@echo "... src/serialization_test.s"
-	@echo "... src/sql_dt.o"
-	@echo "... src/sql_dt.i"
-	@echo "... src/sql_dt.s"
 	@echo "... src/sql_ibtree.o"
 	@echo "... src/sql_ibtree.i"
 	@echo "... src/sql_ibtree.s"

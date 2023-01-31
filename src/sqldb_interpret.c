@@ -84,7 +84,7 @@ insert(struct SQLDB* db, struct SQLParsedInsert* insert)
 	if( result != SQL_OK )
 		goto end;
 
-	dbg_print_buffer(serred.buf, serred.size);
+	// dbg_print_buffer(serred.buf, serred.size);
 
 	result =
 		sqlbt_err(btree_op_update_commit(&upsert, serred.buf, serred.size));
@@ -235,6 +235,7 @@ select(struct SQLDB* db, struct SQLParsedSelect* select)
 	}
 
 end:
+	scanbuffer_free(&buffer);
 	btree_op_scan_release(&scan);
 	if( tree )
 		sqldb_table_btree_destroy(db, table, tree);
@@ -333,7 +334,7 @@ update(struct SQLDB* db, struct SQLParsedUpdate* update)
 				sql_ibtree_serialize_record_acquire(&serred, table, record);
 			if( result != SQL_OK )
 				goto end;
-			dbg_print_buffer(serred.buf, serred.size);
+			// dbg_print_buffer(serred.buf, serred.size);
 
 			result =
 				sqlbt_err(btree_op_scan_update(&scan, serred.buf, serred.size));
@@ -352,6 +353,7 @@ update(struct SQLDB* db, struct SQLParsedUpdate* update)
 	}
 
 end:
+	scanbuffer_free(&buffer);
 	sql_ibtree_serialize_record_release(&serred);
 	btree_op_scan_release(&scan);
 	if( tree )

@@ -79,6 +79,7 @@ read_and_update_sequence(
 	struct IBTLSCompareContext ctx = tb_seq_ctx();
 
 	table_key = (byte*)malloc(sequence_name->size + 4);
+
 	sql_value_serialize_string(
 		sequence_name, table_key, sequence_name->size + 4);
 
@@ -174,7 +175,7 @@ create_sequence(
 
 	sql_ibtree_serialize_record_acquire(&serred, tbl, record);
 
-	dbg_print_buffer(serred.buf, serred.size);
+	// dbg_print_buffer(serred.buf, serred.size);
 
 	result = sqlbt_err(
 		ibtree_insert_ex(db->tb_sequences.tree, serred.buf, serred.size, &ctx));

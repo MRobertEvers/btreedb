@@ -40,14 +40,12 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 
 	u32 ser_size = sqldb_table_tbl_serialize_table_def_size(table);
 	byte* buffer = (byte*)malloc(ser_size);
+	memset(buffer, 0x00, ser_size);
 
 	u32 page_id = 0;
 	result = sqlpager_err(pager_next_unused(sqldb->pager, &page_id));
 	if( result != SQL_OK )
 		goto end;
-
-	struct BTree* newtree =
-		btree_factory_create_ex(sqldb->pager, BTREE_TBL, page_id);
 
 	table->meta.root_page = page_id;
 
@@ -61,7 +59,7 @@ sqldb_create_table(struct SQLDB* sqldb, struct SQLTable* table)
 	result = sqldb_table_tbl_serialize_table_def(table, buffer, ser_size);
 	if( result != SQL_OK )
 		goto end;
-	dbg_print_buffer(buffer, ser_size);
+	// dbg_print_buffer(buffer, ser_size);
 
 	result = sqlbt_err(btree_insert(
 		sqldb->tb_tables.tree, table->meta.table_id, buffer, ser_size));

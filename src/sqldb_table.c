@@ -91,7 +91,6 @@ sqldb_table_btree_create(
 	*out_tree =
 		btree_factory_create_ex(db->pager, BTREE_TBL, tab->meta.root_page);
 
-end:
 	return result;
 }
 

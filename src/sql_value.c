@@ -119,7 +119,7 @@ sql_value_equals(struct SQLValue const* l, struct SQLValue const* r)
 	case SQL_VALUE_TYPE_INT:
 		return l->value.num.num == r->value.num.num;
 	case SQL_VALUE_TYPE_STRING:
-		return sql_string_equals(l, r);
+		return sql_string_equals(l->value.string, r->value.string);
 	default:
 		return false;
 	}
@@ -131,7 +131,7 @@ sql_value_print(struct SQLValue const* r)
 	switch( r->type )
 	{
 	case SQL_VALUE_TYPE_INT:
-		printf("%i", r->value.num.num);
+		printf("%lld", r->value.num.num);
 		break;
 	case SQL_VALUE_TYPE_STRING:
 		printf("%.*s", r->value.string->size, r->value.string->ptr);
@@ -172,7 +172,7 @@ sql_string_deser(struct SQLString** out_str, void* buf, u32 size)
 	ser_read_32bit_le(&len, ptr);
 	ptr += 4;
 
-	*out_str = sql_string_create_from(ptr, len);
+	*out_str = sql_string_create_from((char const*)ptr, len);
 	ptr += len;
 
 	return ptr - ((byte*)buf);
@@ -209,6 +209,7 @@ int
 sql_value_deserialize_as(
 	struct SQLValue* val, enum sql_value_type_e type, void* buf, u32 size)
 {
+	u32 num;
 	byte* ptr = buf;
 	switch( type )
 	{
@@ -217,7 +218,8 @@ sql_value_deserialize_as(
 		val->type = type;
 		break;
 	case SQL_VALUE_TYPE_INT:
-		ser_read_32bit_le(&val->value.num.num, buf);
+		ser_read_32bit_le(&num, buf);
+		val->value.num.num = num;
 		val->type = type;
 		ptr += 4;
 		break;

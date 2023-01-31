@@ -104,13 +104,15 @@ sql_ibtree_serialize_record_acquire(
 	assert(pkey_ind != -1);
 
 	struct SQLRecordSchema* schema = record->schema;
+	if( schema->ncolumns != tbl->ncolumns )
+		return SQL_ERR_BAD_RECORD;
 
 	int schema_pkey_ind =
 		find_pkey_in_schema(schema, tbl->columns[pkey_ind].name);
 	if( schema_pkey_ind == -1 )
 		return SQL_ERR_RECORD_MISSING_PKEY;
 
-	u32 size = sql_value_array_ser_size(&record->values, record->nvalues);
+	u32 size = sql_value_array_ser_size(record->values, record->nvalues);
 
 	byte* buffer = (byte*)malloc(size);
 
@@ -119,13 +121,17 @@ sql_ibtree_serialize_record_acquire(
 	written += sql_value_serialize(
 		&record->values[schema_pkey_ind], ptr, size - written);
 
-	for( int i = 0; i < record->nvalues; i++ )
+	for( int i = 0; i < tbl->ncolumns; i++ )
 	{
-		if( i == schema_pkey_ind )
+		if( i == pkey_ind )
 			continue;
+
+		int record_ind =
+			sql_record_schema_indexof(schema, tbl->columns[i].name);
+
 		// TODO: Bounds checking
 		written += sql_value_serialize(
-			&record->values[i], ptr + written, size - written);
+			&record->values[record_ind], ptr + written, size - written);
 	}
 
 	out_serialized->buf = buffer;
@@ -172,6 +178,7 @@ sql_ibtree_deserialize_record(
 	{
 		if( i == pkey_ind )
 			continue;
+
 		ptr += sql_value_deserialize_as(
 			&out_record->values[out_record->nvalues],
 			convert_to_value_type(tbl->columns[i].type),

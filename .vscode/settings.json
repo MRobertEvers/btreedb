@@ -85,6 +85,7 @@
         "btree_op_scan.h": "c",
         "sqldb_table_tbl.h": "c",
         "sstream": "c",
-        "sql_record.h": "c"
+        "sql_record.h": "c",
+        "sqldb.h": "c"
     },
 }

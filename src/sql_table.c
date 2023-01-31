@@ -45,13 +45,13 @@ sql_column_init(
 // 	memset(r, 0x00, sizeof(*r));
 // }
 
-static void
-sql_table_init_empty(struct SQLTable* tbl, char const* name)
-{
-	assert(tbl->table_name == NULL);
-	memset(tbl, 0x00, sizeof(struct SQLTable));
-	tbl->table_name = sql_string_create_from_cstring(name);
-}
+// static void
+// sql_table_init_empty(struct SQLTable* tbl, char const* name)
+// {
+// 	assert(tbl->table_name == NULL);
+// 	memset(tbl, 0x00, sizeof(struct SQLTable));
+// 	tbl->table_name = sql_string_create_from_cstring(name);
+// }
 
 struct SQLTable*
 sql_table_create()
