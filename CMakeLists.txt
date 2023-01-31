@@ -5,8 +5,8 @@ project(BtreeDb)
 include_directories(src)
 include_directories(bison)
 
-add_compile_options(-fsanitize=address)
-add_link_options(-fsanitize=address)
+# add_compile_options(-fsanitize=address)
+# add_link_options(-fsanitize=address)
 
 # Now build our tools
 add_executable(db
