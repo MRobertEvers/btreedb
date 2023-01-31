@@ -79,10 +79,9 @@ sqldb_table_tbl_find(
 			goto end;
 
 		if( sql_string_equals(table->table_name, name) )
-
 		{
 			sql_table_move(out_table, table);
-		
+
 			found = true;
 			break;
 		}

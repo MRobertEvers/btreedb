@@ -62,8 +62,8 @@ sql_table_create()
 	return table;
 }
 
-static
-void destroy_members(struct SQLTable* table)
+static void
+destroy_members(struct SQLTable* table)
 {
 	sql_string_destroy(table->table_name);
 	for( int i = 0; i < table->ncolumns; i++ )
@@ -89,12 +89,14 @@ sql_table_move(struct SQLTable* l, struct SQLTable* r)
 	destroy_members(l);
 
 	sql_string_move_lval(&l->table_name, &r->table_name);
-	for (int i = 0; i < r->ncolumns; i++) 
+	for( int i = 0; i < r->ncolumns; i++ )
 	{
 		l->columns[i].type = r->columns[i].type;
 		l->columns[i].is_primary_key = r->columns[i].is_primary_key;
 		sql_string_move_lval(&l->columns[i].name, &r->columns[i].name);
 	}
+	l->ncolumns = r->ncolumns;
+	l->meta = r->meta;
 
 	memset(r, 0x00, sizeof(struct SQLTable));
 }
