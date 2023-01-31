@@ -16,7 +16,7 @@ struct SQLString* sql_string_create(u32 capacity);
 struct SQLString* sql_string_create_from(char const* s, u32 size);
 struct SQLString* sql_string_create_from_cstring(char const* s);
 struct SQLString* sql_string_copy(struct SQLString const* l);
-void sql_string_move(struct SQLString** l, struct SQLString** r);
+void sql_string_move_lval(struct SQLString** l, struct SQLString** r);
 
 bool sql_string_equals(struct SQLString const* l, struct SQLString const* r);
 char const* sql_string_raw(struct SQLString const* l);

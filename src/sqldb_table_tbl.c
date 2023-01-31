@@ -81,10 +81,9 @@ sqldb_table_tbl_find(
 		if( sql_string_equals(table->table_name, name) )
 
 		{
-			*out_table = *table;
-			table = NULL;
+			sql_table_move(out_table, table);
+		
 			found = true;
-			// sql_table_move(&out_table, &table);
 			break;
 		}
 
@@ -128,7 +127,7 @@ sqldb_table_tbl_deserialize_table_def(
 	ptr += sql_value_deserialize_as(
 		&value, SQL_VALUE_TYPE_STRING, ptr, ptr - start);
 
-	sql_string_move(&out_table->table_name, &value.value.string);
+	sql_string_move_lval(&out_table->table_name, &value.value.string);
 
 	ptr +=
 		sql_value_deserialize_as(&value, SQL_VALUE_TYPE_INT, ptr, ptr - start);
@@ -148,7 +147,7 @@ sqldb_table_tbl_deserialize_table_def(
 		ptr += sql_value_deserialize_as(
 			&temp, SQL_VALUE_TYPE_STRING, ptr, ptr - start);
 
-		sql_string_move(&out_table->columns[i].name, &temp.value.string);
+		sql_string_move_lval(&out_table->columns[i].name, &temp.value.string);
 		out_table->columns[i].type = type;
 
 		// TODO: Appropriate check for pkey.

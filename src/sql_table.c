@@ -38,7 +38,7 @@ sql_column_init(
 
 // 	*l = sql_c
 
-// 	sql_string_move(&(*l)->name, &(*l)->name);
+// 	sql_string_move_lval(&(*l)->name, &(*l)->name);
 // 	l->type = r->type;
 // 	l->is_primary_key = r->is_primary_key;
 
@@ -62,29 +62,41 @@ sql_table_create()
 	return table;
 }
 
+static
+void destroy_members(struct SQLTable* table)
+{
+	sql_string_destroy(table->table_name);
+	for( int i = 0; i < table->ncolumns; i++ )
+	{
+		sql_string_destroy(table->columns[i].name);
+	}
+	memset(table, 0x00, sizeof(*table));
+}
+
 void
 sql_table_destroy(struct SQLTable* table)
 {
 	if( !table )
 		return;
 
-	sql_string_destroy(table->table_name);
-	for( int i = 0; i < table->ncolumns; i++ )
-	{
-		sql_string_destroy(table->columns[i].name);
-	}
+	destroy_members(table);
 	free(table);
 }
 
 void
-sql_table_move(struct SQLTable** l, struct SQLTable** r)
+sql_table_move(struct SQLTable* l, struct SQLTable* r)
 {
-	if( *l != NULL )
-		sql_table_destroy(*l);
+	destroy_members(l);
 
-	*l = *r;
+	sql_string_move_lval(&l->table_name, &r->table_name);
+	for (int i = 0; i < r->ncolumns; i++) 
+	{
+		l->columns[i].type = r->columns[i].type;
+		l->columns[i].is_primary_key = r->columns[i].is_primary_key;
+		sql_string_move_lval(&l->columns[i].name, &r->columns[i].name);
+	}
 
-	*r = NULL;
+	memset(r, 0x00, sizeof(struct SQLTable));
 }
 
 // void

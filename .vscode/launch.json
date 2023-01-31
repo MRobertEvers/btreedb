@@ -19,6 +19,18 @@
             "cwd": "${workspaceRoot}",
         },
         {
+            "name": "Debug SQL Main Linux",
+            "type": "gdb",
+            "request": "launch",
+            "target": "${workspaceFolder}/build/sql_main",
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "MallocCheckHeapStart": "0",
+                "MallocCheckHeapEach": "0",
+                "MallocStackLogging": "0"
+            }
+        },
+        {
             "name": "Debug SQL Main",
             "type": "lldb",
             "request": "launch",

@@ -48,7 +48,7 @@ sql_string_copy(struct SQLString const* l)
 }
 
 void
-sql_string_move(struct SQLString** l, struct SQLString** r)
+sql_string_move_lval(struct SQLString** l, struct SQLString** r)
 {
 	if( *l != NULL )
 		sql_string_destroy(*l);

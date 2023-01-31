@@ -15,6 +15,8 @@ sql_record_schema_create(void)
 void
 sql_record_schema_destroy(struct SQLRecordSchema* rs)
 {
+	for (int i = 0; i < rs->ncolumns; i++)
+		sql_string_destroy(rs->columns[i]);
 	if( rs )
 		free(rs);
 }
@@ -30,6 +32,8 @@ sql_record_create(void)
 void
 sql_record_destroy(struct SQLRecord* record)
 {
+	for (int i = 0; i < record->nvalues; i++)
+		sql_value_release(&record->values[i]);
 	if( record )
 		free(record);
 }
