@@ -54,6 +54,13 @@ btree_factory_create_ex(struct Pager* pager, enum btree_type_e type, u32 page)
 		break;
 	}
 
+	if (bres != BTREE_OK)
+	{
+		free(rcer);
+		btree_dealloc(tree);
+		tree = NULL;
+	}
+
 	return tree;
 }
 

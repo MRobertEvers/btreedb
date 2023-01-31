@@ -160,7 +160,7 @@ fail:
 }
 
 static enum sql_e
-select(struct SQLDB* db, struct SQLParsedSelect* select)
+select_s(struct SQLDB* db, struct SQLParsedSelect* select)
 {
 	//
 	enum sql_e result = SQL_OK;
@@ -379,7 +379,7 @@ sqldb_interpret(struct SQLDB* db, struct SQLParse* parsed)
 		result = insert(db, &parsed->parse.insert);
 		break;
 	case SQL_PARSE_SELECT:
-		result = select(db, &parsed->parse.select);
+		result = select_s(db, &parsed->parse.select);
 		break;
 	case SQL_PARSE_UPDATE:
 		result = update(db, &parsed->parse.update);

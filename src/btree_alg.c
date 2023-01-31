@@ -21,9 +21,7 @@ read_key_cell(
 {
 	// TODO: Buffer size check
 	struct CellData read_cell = {0};
-	unsigned int key = 0;
 
-	key = source_node->keys[index].key;
 	btu_read_cell(source_node, index, &read_cell);
 
 	ser_read_32bit_le(buffer, read_cell.pointer);

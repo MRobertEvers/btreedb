@@ -155,7 +155,7 @@ btree_node_write_ex(
 			if( result != BTREE_OK )
 				return result;
 
-			assert(num_overflow_pages >= 0);
+			assert(num_overflow_pages > 0);
 			num_overflow_pages--;
 			if( num_overflow_pages == 0 )
 			{
