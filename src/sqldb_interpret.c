@@ -42,7 +42,7 @@ insert(struct SQLDB* db, struct SQLParsedInsert* insert)
 	enum sql_e result = SQL_OK;
 
 	struct OpUpdate upsert = {0};
-	struct BTree* tree = NULL;
+	struct BTreeView tv = {0};
 	u32 row_id = 0;
 	struct SQLSerializedRecord serred = {0};
 	struct SQLTable* table = sql_table_create();
@@ -66,12 +66,12 @@ insert(struct SQLDB* db, struct SQLParsedInsert* insert)
 	if( result != SQL_OK )
 		goto end;
 
-	result = sqldb_table_btree_create(db, table, &tree);
+	result = sqldb_table_btree_acquire(db, table, &tv);
 	if( result != SQL_OK )
 		goto end;
 
 	result =
-		sqlbt_err(btree_op_update_acquire_tbl(tree, &upsert, row_id, NULL));
+		sqlbt_err(btree_op_update_acquire_tbl(tv.tree, &upsert, row_id, NULL));
 	if( result != SQL_OK )
 		goto end;
 
@@ -94,8 +94,7 @@ insert(struct SQLDB* db, struct SQLParsedInsert* insert)
 end:
 	sql_ibtree_serialize_record_release(&serred);
 	btree_op_update_release(&upsert);
-	if( tree )
-		sqldb_table_btree_destroy(db, table, tree);
+	sqldb_table_btree_release(db, table, &tv);
 	sql_record_schema_destroy(record_schema);
 	sql_record_destroy(record);
 	sql_table_destroy(table);
@@ -166,7 +165,7 @@ select_s(struct SQLDB* db, struct SQLParsedSelect* select)
 	enum sql_e result = SQL_OK;
 
 	struct OpScan scan = {0};
-	struct BTree* tree = NULL;
+	struct BTreeView tv = {0};
 	struct ScanBuffer buffer = {0};
 	struct SQLTable* table = sql_table_create();
 	struct SQLRecordSchema* record_schema = sql_record_schema_create();
@@ -184,11 +183,11 @@ select_s(struct SQLDB* db, struct SQLParsedSelect* select)
 	// if( result != SQL_OK )
 	// 	goto end;
 
-	result = sqldb_table_btree_create(db, table, &tree);
+	result = sqldb_table_btree_acquire(db, table, &tv);
 	if( result != SQL_OK )
 		goto end;
 
-	result = sqlbt_err(btree_op_scan_acquire(tree, &scan));
+	result = sqlbt_err(btree_op_scan_acquire(tv.tree, &scan));
 	if( result != SQL_OK )
 		goto end;
 
@@ -237,8 +236,7 @@ select_s(struct SQLDB* db, struct SQLParsedSelect* select)
 end:
 	scanbuffer_free(&buffer);
 	btree_op_scan_release(&scan);
-	if( tree )
-		sqldb_table_btree_destroy(db, table, tree);
+	sqldb_table_btree_release(db, table, &tv);
 	sql_record_schema_destroy(record_schema);
 	sql_record_destroy(record);
 	sql_table_destroy(table);
@@ -266,7 +264,7 @@ update(struct SQLDB* db, struct SQLParsedUpdate* update)
 	enum sql_e result = SQL_OK;
 
 	struct OpScan scan = {0};
-	struct BTree* tree = NULL;
+	struct BTreeView tv = {0};
 	struct ScanBuffer buffer = {0};
 	struct SQLSerializedRecord serred = {0};
 	struct SQLTable* table = sql_table_create();
@@ -277,11 +275,11 @@ update(struct SQLDB* db, struct SQLParsedUpdate* update)
 	if( result != SQL_OK )
 		goto end;
 
-	result = sqldb_table_btree_create(db, table, &tree);
+	result = sqldb_table_btree_acquire(db, table, &tv);
 	if( result != SQL_OK )
 		goto end;
 
-	result = sqlbt_err(btree_op_scan_acquire(tree, &scan));
+	result = sqlbt_err(btree_op_scan_acquire(tv.tree, &scan));
 	if( result != SQL_OK )
 		goto end;
 
@@ -356,8 +354,7 @@ end:
 	scanbuffer_free(&buffer);
 	sql_ibtree_serialize_record_release(&serred);
 	btree_op_scan_release(&scan);
-	if( tree )
-		sqldb_table_btree_destroy(db, table, tree);
+	sqldb_table_btree_release(db, table, &tv);
 	sql_record_schema_destroy(record_schema);
 	sql_record_destroy(record);
 	sql_table_destroy(table);

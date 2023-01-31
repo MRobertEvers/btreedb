@@ -28,7 +28,7 @@ struct SQLDBMetaTable
 sqldb_seq_tbl_create(struct Pager* pager)
 {
 	struct SQLDBMetaTable tb = {
-		.tree = btree_factory_create_ex(pager, BTREE_INDEX, 2),
+		.tree = btree_factory_create_with_pager(pager, BTREE_INDEX, 2),
 		.table = seq_tbl()};
 	return tb;
 }

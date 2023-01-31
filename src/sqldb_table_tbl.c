@@ -14,7 +14,8 @@ struct SQLDBMetaTable
 sqldb_table_tbl_create(struct Pager* pager)
 {
 	return (struct SQLDBMetaTable){
-		.table = NULL, .tree = btree_factory_create_ex(pager, BTREE_TBL, 1)};
+		.table = NULL,
+		.tree = btree_factory_create_with_pager(pager, BTREE_TBL, 1)};
 }
 
 struct ScanBuffer

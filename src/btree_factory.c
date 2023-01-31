@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct Pager*
 btree_factory_pager_create(char const* filename)
@@ -30,16 +31,15 @@ btree_factory_pager_create(char const* filename)
 }
 
 struct BTree*
-btree_factory_create_ex(struct Pager* pager, enum btree_type_e type, u32 page)
+btree_factory_create_ex(
+	struct Pager* pager,
+	struct BTreeNodeRC* rcer,
+	enum btree_type_e type,
+	u32 page)
 {
 	struct BTree* tree = NULL;
-	struct BTreeNodeRC* rcer = NULL;
 
 	enum btree_e bres = BTREE_OK;
-
-	rcer = (struct BTreeNodeRC*)malloc(sizeof(struct BTreeNodeRC));
-
-	noderc_init(rcer, pager);
 
 	bres = btree_alloc(&tree);
 	switch( type )
@@ -54,9 +54,8 @@ btree_factory_create_ex(struct Pager* pager, enum btree_type_e type, u32 page)
 		break;
 	}
 
-	if (bres != BTREE_OK)
+	if( bres != BTREE_OK )
 	{
-		free(rcer);
 		btree_dealloc(tree);
 		tree = NULL;
 	}
@@ -65,10 +64,22 @@ btree_factory_create_ex(struct Pager* pager, enum btree_type_e type, u32 page)
 }
 
 struct BTree*
+btree_factory_create_with_pager(
+	struct Pager* pager, enum btree_type_e type, u32 page)
+{
+	struct BTreeNodeRC* rcer = NULL;
+	rcer = (struct BTreeNodeRC*)malloc(sizeof(struct BTreeNodeRC));
+	noderc_init(rcer, pager);
+	return btree_factory_create_ex(pager, rcer, type, page);
+}
+
+struct BTree*
 btree_factory_create(char const* filename)
 {
-	return btree_factory_create_ex(
-		btree_factory_pager_create(filename), BTREE_INDEX, 1);
+	struct BTreeNodeRC* rcer = NULL;
+	rcer = (struct BTreeNodeRC*)malloc(sizeof(struct BTreeNodeRC));
+	noderc_init(rcer, btree_factory_pager_create(filename));
+	return btree_factory_create_ex(rcer->pager, rcer, BTREE_INDEX, 1);
 }
 
 void
@@ -79,4 +90,31 @@ btree_factory_destroy(struct BTree* tree)
 	free(tree->rcer);
 
 	btree_dealloc(tree);
+}
+
+enum sql_e
+btree_factory_view_acquire(
+	struct BTreeView* tv, struct Pager* pager, enum btree_type_e type, u32 page)
+{
+	struct BTreeNodeRC* rcer = NULL;
+
+	rcer = (struct BTreeNodeRC*)malloc(sizeof(struct BTreeNodeRC));
+	noderc_init(rcer, pager);
+
+	tv->tree = btree_factory_create_ex(pager, rcer, type, page);
+	tv->rcer = rcer;
+	if( !tv->tree )
+	{
+		free(rcer);
+		return SQL_ERR_UNKNOWN;
+	}
+	return SQL_OK;
+}
+
+void
+btree_factory_view_release(struct BTreeView* tv)
+{
+	free(tv->tree);
+	free(tv->rcer);
+	memset(tv, 0x00, sizeof(*tv));
 }

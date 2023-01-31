@@ -82,23 +82,23 @@ end:
 }
 
 enum sql_e
-sqldb_table_btree_create(
-	struct SQLDB* db, struct SQLTable* tab, struct BTree** out_tree)
+sqldb_table_btree_acquire(
+	struct SQLDB* db, struct SQLTable* tab, struct BTreeView* out_tree)
 {
 	enum sql_e result = SQL_OK;
 	assert(tab->meta.root_page != 0);
 
-	*out_tree =
-		btree_factory_create_ex(db->pager, BTREE_TBL, tab->meta.root_page);
+	result = btree_factory_view_acquire(
+		out_tree, db->pager, BTREE_TBL, tab->meta.root_page);
 
 	return result;
 }
 
 enum sql_e
-sqldb_table_btree_destroy(
-	struct SQLDB* db, struct SQLTable* tab, struct BTree* out_tree)
+sqldb_table_btree_release(
+	struct SQLDB* db, struct SQLTable* tab, struct BTreeView* out_tree)
 {
 	enum sql_e result = SQL_OK;
-	free(out_tree);
+	btree_factory_view_release(out_tree);
 	return result;
 }
