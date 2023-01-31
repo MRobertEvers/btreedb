@@ -553,7 +553,7 @@ gc_node(
 		byte* dest = btu_calc_highwater_offset(node, offset - shift_size);
 
 		memmove(
-			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
+			(void*)dest, (void*)src, shift_size);
 		node->keys[i].cell_offset -= shift_size;
 	}
 

@@ -74,6 +74,7 @@ main()
 	// CREATE TABLE "b" ("age" INT, "name" STRING)
 	// CREATE TABLE "a" ("age" INT, "name" STRING)
 	// INSERT INTO "a" ("name", "age") VALUES ('hello', 88)
+	// UPDATE "a" SET "age" = 9
 	// INSERT INTO "b" ("name", "age") VALUES ('hello', 88)
 	// SELECT * FROM "a"
 	remove("sql_db.db");
