@@ -220,105 +220,61 @@ update_record_value(
 }
 
 static enum sql_e
-update(struct SQLDB* db, struct SQLParsedUpdate* update)
+update_record(
+	struct SQLDBScan* scan,
+	struct SQLParsedUpdate* update,
+	struct SQLRecord* record)
 {
 	enum sql_e result = SQL_OK;
+	struct SQLValue newvalue = {0};
 
-	struct OpScan scan = {0};
-	struct BTreeView tv = {0};
-	struct ScanBuffer buffer = {0};
-	struct SQLSerializedRecord serred = {0};
-	struct SQLTable* table = sql_table_create();
-	struct SQLRecordSchema* record_schema = sql_record_schema_create();
-	struct SQLRecord* record = sql_record_create();
+	print_record(record);
 
-	result = sqldb_table_tbl_find(db, update->table_name, table);
-	if( result != SQL_OK )
-		goto end;
-
-	result = sqldb_table_btree_acquire(db, table, &tv);
-	if( result != SQL_OK )
-		goto end;
-
-	result = sqlbt_err(btree_op_scan_acquire(tv.tree, &scan));
-	if( result != SQL_OK )
-		goto end;
-
-	result = sqlbt_err(btree_op_scan_prepare(&scan));
-	if( result != SQL_OK )
-		goto end;
-
-	while( !btree_op_scan_done(&scan) )
+	for( int i = 0; i < update->ncolumns; i++ )
 	{
-		scanbuffer_resize(&buffer, scan.data_size);
+		// TODO: The value gets moved but this looks sketchy.
+		sql_value_acquire_eval(&newvalue, &update->values[i]);
 
-		result =
-			sqlbt_err(btree_op_scan_current(&scan, buffer.buffer, buffer.size));
-		if( result != SQL_OK )
-			goto end;
+		result = update_record_value(record, update->columns[i], &newvalue);
+		sql_value_release(&newvalue);
 
-		result = sql_ibtree_deserialize_record(
-			table, record_schema, record, buffer.buffer, buffer.size);
-		if( result != SQL_OK )
-			goto end;
-
-		if( match_where(record, &update->where) )
-		{
-			printf("Match\n");
-
-			for( int i = 0; i < record->nvalues; i++ )
-			{
-				printf(
-					"(%.*s, ",
-					record_schema->columns[i]->size,
-					record_schema->columns[i]->ptr);
-				sql_value_print(&record->values[i]);
-				printf("),");
-			}
-			printf("\n");
-
-			for( int i = 0; i < update->ncolumns; i++ )
-			{
-				// TODO: The value gets moved but this looks sketchy.
-				struct SQLValue newvalue = {0};
-				sql_value_acquire_eval(&newvalue, &update->values[i]);
-
-				update_record_value(record, update->columns[i], &newvalue);
-
-				sql_value_release(&newvalue);
-			}
-			u32 newsize = sql_ibtree_serialize_record_size(record);
-			scanbuffer_resize(&buffer, newsize);
-			result =
-				sql_ibtree_serialize_record_acquire(&serred, table, record);
-			if( result != SQL_OK )
-				goto end;
-			// dbg_print_buffer(serred.buf, serred.size);
-
-			result =
-				sqlbt_err(btree_op_scan_update(&scan, serred.buf, serred.size));
-			if( result != SQL_OK )
-				goto end;
-		}
-
-		sql_record_schema_destroy(record_schema);
-		record_schema = sql_record_schema_create();
-		sql_record_destroy(record);
-		record = sql_record_create();
-
-		result = sqlbt_err(btree_op_scan_next(&scan));
 		if( result != SQL_OK )
 			goto end;
 	}
 
+	result = sqldb_scan_update(scan, record);
+	if( result != SQL_OK )
+		goto end;
 end:
-	scanbuffer_free(&buffer);
-	sql_ibtree_serialize_record_release(&serred);
-	btree_op_scan_release(&scan);
-	sqldb_table_btree_release(db, table, &tv);
-	sql_record_schema_destroy(record_schema);
-	sql_record_destroy(record);
-	sql_table_destroy(table);
+	return result;
+}
+
+static enum sql_e
+update(struct SQLDB* db, struct SQLParsedUpdate* update)
+{
+	enum sql_e result = SQL_OK;
+
+	struct SQLDBScan scan = {0};
+	result = sqldb_scan_acquire(db, update->table_name, &scan);
+	if( result != SQL_OK )
+		goto end;
+
+	do
+	{
+		result = sqldb_scan_next(&scan);
+		if( result != SQL_OK )
+			goto end;
+
+		struct SQLRecord* record = sqldb_scan_record(&scan);
+		if( !record )
+			goto end;
+
+		if( match_where(record, &update->where) )
+			update_record(&scan, update, record);
+	} while( !sqldb_scan_done(&scan) && result == SQL_OK );
+
+end:
+	sqldb_scan_release(&scan);
 	return result;
 }
 

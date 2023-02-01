@@ -43,7 +43,7 @@ sql_value_acquire_eval(
 	return SQL_OK;
 }
 
-enum sql_e
+void
 sql_value_release(struct SQLValue* value)
 {
 	switch( value->type )
@@ -58,7 +58,6 @@ sql_value_release(struct SQLValue* value)
 	}
 
 	memset(value, 0x00, sizeof(*value));
-	return SQL_OK;
 }
 
 int

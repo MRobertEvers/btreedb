@@ -145,6 +145,29 @@ await:
 	return result;
 }
 
+enum sql_e
+sqldb_scan_update(struct SQLDBScan* scan, struct SQLRecord* record)
+{
+	enum sql_e result = SQL_OK;
+	struct ScanState* fsm = (struct ScanState*)scan->internal;
+	struct SQLSerializedRecord serred = {0};
+
+	u32 newsize = sql_ibtree_serialize_record_size(record);
+	sqldb_scanbuffer_resize(&fsm->buffer, newsize);
+
+	result = sql_ibtree_serialize_record_acquire(&serred, fsm->table, record);
+	if( result != SQL_OK )
+		goto end;
+
+	result = sqlbt_err(btree_op_scan_update(&fsm->op, serred.buf, serred.size));
+	if( result != SQL_OK )
+		goto end;
+
+end:
+	sql_ibtree_serialize_record_release(&serred);
+	return result;
+}
+
 bool
 sqldb_scan_done(struct SQLDBScan* scan)
 {

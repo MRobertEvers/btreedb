@@ -31,7 +31,7 @@ struct SQLValue
 enum sql_e sql_value_acquire_eval(
 	struct SQLValue* value, struct SQLLiteralStr const* sql_value);
 
-enum sql_e sql_value_release(struct SQLValue* value);
+void sql_value_release(struct SQLValue* value);
 
 bool sql_value_equals(struct SQLValue const* l, struct SQLValue const* r);
 void sql_value_print(struct SQLValue const* r);
