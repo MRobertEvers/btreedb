@@ -78,24 +78,6 @@ main()
 	// INSERT INTO "b" ("name", "age") VALUES ('hello', 88)
 	// SELECT * FROM "a"
 	remove("sql_db.db");
-	// char create_tab_string[] = "CREATE TABLE \"my_table\" (\"age\" INT )";
-
-	// struct SQLDB* db = NULL;
-	// struct SQLTable* table = sql_table_create();
-
-	// // Parse
-	// struct SQLString* input =
-	// sql_string_create_from_cstring(create_tab_string); struct SQLParse*
-	// tabparse = sql_parse_create(input);
-
-	// sqldb_create(&db, "sql_db.db");
-
-	// sqldb_interpret(db, tabparse);
-
-	// // end:
-	// sql_table_destroy(table);
-	// sql_parse_destroy(tabparse);
-	// sql_string_destroy(input);
 
 	return cli();
 }
