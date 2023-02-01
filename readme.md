@@ -43,3 +43,4 @@ https://github.com/westes/flex
 
 1. Proper write caching. All writes immediate write to disk.
 2. Pager free list.
+3. Traverse with early splitting and early merging.
