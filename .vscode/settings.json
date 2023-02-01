@@ -86,6 +86,8 @@
         "sqldb_table_tbl.h": "c",
         "sstream": "c",
         "sql_record.h": "c",
-        "sqldb.h": "c"
+        "sqldb.h": "c",
+        "sqldb_table.h": "c",
+        "sqldb_scanbuffer.h": "c"
     },
 }

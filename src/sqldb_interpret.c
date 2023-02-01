@@ -9,6 +9,7 @@
 #include "sql_utils.h"
 #include "sql_value.h"
 #include "sqldb.h"
+#include "sqldb_scan.h"
 #include "sqldb_seq_tbl.h"
 #include "sqldb_table.h"
 #include "sqldb_table_tbl.h"
@@ -158,88 +159,48 @@ fail:
 	goto end;
 }
 
+static void
+print_record(struct SQLRecord* record)
+{
+	for( int i = 0; i < record->nvalues; i++ )
+	{
+		printf(
+			"(%.*s, ",
+			record->schema->columns[i]->size,
+			record->schema->columns[i]->ptr);
+		sql_value_print(&record->values[i]);
+		printf("),");
+	}
+	printf("\n");
+}
+
 static enum sql_e
 select_s(struct SQLDB* db, struct SQLParsedSelect* select)
 {
 	//
 	enum sql_e result = SQL_OK;
 
-	struct OpScan scan = {0};
-	struct BTreeView tv = {0};
-	struct ScanBuffer buffer = {0};
-	struct SQLTable* table = sql_table_create();
-	struct SQLRecordSchema* record_schema = sql_record_schema_create();
-	struct SQLRecord* record = sql_record_create();
-
-	result = sqldb_table_tbl_find(db, select->table_name, table);
+	struct SQLDBScan scan = {0};
+	result = sqldb_scan_acquire(db, select->table_name, &scan);
 	if( result != SQL_OK )
 		goto end;
 
-	// // All columns except nullable, or default columns (pkey is
-	// autoincrement) result = sql_parsegen_record_schema_from_insert(insert,
-	// record_schema); if( result != SQL_OK ) 	goto end;
-
-	// result = sql_parsegen_record_from_insert(insert, record_schema, record);
-	// if( result != SQL_OK )
-	// 	goto end;
-
-	result = sqldb_table_btree_acquire(db, table, &tv);
-	if( result != SQL_OK )
-		goto end;
-
-	result = sqlbt_err(btree_op_scan_acquire(tv.tree, &scan));
-	if( result != SQL_OK )
-		goto end;
-
-	result = sqlbt_err(btree_op_scan_prepare(&scan));
-	if( result != SQL_OK )
-		goto end;
-
-	while( !btree_op_scan_done(&scan) )
+	do
 	{
-		scanbuffer_resize(&buffer, scan.data_size);
-
-		result =
-			sqlbt_err(btree_op_scan_current(&scan, buffer.buffer, buffer.size));
+		result = sqldb_scan_next(&scan);
 		if( result != SQL_OK )
 			goto end;
 
-		result = sql_ibtree_deserialize_record(
-			table, record_schema, record, buffer.buffer, buffer.size);
-		if( result != SQL_OK )
+		struct SQLRecord* record = sqldb_scan_record(&scan);
+		if( !record )
 			goto end;
 
 		if( match_where(record, &select->where) )
-		{
-			for( int i = 0; i < record->nvalues; i++ )
-			{
-				printf(
-					"(%.*s, ",
-					record_schema->columns[i]->size,
-					record_schema->columns[i]->ptr);
-				sql_value_print(&record->values[i]);
-				printf("),");
-			}
-			printf("\n");
-		}
-
-		sql_record_schema_destroy(record_schema);
-		record_schema = sql_record_schema_create();
-		sql_record_destroy(record);
-		record = sql_record_create();
-
-		result = sqlbt_err(btree_op_scan_next(&scan));
-		if( result != SQL_OK )
-			goto end;
-	}
+			print_record(record);
+	} while( !sqldb_scan_done(&scan) && result == SQL_OK );
 
 end:
-	scanbuffer_free(&buffer);
-	btree_op_scan_release(&scan);
-	sqldb_table_btree_release(db, table, &tv);
-	sql_record_schema_destroy(record_schema);
-	sql_record_destroy(record);
-	sql_table_destroy(table);
+	sqldb_scan_release(&scan);
 	return result;
 }
 
