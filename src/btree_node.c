@@ -254,7 +254,6 @@ btree_node_insert_inline(
 		btree_pkey_set_cell_type(0, PKEY_FLAG_CELL_TYPE_INLINE));
 }
 
-int debg = 0;
 enum btree_e
 btree_node_insert_inline_ex(
 	struct BTreeNode* node,
@@ -270,14 +269,8 @@ btree_node_insert_inline_ex(
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
-	printf("DBG: %d\n", debg++);
-	printf(
-		"HW? %d heap %d isize %d\n", cell_size, heap_needed, cell->inline_size);
 	byte* cell_left_edge = btu_calc_highwater_offset(
 		node, node->header->cell_high_water_offset + cell_size);
-
-	long long l = cell_left_edge - btu_get_node_buffer(node);
-	printf("Diff %lld\n", l);
 
 	result = btree_cell_write_inline(cell, cell_left_edge, cell_size);
 	if( result != BTREE_OK )
@@ -629,8 +622,6 @@ btree_node_remove(
 	// 	printf("%i: %u\n", i, node->keys[i].cell_offset);
 	// }
 	// printf("\n");
-	printf("Before:\n");
-	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 
 	int deleted_offset = node->keys[index_number].cell_offset;
 	btu_read_cell(node, index_number, &cell);
@@ -661,8 +652,7 @@ btree_node_remove(
 
 	if( node->header->num_keys > 0 )
 		gc_node(node, index_number, deleted_offset, deleted_inline_size);
-	printf("After:\n");
-	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
+
 	return BTREE_OK;
 }
 

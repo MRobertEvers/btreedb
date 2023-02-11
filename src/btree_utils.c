@@ -2,7 +2,6 @@
 
 #include "serialization.h"
 
-#include <stdio.h>
 #include <string.h>
 
 enum btree_e
@@ -67,17 +66,8 @@ byte*
 btu_calc_highwater_offset(struct BTreeNode* node, int highwater)
 {
 	byte* base = btu_get_node_buffer(node);
-	byte* og = base;
 	base += btu_get_node_size(node);
-	long long l = base - og;
-	printf("%lld\n", l);
-
 	base -= highwater;
-
-	l = base - og;
-
-	printf("%lld (%d)\n", l, highwater);
-
 	return base;
 }
 
