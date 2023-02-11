@@ -129,7 +129,7 @@ bta_split_node_as_parent(
 	// Add the middle point between the left and right pages as a key to the
 	// parent.
 	write_cell.inline_size = sizeof(nv_page(&left_nv)->page_id);
-	write_cell.payload = &nv_page(&left_nv)->page_id;
+	write_cell.payload = (byte*)&nv_page(&left_nv)->page_id;
 	result = btree_node_insert_inline(
 		nv_node(&parent_nv),
 		&insert_end,

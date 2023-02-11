@@ -8,7 +8,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
-// #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -254,6 +254,7 @@ btree_node_insert_inline(
 		btree_pkey_set_cell_type(0, PKEY_FLAG_CELL_TYPE_INLINE));
 }
 
+int debg = 0;
 enum btree_e
 btree_node_insert_inline_ex(
 	struct BTreeNode* node,
@@ -269,8 +270,14 @@ btree_node_insert_inline_ex(
 	if( node->header->free_heap < heap_needed )
 		return BTREE_ERR_NODE_NOT_ENOUGH_SPACE;
 
+	printf("DBG: %d\n", debg++);
+	printf(
+		"HW? %d heap %d isize %d\n", cell_size, heap_needed, cell->inline_size);
 	byte* cell_left_edge = btu_calc_highwater_offset(
 		node, node->header->cell_high_water_offset + cell_size);
+
+	long long l = cell_left_edge - btu_get_node_buffer(node);
+	printf("Diff %lld\n", l);
 
 	result = btree_cell_write_inline(cell, cell_left_edge, cell_size);
 	if( result != BTREE_OK )
@@ -445,8 +452,8 @@ btree_node_move_cell_from_data(
 			btree_node_heap_required_for_insertion(cell_buffer_size) -
 			dest_max_size;
 
-		char* overflow_payload = NULL;
-		char* payload = NULL;
+		byte* overflow_payload = NULL;
+		byte* payload = NULL;
 		u32 overflow_payload_size = 0;
 		u32 inline_size = 0;
 
@@ -462,7 +469,7 @@ btree_node_move_cell_from_data(
 			u32 previous_inline_payload_size =
 				btree_cell_overflow_calc_inline_payload_size(cell.inline_size);
 			inline_size = cell.inline_size - bytes_overflown;
-			payload = (char*)read_cell.inline_payload;
+			payload = read_cell.inline_payload;
 			u32 new_inline_payload_size =
 				btree_cell_overflow_calc_inline_payload_size(inline_size);
 			overflow_payload = payload + new_inline_payload_size;
@@ -552,8 +559,7 @@ gc_node(
 		byte* src = btu_calc_highwater_offset(node, offset);
 		byte* dest = btu_calc_highwater_offset(node, offset - shift_size);
 
-		memmove(
-			(void*)dest, (void*)src, shift_size);
+		memmove((void*)dest, (void*)src, *cell.size);
 		node->keys[i].cell_offset -= shift_size;
 	}
 
@@ -623,6 +629,8 @@ btree_node_remove(
 	// 	printf("%i: %u\n", i, node->keys[i].cell_offset);
 	// }
 	// printf("\n");
+	printf("Before:\n");
+	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 
 	int deleted_offset = node->keys[index_number].cell_offset;
 	btu_read_cell(node, index_number, &cell);
@@ -653,7 +661,8 @@ btree_node_remove(
 
 	if( node->header->num_keys > 0 )
 		gc_node(node, index_number, deleted_offset, deleted_inline_size);
-
+	printf("After:\n");
+	dbg_print_buffer(node->page->page_buffer, node->page->page_size);
 	return BTREE_OK;
 }
 

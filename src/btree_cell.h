@@ -38,7 +38,7 @@ struct BTreeCellInline
 	// inline_size is size of everything except this int.
 	// I.e. inline_payload_size
 	u32 inline_size;
-	void* payload;
+	byte* payload;
 };
 
 /**

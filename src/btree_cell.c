@@ -45,7 +45,7 @@ btree_cell_write_inline(
 	char* cell_left_edge = buffer;
 	ser_write_32bit_le(cell_left_edge, cell->inline_size);
 
-	cell_left_edge = cell_left_edge + sizeof(cell->inline_size);
+	cell_left_edge = cell_left_edge + sizeof(u32);
 	memcpy(cell_left_edge, payload, cell->inline_size);
 
 	return BTREE_OK;
@@ -64,7 +64,7 @@ btree_cell_read_inline(
 	u32* out_total_size)
 {
 	// TODO: Bounds check.
-	char* cell_left_edge = cell_buffer;
+	byte* cell_left_edge = cell_buffer;
 	ser_read_32bit_le(&cell->inline_size, cell_left_edge);
 
 	if( out_total_size )

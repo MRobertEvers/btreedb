@@ -17,6 +17,7 @@ struct PageMetadata
 static int
 metadata_size(void)
 {
+	return 0;
 	return 1	// is_free
 		   + 4	// Next free page
 		   + 4	// Page #
@@ -163,7 +164,7 @@ read_from_disk(
 
 	pager_result = pager->ops->read(
 		pager->file,
-		page->page_buffer,
+		deadjust_page_buffer(page->page_buffer),
 		offset,
 		pager->disk_page_size,
 		&pages_read);
@@ -335,7 +336,7 @@ pager_write_page(struct Pager* pager, struct Page* page)
 
 	pager->ops->write(
 		pager->file,
-		page->page_buffer,
+		deadjust_page_buffer(page->page_buffer),
 		offset,
 		pager->disk_page_size,
 		&write_result);
