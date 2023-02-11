@@ -41,6 +41,10 @@ https://github.com/westes/flex
 
 ## Remaining features
 
+In no particular order.
+
 1. Proper write caching. All writes immediate write to disk.
 2. Pager free list.
 3. Traverse with early splitting and early merging.
+4. Query Planner
+5. Delete operation

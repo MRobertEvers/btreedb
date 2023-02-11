@@ -7,6 +7,63 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct PageMetadata
+{
+	char is_free; // 0x00 - in use, 0xFF - free
+	int next_free_page;
+	int page_number;
+};
+
+static int
+metadata_size(void)
+{
+	return 1	// is_free
+		   + 4	// Next free page
+		   + 4	// Page #
+		   + 3; // Don't really need to "reserve" space, but I am anyway.
+}
+
+/**
+ * @brief Pager stores metadata at the beginning of each page.
+ *
+ * Shift the buffer by that amount.
+ *
+ * @param page_buffer
+ * @return void*
+ */
+static void*
+adjust_page_buffer(void* page_buffer)
+{
+	char* buf = (char*)page_buffer;
+	buf += metadata_size();
+
+	return (void*)buf;
+}
+
+static void*
+deadjust_page_buffer(void* page_buffer)
+{
+	char* buf = (char*)page_buffer;
+	buf -= metadata_size();
+
+	return (void*)buf;
+}
+
+static void
+memcpy_page_buffer(struct Page* dst, struct Page* src, struct Pager* pager)
+{
+	memcpy(
+		deadjust_page_buffer(dst->page_buffer),
+		deadjust_page_buffer(src->page_buffer),
+		pager->disk_page_size);
+}
+
+static void
+memset_page_buffer(struct Page* p, char val, struct Pager* pager)
+{
+	memset(deadjust_page_buffer(p->page_buffer), val, pager->disk_page_size);
+}
+
 static enum pager_e
 pager_page_alloc(struct Pager* pager, struct Page** r_page)
 {
@@ -28,8 +85,11 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	page->page_id = page_id;
 	page->status = PAGER_ERR_PAGE_PERSISTENCE_UNKNOWN;
 	page->page_size = pager->page_size;
-	page->page_buffer = malloc(pager->page_size);
-	memset(page->page_buffer, 0x00, pager->page_size);
+
+	void* page_buffer = malloc(pager->disk_page_size);
+	page->page_buffer = adjust_page_buffer(page_buffer);
+
+	memset_page_buffer(page, 0x00, pager);
 
 	return PAGER_OK;
 }
@@ -37,7 +97,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 static enum pager_e
 pager_page_deinit(struct Page* page)
 {
-	free(page->page_buffer);
+	free(deadjust_page_buffer(page->page_buffer));
 	memset(page, 0x00, sizeof(*page));
 
 	return PAGER_OK;
@@ -97,12 +157,16 @@ read_from_disk(
 	assert(pager->ops != NULL);
 	assert(selector->page_id != PAGE_CREATE_NEW_PAGE);
 
-	int offset = pager->page_size * (selector->page_id - 1);
+	int offset = pager->disk_page_size * (selector->page_id - 1);
 	int pages_read;
 	enum pager_e pager_result;
 
 	pager_result = pager->ops->read(
-		pager->file, page->page_buffer, offset, pager->page_size, &pages_read);
+		pager->file,
+		page->page_buffer,
+		offset,
+		pager->disk_page_size,
+		&pages_read);
 
 	page->page_id = selector->page_id;
 
@@ -123,15 +187,16 @@ pager_dealloc(struct Pager* pager)
 	return PAGER_OK;
 }
 
-enum pager_e
+static enum pager_e
 pager_init(
 	struct Pager* pager,
 	struct PagerOps* ops,
 	struct PageCache* cache,
-	int page_size)
+	int disk_page_size)
 {
 	memset(pager, 0x00, sizeof(*pager));
-	pager->page_size = page_size;
+	pager->disk_page_size = disk_page_size;
+	pager->page_size = disk_page_size - metadata_size();
 	pager->ops = ops;
 
 	pager->cache = cache;
@@ -160,7 +225,7 @@ pager_open(struct Pager* pager, char const* pager_str)
 
 	pager->ops->open(&pager->file, pager->pager_name_str);
 	int size = pager->ops->size(pager->file);
-	pager->max_page = size / pager->page_size;
+	pager->max_page = size / pager->disk_page_size;
 
 	return PAGER_OK;
 }
@@ -176,14 +241,14 @@ pager_create(
 	struct Pager** r_pager,
 	struct PagerOps* ops,
 	struct PageCache* cache,
-	int page_size)
+	int disk_page_size)
 {
 	enum pager_e pager_result;
 	pager_result = pager_alloc(r_pager);
 	if( pager_result != PAGER_OK )
 		goto err;
 
-	pager_result = pager_init(*r_pager, ops, cache, page_size);
+	pager_result = pager_init(*r_pager, ops, cache, disk_page_size);
 	if( pager_result != PAGER_OK )
 		goto err;
 
@@ -232,7 +297,7 @@ pager_read_page(
 
 	if( result == PAGER_OK )
 	{
-		memcpy(page->page_buffer, cached_page->page_buffer, pager->page_size);
+		memcpy_page_buffer(page, cached_page, pager);
 
 		page_cache_release(pager->cache, cached_page);
 	}
@@ -262,17 +327,17 @@ pager_write_page(struct Pager* pager, struct Page* page)
 		page_cache_acquire(pager->cache, page->page_id, &cached_page);
 	if( cache_result == PAGER_OK )
 	{
-		memcpy(cached_page->page_buffer, page->page_buffer, pager->page_size);
+		memcpy_page_buffer(cached_page, page, pager);
 		page_cache_release(pager->cache, cached_page);
 	}
 
-	offset = pager->page_size * (page->page_id - 1);
+	offset = pager->disk_page_size * (page->page_id - 1);
 
 	pager->ops->write(
 		pager->file,
 		page->page_buffer,
 		offset,
-		pager->page_size,
+		pager->disk_page_size,
 		&write_result);
 
 	pager->max_page =
