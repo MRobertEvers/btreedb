@@ -198,6 +198,8 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 	char found = 0;
 	struct NodeView nv = {0};
 	struct CursorBreadcrumb crumb = {0};
+	struct SplitPage split_result = {0};
+	struct SplitPageAsParent root_split_result = {0};
 
 	struct Cursor* cursor = cursor_create(tree);
 
@@ -229,23 +231,23 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			// This node becomes the new parent of those nodes.
 			if( nv_page(&nv)->page_id == tree->root_page_id )
 			{
-				struct SplitPageAsParent split_result;
 				result = bta_split_node_as_parent(
-					nv_node(&nv), tree->rcer, &split_result);
+					nv_node(&nv), tree->rcer, &root_split_result);
 				if( result != BTREE_OK )
 					goto end;
 
 				result = noderc_reinit_read(
 					tree->rcer,
 					&nv,
-					key <= split_result.left_child_high_key
-						? split_result.left_child_page_id
-						: split_result.right_child_page_id);
+					key <= root_split_result.left_child_high_key
+						? root_split_result.left_child_page_id
+						: root_split_result.right_child_page_id);
 				if( result != BTREE_OK )
 					goto end;
 
 				result = btree_node_write(
 					nv_node(&nv), tree->pager, key, data, data_size);
+
 				if( result != BTREE_OK )
 					goto end;
 
@@ -253,7 +255,6 @@ btree_insert(struct BTree* tree, int key, void* data, int data_size)
 			}
 			else
 			{
-				struct SplitPage split_result;
 				result =
 					bta_split_node(nv_node(&nv), tree->rcer, &split_result);
 				if( result != BTREE_OK )

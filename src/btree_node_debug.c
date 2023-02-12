@@ -10,7 +10,7 @@ dbg_print_node(struct BTreeNode* node)
 {
 	printf(
 		"Page %d (leaf? %d) (heap? %d) (off? %d): ",
-		node->page_number,
+		node->page->page_id,
 		node->header->is_leaf,
 		node->header->free_heap,
 		node->header->cell_high_water_offset);
@@ -19,9 +19,9 @@ dbg_print_node(struct BTreeNode* node)
 		struct CellData cell = {0};
 
 		btu_read_cell(node, i, &cell);
-		// unsigned int page_id = 0;
-		// memcpy(&page_id, cell.pointer, sizeof(page_id));
-		printf("%d (p.%u), ", node->keys[i].key, 0);
+		unsigned int page_id = 0;
+		memcpy(&page_id, cell.pointer, sizeof(page_id));
+		printf("%d (p.%u), ", node->keys[i].key, page_id);
 	}
 	if( !node->header->is_leaf )
 	{
