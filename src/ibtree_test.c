@@ -33,7 +33,7 @@ ibtree_test_insert_shallow(void)
 	remove(db_name);
 	page_cache_create(&cache, 3);
 	// 1 byte of payload can fit on the first page.
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
@@ -103,7 +103,7 @@ ibtree_test_insert_split_root(void)
 	remove(db_name);
 	page_cache_create(&cache, 3);
 	// 1 byte of payload can fit on the first page.
-	u32 page_size = btree_min_page_size() + 6 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
@@ -211,7 +211,7 @@ ibtree_test_deep_tree(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
@@ -1150,7 +1150,7 @@ ibta_rebalance_root_nofit(void)
 	struct PageCache* cache = NULL;
 
 	// 1 byte of payload can fit on the first page.
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	page_cache_create(&cache, 11);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
@@ -1386,7 +1386,7 @@ ibta_cmp_ctx_test(void)
 	int result = 1;
 
 	page_cache_create(&cache, 11);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	page_create(pager, &test_page);
 	noderc_init(&rcer, pager);

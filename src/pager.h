@@ -78,4 +78,5 @@ enum pager_e pager_write_page(struct Pager*, struct Page*);
 enum pager_e pager_extend(struct Pager*, u32* out_page_id);
 enum pager_e pager_next_unused(struct Pager*, u32* out_page_id);
 
+int pager_disk_page_size_for(int mem_page_size);
 #endif

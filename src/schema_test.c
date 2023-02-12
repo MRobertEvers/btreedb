@@ -81,7 +81,7 @@ schema_compare_test(void)
 
 	remove(db_name);
 	page_cache_create(&cache, 10);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	noderc_init(&rcer, pager);
 
@@ -223,7 +223,7 @@ schema_comparer_test(void)
 
 	remove(db_name);
 	page_cache_create(&cache, 10);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	noderc_init(&rcer, pager);
 

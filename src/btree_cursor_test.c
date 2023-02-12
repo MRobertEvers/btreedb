@@ -36,7 +36,7 @@ cursor_iter_ibtree_test(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
@@ -174,7 +174,7 @@ cursor_iter_btree_test(void)
 	remove(db_name);
 
 	page_cache_create(&cache, 11);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);

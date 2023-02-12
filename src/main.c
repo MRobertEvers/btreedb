@@ -76,7 +76,7 @@ main()
 
 	remove("test.db");
 	page_cache_create(&cache, 10);
-	u32 page_size = btree_min_page_size() + 1 * 4;
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
 	pager_cstd_create(&pager, cache, "test.db", page_size);
 	noderc_init(&rcer, pager);
 

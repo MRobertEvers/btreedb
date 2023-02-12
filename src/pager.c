@@ -17,7 +17,6 @@ struct PageMetadata
 static int
 metadata_size(void)
 {
-	return 0;
 	return 1	// is_free
 		   + 4	// Next free page
 		   + 4	// Page #
@@ -377,4 +376,10 @@ pager_next_unused(struct Pager* pager, u32* out_page_id)
 {
 	*out_page_id = pager->max_page + 1;
 	return PAGER_OK;
+}
+
+int
+pager_disk_page_size_for(int mem_page_size)
+{
+	return mem_page_size + metadata_size();
 }
