@@ -8,20 +8,6 @@
 
 #define PAGE_CREATE_NEW_PAGE 0
 
-struct Pager
-{
-	char pager_name_str[32];
-	struct PagerOps* ops;
-	// Size of page as it's allocated on disk.
-	u32 disk_page_size;
-	// Size of page useable by client modules.
-	u32 page_size;
-	u32 max_page;
-	void* file;
-
-	struct PageCache* cache;
-};
-
 /**
  * @brief Creates a new non-loaded page object.
  *
@@ -63,8 +49,15 @@ enum pager_e pager_create(
 	int disk_page_size);
 enum pager_e pager_destroy(struct Pager*);
 
-enum pager_e
-pager_read_page(struct Pager*, struct PageSelector* selector, struct Page*);
+/**
+ * @brief Read page from pager.
+ *
+ * @param selector
+ * @param page An already allocated page.
+ * @return enum pager_e
+ */
+enum pager_e pager_read_page(
+	struct Pager*, struct PageSelector* selector, struct Page* page);
 
 /**
  * @brief Writes page to disk; if page is NEW, assign page number.
@@ -74,6 +67,13 @@ pager_read_page(struct Pager*, struct PageSelector* selector, struct Page*);
  * @return enum pager_e
  */
 enum pager_e pager_write_page(struct Pager*, struct Page*);
+
+/**
+ * @brief Add a page to the free list.
+ *
+ * @return enum pager_e
+ */
+enum pager_e pager_free_page(struct Pager*, struct Page*);
 
 enum pager_e pager_extend(struct Pager*, u32* out_page_id);
 enum pager_e pager_next_unused(struct Pager*, u32* out_page_id);

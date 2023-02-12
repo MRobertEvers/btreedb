@@ -18,4 +18,18 @@ struct Page
 	void* page_buffer;
 };
 
+struct Pager
+{
+	char pager_name_str[32];
+	struct PagerOps* ops;
+	// Size of page as it's allocated on disk.
+	u32 disk_page_size;
+	// Size of page useable by client modules.
+	u32 page_size;
+	u32 max_page;
+	void* file;
+
+	struct PageCache* cache;
+};
+
 #endif

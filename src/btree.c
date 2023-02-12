@@ -53,6 +53,9 @@ btree_init_root_page(struct BTree* tree, struct Page* page, u32 page_id)
 		if( result != BTREE_OK )
 			return result;
 
+		// TODO: This is confusing that I have to remember to reset the page to
+		// new page.
+		page->page_id = PAGE_CREATE_NEW_PAGE;
 		result = btpage_err(pager_write_page(tree->pager, page));
 
 		return result;

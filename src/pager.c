@@ -1,68 +1,14 @@
 #include "pager.h"
 
 #include "page_cache.h"
+#include "pagemeta.h"
+#include "serialization.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-struct PageMetadata
-{
-	char is_free; // 0x00 - in use, 0xFF - free
-	int next_free_page;
-	int page_number;
-};
-
-static int
-metadata_size(void)
-{
-	return 1	// is_free
-		   + 4	// Next free page
-		   + 4	// Page #
-		   + 3; // Don't really need to "reserve" space, but I am anyway.
-}
-
-/**
- * @brief Pager stores metadata at the beginning of each page.
- *
- * Shift the buffer by that amount.
- *
- * @param page_buffer
- * @return void*
- */
-static void*
-adjust_page_buffer(void* page_buffer)
-{
-	char* buf = (char*)page_buffer;
-	buf += metadata_size();
-
-	return (void*)buf;
-}
-
-static void*
-deadjust_page_buffer(void* page_buffer)
-{
-	char* buf = (char*)page_buffer;
-	buf -= metadata_size();
-
-	return (void*)buf;
-}
-
-static void
-memcpy_page_buffer(struct Page* dst, struct Page* src, struct Pager* pager)
-{
-	memcpy(
-		deadjust_page_buffer(dst->page_buffer),
-		deadjust_page_buffer(src->page_buffer),
-		pager->disk_page_size);
-}
-
-static void
-memset_page_buffer(struct Page* p, char val, struct Pager* pager)
-{
-	memset(deadjust_page_buffer(p->page_buffer), val, pager->disk_page_size);
-}
 
 static enum pager_e
 pager_page_alloc(struct Pager* pager, struct Page** r_page)
@@ -87,9 +33,9 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 	page->page_size = pager->page_size;
 
 	void* page_buffer = malloc(pager->disk_page_size);
-	page->page_buffer = adjust_page_buffer(page_buffer);
+	page->page_buffer = pagemeta_adjust_buffer(page_buffer);
 
-	memset_page_buffer(page, 0x00, pager);
+	pagemeta_memset_page(page, 0x00, pager);
 
 	return PAGER_OK;
 }
@@ -97,7 +43,7 @@ pager_page_init(struct Pager* pager, struct Page* page, int page_id)
 static enum pager_e
 pager_page_deinit(struct Page* page)
 {
-	free(deadjust_page_buffer(page->page_buffer));
+	free(pagemeta_deadjust_buffer(page->page_buffer));
 	memset(page, 0x00, sizeof(*page));
 
 	return PAGER_OK;
@@ -163,7 +109,7 @@ read_from_disk(
 
 	pager_result = pager->ops->read(
 		pager->file,
-		deadjust_page_buffer(page->page_buffer),
+		pagemeta_deadjust_buffer(page->page_buffer),
 		offset,
 		pager->disk_page_size,
 		&pages_read);
@@ -196,7 +142,7 @@ pager_init(
 {
 	memset(pager, 0x00, sizeof(*pager));
 	pager->disk_page_size = disk_page_size;
-	pager->page_size = disk_page_size - metadata_size();
+	pager->page_size = disk_page_size - pagemeta_size();
 	pager->ops = ops;
 
 	pager->cache = cache;
@@ -297,7 +243,7 @@ pager_read_page(
 
 	if( result == PAGER_OK )
 	{
-		memcpy_page_buffer(page, cached_page, pager);
+		pagemeta_memcpy_page(page, cached_page, pager);
 
 		page_cache_release(pager->cache, cached_page);
 	}
@@ -308,26 +254,123 @@ pager_read_page(
 	return result;
 }
 
+static void
+write_new_page_meta(struct Page* page, int page_number)
+{
+	struct PageMetadata meta = {
+		.is_free = false, .next_free_page = 0, .page_number = page_number};
+
+	pagemeta_write(page, &meta);
+}
+
+/**
+ * Read the free page list.
+ *
+ * @param pager
+ * @return enum pager_e
+ */
+static enum pager_e
+pager_get_free_page(struct Pager* pager, int* out_free_page)
+{
+	enum pager_e result = PAGER_OK;
+
+	struct PageSelector selector = {.page_id = 1};
+	struct Page* root_page = NULL;
+	struct Page* page = NULL;
+	struct PageMetadata root_meta = {0};
+	struct PageMetadata meta = {0};
+	int next_free_page = 0;
+
+	result = page_create(pager, &root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = page_create(pager, &page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = pager_read_page(pager, &selector, root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+	pagemeta_read(&root_meta, root_page);
+
+	if( root_meta.next_free_page == 0 )
+	{
+		result = PAGER_ERR_NO_FREE_PAGE;
+		goto end;
+	}
+
+	pager_reselect(&selector, root_meta.next_free_page);
+	result = pager_read_page(pager, &selector, page);
+	if( result != PAGER_OK )
+		goto end;
+
+	pagemeta_read(&meta, page);
+
+	next_free_page = root_meta.next_free_page;
+	*out_free_page = next_free_page;
+
+	root_meta.next_free_page = meta.next_free_page;
+	pagemeta_write(root_page, &root_meta);
+
+	result = pager_write_page(pager, root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+end:
+	page_destroy(pager, root_page);
+	page_destroy(pager, page);
+	return result;
+}
+
+static enum pager_e
+pager_alloc_page(struct Pager* pager, struct Page* page)
+{
+	enum pager_e result = PAGER_OK;
+	int next_page_id = 0;
+	if( pager->max_page == 0 )
+		page->page_id = 1;
+	else
+	{
+		result = pager_get_free_page(pager, &next_page_id);
+		if( result != PAGER_OK && result != PAGER_ERR_NO_FREE_PAGE )
+			goto end;
+
+		if( result == PAGER_OK )
+			page->page_id = next_page_id;
+		else
+			page->page_id = pager->max_page + 1;
+	}
+
+	write_new_page_meta(page, page->page_id);
+
+end:
+	return result;
+}
+
 enum pager_e
 pager_write_page(struct Pager* pager, struct Page* page)
 {
 	assert(pager->ops);
 	int write_result;
+	enum pager_e result = PAGER_OK;
 	int offset;
 
 	if( page->page_id == PAGE_CREATE_NEW_PAGE )
 	{
-		page->page_id = pager->max_page + 1;
+		result = pager_alloc_page(pager, page);
+		if( result != PAGER_OK )
+			goto end;
 	}
 
 	// TODO: Hack - all writes also write to disk.
 	// Some reads are from cache... need to think this through.
 	struct Page* cached_page;
-	enum pager_e cache_result =
-		page_cache_acquire(pager->cache, page->page_id, &cached_page);
-	if( cache_result == PAGER_OK )
+	result = page_cache_acquire(pager->cache, page->page_id, &cached_page);
+	if( result == PAGER_OK )
 	{
-		memcpy_page_buffer(cached_page, page, pager);
+		pagemeta_memcpy_page(cached_page, page, pager);
 		page_cache_release(pager->cache, cached_page);
 	}
 
@@ -335,7 +378,7 @@ pager_write_page(struct Pager* pager, struct Page* page)
 
 	pager->ops->write(
 		pager->file,
-		deadjust_page_buffer(page->page_buffer),
+		pagemeta_deadjust_buffer(page->page_buffer),
 		offset,
 		pager->disk_page_size,
 		&write_result);
@@ -345,8 +388,68 @@ pager_write_page(struct Pager* pager, struct Page* page)
 
 	// TODO: Error check.
 	page->status = PAGER_OK;
+	result = PAGER_OK;
 
-	return PAGER_OK;
+end:
+	return result;
+}
+
+/**
+ * The head of the free list is stored on the page 1.
+ *
+ * TODO: We can write to the page itself immediately,
+ * but for concurrent algorithms, we may need to defer
+ * updating the root page. We can traverse the list
+ * of free pages without worry as there are no references
+ * to those pages, but the root page must be synchronized.
+ *
+ * @param pager
+ * @param page
+ * @return enum pager_e
+ */
+enum pager_e
+pager_free_page(struct Pager* pager, struct Page* page)
+{
+	assert(page->page_id != PAGE_CREATE_NEW_PAGE);
+	enum pager_e result = PAGER_OK;
+
+	struct PageSelector selector = {.page_id = 1};
+	struct Page* root_page = NULL;
+	struct PageMetadata meta = {0};
+
+	result = page_create(pager, &root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = pager_read_page(pager, &selector, root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+	pagemeta_read(&meta, root_page);
+
+	int old_free_head_id = meta.next_free_page;
+	meta.next_free_page = page->page_id;
+
+	pagemeta_write(root_page, &meta);
+
+	result = pager_write_page(pager, root_page);
+	if( result != PAGER_OK )
+		goto end;
+
+	pagemeta_read(&meta, page);
+
+	meta.is_free = true;
+	meta.next_free_page = old_free_head_id;
+
+	pagemeta_write(page, &meta);
+
+	result = pager_write_page(pager, page);
+	if( result != PAGER_OK )
+		goto end;
+
+end:
+	page_destroy(pager, root_page);
+	return result;
 }
 
 enum pager_e
@@ -358,6 +461,8 @@ pager_extend(struct Pager* pager, u32* out_page_id)
 	result = page_create(pager, &page);
 	if( result != PAGER_OK )
 		goto end;
+
+	page->page_id = pager->max_page + 1;
 
 	result = pager_write_page(pager, page);
 	if( result != PAGER_OK )
@@ -381,5 +486,5 @@ pager_next_unused(struct Pager* pager, u32* out_page_id)
 int
 pager_disk_page_size_for(int mem_page_size)
 {
-	return mem_page_size + metadata_size();
+	return mem_page_size + pagemeta_size();
 }

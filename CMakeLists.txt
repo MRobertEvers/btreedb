@@ -12,6 +12,7 @@ include_directories(bison)
 add_executable(db
     src/main.c
     src/pager.c
+    src/pagemeta.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c
@@ -45,6 +46,7 @@ endif()
 add_executable(sql_main
     src/sql_main.c
     src/pager.c
+    src/pagemeta.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c
@@ -111,6 +113,7 @@ add_executable(test
     src/schema_test.c
     src/noderc.c
     src/pager.c
+    src/pagemeta.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c
