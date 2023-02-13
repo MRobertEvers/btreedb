@@ -496,9 +496,14 @@ bta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	parent_deficient =
 		node_num_keys(nv_node(&parent_nv)) < btree_underflow_lim(cursor->tree);
 
-	// TODO: Free list.
 	result = noderc_persist_n(
 		cursor_rcer(cursor), 3, &left_nv, &right_nv, &parent_nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	// Free List
+	result =
+		btpage_err(pager_free_page(cursor_pager(cursor), nv_page(&left_nv)));
 	if( result != BTREE_OK )
 		goto end;
 
@@ -731,7 +736,11 @@ bta_rebalance_root(struct Cursor* cursor)
 				goto end;
 		}
 
-		// TODO: free list.
+		// Free List
+		result = btpage_err(
+			pager_free_page(cursor_pager(cursor), nv_page(&right_nv)));
+		if( result != BTREE_OK )
+			goto end;
 	}
 
 end:

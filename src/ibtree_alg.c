@@ -757,7 +757,11 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 	if( result != BTREE_OK )
 		goto end;
 
-	// TODO: Free list left page.
+	// Free List
+	result =
+		btpage_err(pager_free_page(cursor_pager(cursor), nv_page(&right_nv)));
+	if( result != BTREE_OK )
+		goto end;
 
 end:
 	noderc_release_n(cursor_rcer(cursor), 3, &parent_nv, &left_nv, &right_nv);
@@ -892,7 +896,11 @@ ibta_rebalance_root(struct Cursor* cursor)
 				goto end;
 		}
 
-		// TODO: free list.
+		// Free List
+		result = btpage_err(
+			pager_free_page(cursor_pager(cursor), nv_page(&right_nv)));
+		if( result != BTREE_OK )
+			goto end;
 	}
 
 	result = noderc_persist_n(cursor_rcer(cursor), 2, &root_nv, &right_nv);

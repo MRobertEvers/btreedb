@@ -188,9 +188,12 @@ btree_node_copy(struct BTreeNode* dest_node, struct BTreeNode* src_node);
 enum btree_e btree_node_reset(struct BTreeNode* node);
 
 /**
- * @brief Removes data from a node.
+ * @brief Removes cell from a node.
  *
  * Removes key at index and moves data in the heap to fill the gap.
+ * Does not delete overflow data.
+ *
+ * Only the inline cell data is copied to the buffer.
  *
  * @param node
  * @param index

@@ -160,7 +160,7 @@ btree_op_scan_update(struct OpScan* op, void* payload, u32 payload_size)
 
 	// TODO: Check that we're looking at a record.
 	result =
-		btree_node_remove(nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
+		btree_node_delete(cursor_tree(cursor), &nv, cursor_curr_ind(cursor));
 	if( result != BTREE_OK )
 		goto end;
 

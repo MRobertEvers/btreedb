@@ -24,12 +24,23 @@ struct BTreeOverflowReadResult
 	u32 next_page_id;
 	u32 payload_bytes;
 };
+
+/**
+ * @brief Outpayload may be null
+ *
+ * @param pager
+ * @param page
+ * @param page_id
+ * @param out
+ * @param out_payload
+ * @return enum btree_e
+ */
 enum btree_e btree_overflow_peek(
 	struct Pager* pager,
 	struct Page* page,
 	u32 page_id,
-	byte** out_payload,
-	struct BTreeOverflowReadResult* out);
+	struct BTreeOverflowReadResult* out,
+	byte** out_payload);
 
 enum btree_e btree_overflow_read(
 	struct Pager* pager,

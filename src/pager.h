@@ -73,6 +73,7 @@ enum pager_e pager_write_page(struct Pager*, struct Page*);
  *
  * @return enum pager_e
  */
+enum pager_e pager_free_page_id(struct Pager*, u32 page_number);
 enum pager_e pager_free_page(struct Pager*, struct Page*);
 
 enum pager_e pager_extend(struct Pager*, u32* out_page_id);

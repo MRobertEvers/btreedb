@@ -615,14 +615,6 @@ btree_node_remove(
 	index_number = index->index;
 	assert(index_number < node->header->num_keys);
 
-	// printf("Keys Before: %u: \n", node->header->num_keys);
-	// printf("Deleting: %u \n", index_number);
-	// for( int i = 0; i < node->header->num_keys; i++ )
-	// {
-	// 	printf("%i: %u\n", i, node->keys[i].cell_offset);
-	// }
-	// printf("\n");
-
 	int deleted_offset = node->keys[index_number].cell_offset;
 	btu_read_cell(node, index_number, &cell);
 	int deleted_inline_size = btree_cell_get_size(&cell);
@@ -648,8 +640,6 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	// TODO: This is seriously flaky.
-
 	if( node->header->num_keys > 0 )
 		gc_node(node, index_number, deleted_offset, deleted_inline_size);
 
@@ -702,6 +692,7 @@ ibtree_node_remove(
 	}
 
 	index_number = index->index;
+	int deleted_offset = node->keys[index_number].cell_offset;
 
 	if( holding_node )
 	{
@@ -723,21 +714,8 @@ ibtree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	// TODO: This is seriously flaky.
-	for( int i = index_number; i < node->header->num_keys; i++ )
-	{
-		u32 offset = node->keys[i].cell_offset;
-		btu_read_cell(node, index_number, &cell);
-		byte* src = btu_calc_highwater_offset(node, offset);
-		byte* dest = btu_calc_highwater_offset(
-			node, offset - (deleted_inline_size + sizeof(u32)));
-		memmove(
-			(void*)dest, (void*)src, btree_cell_get_size(&cell) + sizeof(u32));
-	}
-
-	node->header->cell_high_water_offset -= deleted_inline_size + sizeof(u32);
-	node->header->free_heap += btree_node_heap_required_for_insertion(
-		deleted_inline_size + sizeof(u32));
+	if( node->header->num_keys > 0 )
+		gc_node(node, index_number, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }
@@ -821,7 +799,7 @@ btree_node_compare_cell(
 		do
 		{
 			result =
-				btree_overflow_peek(ctx->pager, page, next_page_id, &cmp, &ov);
+				btree_overflow_peek(ctx->pager, page, next_page_id, &ov, &cmp);
 			if( result != BTREE_OK )
 				goto end_overflow;
 

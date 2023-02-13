@@ -19,8 +19,8 @@ btree_overflow_peek(
 	struct Pager* pager,
 	struct Page* page,
 	u32 page_id,
-	byte** out_payload,
-	struct BTreeOverflowReadResult* out)
+	struct BTreeOverflowReadResult* out,
+	byte** out_payload)
 {
 	u32 bytes_on_page = 0;
 	u32 next_page_id = 0;
@@ -46,7 +46,8 @@ btree_overflow_peek(
 	assert(bytes_on_page < pager->page_size);
 
 	payload_buffer += sizeof(next_page_id);
-	*out_payload = payload_buffer;
+	if( out_payload )
+		*out_payload = payload_buffer;
 
 	out->next_page_id = next_page_id;
 	out->payload_bytes = bytes_on_page;
@@ -74,7 +75,7 @@ btree_overflow_read(
 	if( read_result != BTREE_OK )
 		goto end;
 
-	read_result = btree_overflow_peek(pager, page, page_id, &payload, out);
+	read_result = btree_overflow_peek(pager, page, page_id, out, &payload);
 	if( read_result != BTREE_OK )
 		goto end;
 
@@ -119,8 +120,6 @@ btree_overflow_write(
 	payload_buffer += sizeof(data_size);
 
 	memcpy(payload_buffer, data, data_size);
-
-	// dbg_print_buffer(page->page_buffer, page->page_size);
 
 	result = btpage_err(pager_write_page(pager, page));
 	if( result != BTREE_OK )

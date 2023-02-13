@@ -11,7 +11,6 @@ sql_column_init_c(
 	enum sql_dt_e type,
 	bool primary)
 {
-	// TODO: Free
 	col->name = sql_string_create_from_cstring(name);
 	col->type = type;
 	col->is_primary_key = primary;
@@ -24,7 +23,6 @@ sql_column_init(
 	enum sql_dt_e type,
 	bool primary)
 {
-	// TODO: Free
 	col->name = sql_string_copy(name);
 	col->type = type;
 	col->is_primary_key = primary;

@@ -243,7 +243,6 @@ cursor_peek(struct Cursor* cursor, struct CursorBreadcrumb* crumb)
 	return BTREE_OK;
 }
 
-// TODO: Test this.
 enum btree_e
 cursor_iter_begin(struct Cursor* cursor)
 {
@@ -461,7 +460,6 @@ cursor_traverse_to_ex(
 			if( result != BTREE_OK )
 				goto end;
 		}
-		// TODO: Only break if ibtree
 	} while( !node_is_leaf(nv_node(&nv)) && (!stop_on_found || !(*found)) );
 
 end:

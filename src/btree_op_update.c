@@ -147,8 +147,8 @@ btree_op_update_commit(struct OpUpdate* op, byte* payload, u32 payload_size)
 
 	if( !op->not_found )
 	{
-		result = btree_node_remove(
-			nv_node(&nv), cursor_curr_ind(cursor), NULL, NULL, 0);
+		result = btree_node_delete(
+			cursor_tree(cursor), &nv, cursor_curr_ind(cursor));
 		if( result != BTREE_OK )
 			goto end;
 	}

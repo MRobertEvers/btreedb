@@ -44,7 +44,8 @@ https://github.com/westes/flex
 In no particular order.
 
 1. Proper write caching. All writes immediate write to disk.
-2. Pager free list.
+2. Pager free list. 
+    I've added this but it is synchronous. This is problematic because it has to hop back to page 1 every free which is slow. Deletes should be queued and then committed when the outer operation is done.
 3. Traverse with early splitting and early merging.
 4. Query Planner
 5. Delete operation

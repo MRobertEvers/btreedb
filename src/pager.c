@@ -341,6 +341,7 @@ pager_alloc_page(struct Pager* pager, struct Page* page)
 			page->page_id = next_page_id;
 		else
 			page->page_id = pager->max_page + 1;
+		result = PAGER_OK;
 	}
 
 	write_new_page_meta(page, page->page_id);
@@ -391,6 +392,30 @@ pager_write_page(struct Pager* pager, struct Page* page)
 	result = PAGER_OK;
 
 end:
+	return result;
+}
+
+enum pager_e
+pager_free_page_id(struct Pager* pager, u32 page_number)
+{
+	enum pager_e result = PAGER_OK;
+	struct PageSelector selector = {.page_id = page_number};
+	struct Page* page = NULL;
+	result = page_create(pager, &page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = pager_read_page(pager, &selector, page);
+	if( result != PAGER_OK )
+		goto end;
+
+	result = pager_free_page(pager, page);
+	if( result != PAGER_OK )
+		goto end;
+
+end:
+	page_destroy(pager, page);
+
 	return result;
 }
 

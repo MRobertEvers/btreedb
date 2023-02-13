@@ -187,3 +187,91 @@ btree_node_write_ex(
 		return result;
 	}
 }
+
+enum btree_e
+btree_node_delete(
+	struct BTree* tree, struct NodeView* nv, struct ChildListIndex* index)
+{
+	assert(index->mode == KLIM_INDEX);
+
+	struct Pager* pager = nv_pager(nv);
+
+	enum btree_e result = BTREE_OK;
+	u32 index_num = index->index;
+	byte* cell_buffer = btu_get_cell_buffer(nv_node(nv), index->index);
+	// TODO: Not this
+	u32 cell_buffer_size =
+		btu_calc_highwater_offset(nv_node(nv), 0) - cell_buffer;
+
+	char is_overflow_cell = btree_pkey_is_cell_type(
+		btu_get_cell_flags(nv_node(nv), index_num),
+		PKEY_FLAG_CELL_TYPE_OVERFLOW);
+
+	if( is_overflow_cell )
+	{
+		struct BTreeCellOverflow cell = {0};
+		struct BufferReader reader = {0};
+
+		btree_cell_init_overflow_reader(&reader, cell_buffer, cell_buffer_size);
+
+		result = btree_cell_read_overflow_ex(&reader, &cell, NULL, 0);
+		if( result != BTREE_OK )
+			return result;
+
+		int next_page_id = cell.overflow_page_id;
+
+		struct Page* temp_page = NULL;
+		result = btpage_err(page_create(pager, &temp_page));
+		if( result != BTREE_OK )
+			goto skip;
+
+		struct BTreeOverflowReadResult peek = {0};
+		while( next_page_id != 0 )
+		{
+			result = btree_overflow_peek(
+				pager, temp_page, next_page_id, &peek, NULL);
+			if( result != BTREE_OK )
+				break;
+
+			result = btpage_err(pager_free_page_id(pager, next_page_id));
+			if( result != BTREE_OK )
+				break;
+
+			next_page_id = peek.next_page_id;
+		}
+
+	skip:
+		if( temp_page )
+			page_destroy(pager, temp_page);
+
+		result = noderc_reinit_read(tree->rcer, nv, nv_page(nv)->page_id);
+		if( result != BTREE_OK )
+			goto end;
+	}
+
+	// Remove the cell that we just freed.
+	switch( tree->type )
+	{
+	case BTREE_INDEX:
+	{
+		result = ibtree_node_remove(nv_node(nv), index, NULL);
+		if( result != BTREE_OK )
+			return result;
+		break;
+	}
+	case BTREE_TBL:
+	{
+		result = btree_node_remove(nv_node(nv), index, NULL, NULL, 0);
+		if( result != BTREE_OK )
+			return result;
+		break;
+	}
+	}
+
+	result = noderc_persist_n(tree->rcer, 1, nv);
+	if( result != BTREE_OK )
+		return result;
+
+end:
+	return BTREE_OK;
+}

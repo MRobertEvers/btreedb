@@ -3,6 +3,7 @@
 
 #include "btint.h"
 #include "btree_defs.h"
+#include "noderc.h"
 #include "pager.h"
 
 /**
@@ -61,5 +62,8 @@ enum btree_e btree_node_write_ex(
 	void* data,
 	u32 data_size,
 	enum writer_ex_mode_e mode);
+
+enum btree_e btree_node_delete(
+	struct BTree* tree, struct NodeView* node, struct ChildListIndex* index);
 
 #endif

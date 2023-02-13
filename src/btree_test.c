@@ -11,6 +11,7 @@
 #include "btree_utils.h"
 #include "noderc.h"
 #include "page_cache.h"
+#include "pagemeta.h"
 #include "pager_ops_cstd.h"
 #include "serialization.h"
 
@@ -675,6 +676,73 @@ end:
 	remove(db_name);
 
 	return result;
+}
+
+int
+btree_test_freelist(void)
+{
+	int result = 1;
+	char const* db_name = "btree_test_freelist.db";
+	remove(db_name);
+
+	struct NodeView nv = {0};
+	struct Pager* pager = NULL;
+	struct PageCache* cache = NULL;
+	struct Cursor* cursor = NULL;
+
+	// 1 byte of payload can fit on the first page.
+	u32 page_size = pager_disk_page_size_for(btree_min_page_size() + 1 * 4);
+	page_cache_create(&cache, 4);
+	pager_cstd_create(&pager, cache, db_name, page_size);
+
+	char big_payload[0x1000] = "AAAAAAAA";
+	struct BTreeNodeRC rcer;
+	noderc_init(&rcer, pager);
+	struct BTree* tree;
+	btree_alloc(&tree);
+	if( btree_init(tree, pager, &rcer, 1) != BTREE_OK )
+	{
+		result = 0;
+		goto end;
+	}
+
+	btree_insert(tree, 4, big_payload, sizeof(big_payload));
+	cursor = cursor_create(tree);
+	char found = 0;
+	cursor_traverse_to(cursor, 4, &found);
+
+	if( !found )
+		goto fail;
+
+	noderc_acquire(&rcer, &nv);
+	cursor_read_current(cursor, &nv);
+
+	btree_node_delete(
+		cursor_tree(cursor), nv_node(&nv), cursor_curr_ind(cursor));
+
+	cursor_destroy(cursor);
+
+	cursor = cursor_create(tree);
+	cursor_traverse_to(cursor, 4, &found);
+
+	if( found )
+		goto fail;
+
+	noderc_reinit_read(&rcer, &nv, 1);
+
+	struct PageMetadata meta = {0};
+	pagemeta_read(&meta, nv_page(&nv));
+
+	if( meta.next_free_page == 0 )
+		goto fail;
+
+end:
+	remove(db_name);
+
+	return result;
+fail:
+	result = 0;
+	goto end;
 }
 
 int
