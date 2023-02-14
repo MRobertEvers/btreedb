@@ -7,6 +7,7 @@
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "noderc.h"
+#include "page.h"
 
 #include <assert.h>
 #include <stdio.h>

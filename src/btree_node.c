@@ -4,6 +4,7 @@
 #include "btree_node_debug.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
+#include "page.h"
 #include "serialization.h"
 
 #include <assert.h>

@@ -1,8 +1,10 @@
 #include "pager_test.h"
 
+#include "page.h"
 #include "page_cache.h"
 #include "pagemeta.h"
 #include "pager.h"
+#include "pager_freelist.h"
 #include "pager_ops_cstd.h"
 
 #include <stdio.h>
@@ -136,7 +138,7 @@ pager_test_free_page_list(void)
 	if( meta.next_free_page != 0 )
 		goto fail;
 
-	pager_free_page(pager, page_two);
+	pager_freelist_push_page(pager, page_two);
 
 	pager_read_page(pager, &(struct PageSelector){.page_id = 1}, page_one);
 	pagemeta_read(&meta, page_one);

@@ -2,7 +2,7 @@
 #define PAGEMETA_H_
 
 #include "btint.h"
-#include "page.h"
+#include "page_defs.h"
 
 #include <stdbool.h>
 

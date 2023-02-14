@@ -4,6 +4,8 @@
 #include "btree_node.h"
 #include "btree_overflow.h"
 #include "btree_utils.h"
+#include "page.h"
+#include "pager_freelist.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -178,6 +180,14 @@ btree_node_write_ex(
 			btree_cell_overflow_disk_size(inline_payload_size));
 		write_payload.inline_payload = overflow_data;
 
+		// TODO: Reinit
+		result = btpage_err(pager_read_page(
+			pager,
+			&(struct PageSelector){.page_id = node->page->page_id},
+			node->page));
+		if( result != BTREE_OK )
+			return result;
+
 		result = btree_node_insert_overflow(
 			node, insertion_index, key, &write_payload);
 
@@ -233,7 +243,7 @@ btree_node_delete(
 			if( result != BTREE_OK )
 				break;
 
-			result = btpage_err(pager_free_page_id(pager, next_page_id));
+			result = btpage_err(pager_freelist_push(pager, next_page_id));
 			if( result != BTREE_OK )
 				break;
 

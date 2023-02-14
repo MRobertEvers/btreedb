@@ -10,6 +10,7 @@
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "noderc.h"
+#include "page.h"
 #include "page_cache.h"
 #include "pagemeta.h"
 #include "pager_ops_cstd.h"
@@ -17,6 +18,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 int
@@ -733,9 +735,18 @@ btree_test_freelist(void)
 	struct PageMetadata meta = {0};
 	pagemeta_read(&meta, nv_page(&nv));
 
-	if( meta.next_free_page == 0 )
+	if( meta.next_free_page != 2 )
 		goto fail;
 
+	char* smaller_payload = (char*)malloc(page_size * 3);
+	btree_insert(tree, 4, smaller_payload, page_size * 3);
+
+	noderc_reinit_read(&rcer, &nv, 1);
+
+	pagemeta_read(&meta, nv_page(&nv));
+
+	if( meta.next_free_page != 6 )
+		goto fail;
 end:
 	remove(db_name);
 

@@ -10,6 +10,7 @@
 #include "btree_utils.h"
 #include "noderc.h"
 #include "pager.h"
+#include "pager_freelist.h"
 #include "serialization.h"
 
 #include <assert.h>
@@ -758,8 +759,8 @@ ibta_merge(struct Cursor* cursor, enum bta_rebalance_mode_e mode)
 		goto end;
 
 	// Free List
-	result =
-		btpage_err(pager_free_page(cursor_pager(cursor), nv_page(&right_nv)));
+	result = btpage_err(
+		pager_freelist_push_page(cursor_pager(cursor), nv_page(&right_nv)));
 	if( result != BTREE_OK )
 		goto end;
 
@@ -898,7 +899,7 @@ ibta_rebalance_root(struct Cursor* cursor)
 
 		// Free List
 		result = btpage_err(
-			pager_free_page(cursor_pager(cursor), nv_page(&right_nv)));
+			pager_freelist_push_page(cursor_pager(cursor), nv_page(&right_nv)));
 		if( result != BTREE_OK )
 			goto end;
 	}

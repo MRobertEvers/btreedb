@@ -2,6 +2,7 @@
 
 #include "btree_defs.h"
 #include "btree_utils.h"
+#include "page.h"
 #include "serialization.h"
 
 #include <assert.h>

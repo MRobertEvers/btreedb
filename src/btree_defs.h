@@ -2,7 +2,7 @@
 #define BTREE_DEFS_H
 
 #include "btint.h"
-#include "page.h"
+#include "page_defs.h"
 
 #define BTREE_HEADER_SIZE 100
 

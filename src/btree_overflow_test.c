@@ -9,6 +9,7 @@
 #include "btree_node_writer.h"
 #include "btree_utils.h"
 #include "noderc.h"
+#include "page.h"
 #include "page_cache.h"
 #include "pager_ops_cstd.h"
 

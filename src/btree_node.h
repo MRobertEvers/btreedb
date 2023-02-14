@@ -4,7 +4,7 @@
 #include "btint.h"
 #include "btree_cell.h"
 #include "btree_defs.h"
-#include "page.h"
+#include "page_defs.h"
 
 #include <stdbool.h>
 

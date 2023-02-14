@@ -2,6 +2,7 @@
 
 #include "btree_node.h"
 #include "btree_utils.h"
+#include "page.h"
 
 #include <stdarg.h>
 #include <string.h>

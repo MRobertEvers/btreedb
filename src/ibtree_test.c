@@ -10,6 +10,7 @@
 #include "ibtree.h"
 #include "ibtree_alg.h"
 #include "noderc.h"
+#include "page.h"
 #include "pager.h"
 #include "pager_ops_cstd.h"
 

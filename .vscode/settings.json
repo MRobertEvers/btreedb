@@ -88,6 +88,7 @@
         "sql_record.h": "c",
         "sqldb.h": "c",
         "sqldb_table.h": "c",
-        "sqldb_scanbuffer.h": "c"
+        "sqldb_scanbuffer.h": "c",
+        "ostream": "c"
     },
 }

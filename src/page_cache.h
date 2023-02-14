@@ -1,7 +1,7 @@
 #ifndef PAGE_CACHE_H_
 #define PAGE_CACHE_H_
 
-#include "page.h"
+#include "page_defs.h"
 #include "pager_e.h"
 
 struct PageCacheKey

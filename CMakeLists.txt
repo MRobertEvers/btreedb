@@ -13,6 +13,9 @@ add_executable(db
     src/main.c
     src/pager.c
     src/pagemeta.c
+    src/page.c
+    src/pager_freelist.c
+    src/pager_internal.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c
@@ -47,6 +50,9 @@ add_executable(sql_main
     src/sql_main.c
     src/pager.c
     src/pagemeta.c
+    src/page.c
+    src/pager_freelist.c
+    src/pager_internal.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c
@@ -114,6 +120,9 @@ add_executable(test
     src/noderc.c
     src/pager.c
     src/pagemeta.c
+    src/page.c
+    src/pager_freelist.c
+    src/pager_internal.c
     src/btree.c
     src/ibtree.c
     src/pager_ops_cstd.c

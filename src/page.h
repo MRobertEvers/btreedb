@@ -1,35 +1,37 @@
 #ifndef PAGE_H_
 #define PAGE_H_
 
-#include "btint.h"
-#include "pager_e.h"
+#include "page_defs.h"
 
-struct PageSelector
-{
-	u32 page_id;
-};
+/**
+ * @brief Selects the page_id; DOES NOT LOAD THE PAGE.
+ *
+ * Use this for switch which page you want to read.
+ *
+ * @param page
+ * @param r_page
+ */
+void pager_reselect(struct PageSelector* selector, int page_id);
 
-struct Page
-{
-	u32 page_id;
-	u32 page_size;
-	enum pager_e status;
+/**
+ * @brief Creates a new non-loaded page object.
+ *
+ * !Attention! Use commit or destroy when done!
+ *
+ * @param pager
+ * @param page_id
+ * @param r_page
+ * @return enum pager_e
+ */
+enum pager_e page_create(struct Pager* pager, struct Page** r_page);
 
-	void* page_buffer;
-};
-
-struct Pager
-{
-	char pager_name_str[32];
-	struct PagerOps* ops;
-	// Size of page as it's allocated on disk.
-	u32 disk_page_size;
-	// Size of page useable by client modules.
-	u32 page_size;
-	u32 max_page;
-	void* file;
-
-	struct PageCache* cache;
-};
+/**
+ * @brief Release page; Takes ownership of page
+ *
+ * @param pager
+ * @param page
+ * @return enum pager_e
+ */
+enum pager_e page_destroy(struct Pager* pager, struct Page* page);
 
 #endif
