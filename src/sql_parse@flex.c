@@ -307,6 +307,32 @@ fail:
 	goto end;
 }
 
+static struct SQLParsedDelete
+parse_delete(struct Lexer* lex, bool* success)
+{
+	struct SQLParsedDelete delete = {0};
+
+	if( current(lex) != SQL_DELETE_KW )
+		goto fail;
+
+	if( next(lex) != SQL_QUOTED_IDENTIFIER )
+		goto fail;
+
+	delete.table_name = sql_string_create_from(text(lex), leng(lex));
+
+	if( next(lex) != SQL_WHERE_KW )
+		goto end;
+
+	delete.where = parse_where(lex, success);
+
+end:
+	return delete;
+fail:
+	*success = false;
+	sql_parsed_delete_cleanup(&delete);
+	goto end;
+}
+
 struct SQLParse*
 sql_parse_create(struct SQLString const* str)
 {
@@ -339,6 +365,10 @@ sql_parse_create(struct SQLString const* str)
 	case SQL_UPDATE_KW:
 		parse->parse.update = parse_update(&lexer, &parse_success);
 		parse->type = SQL_PARSE_UPDATE;
+		break;
+	case SQL_DELETE_KW:
+		parse->parse.delete = parse_delete(&lexer, &parse_success);
+		parse->type = SQL_PARSE_DELETE;
 		break;
 	default:
 		parse->type = SQL_PARSE_INVALID;
