@@ -74,3 +74,10 @@ sql_parsed_create_table_cleanup(struct SQLParsedCreateTable* tbl)
 
 	memset(tbl, 0x00, sizeof(*tbl));
 }
+
+void
+sql_parsed_delete_cleanup(struct SQLParsedDelete* delete)
+{
+	sql_string_destroy(delete->table_name);
+	where_clause_cleanup(&delete->where);
+}

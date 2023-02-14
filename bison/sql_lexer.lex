@@ -21,6 +21,7 @@ sql_literal {name_character}+
 "INSERT INTO"		{ return SQL_INSERT_KW; }
 "VALUES"		{ return SQL_VALUES_KW; }
 "SELECT"        { return SQL_SELECT_KW;}
+"DELETE FROM"        { return SQL_DELETE_KW;}
 "UPDATE"         { return SQL_UPDATE_KW;}
 "WHERE" {return SQL_WHERE_KW;}
 "FROM" {return SQL_FROM_KW;}

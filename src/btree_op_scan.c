@@ -184,6 +184,34 @@ end:
 	return result;
 }
 
+enum btree_e
+btree_op_scan_delete(struct OpScan* op)
+{
+	enum btree_e result = BTREE_OK;
+	struct NodeView nv = {0};
+	struct Cursor* cursor = op->cursor;
+
+	result = noderc_acquire(cursor_rcer(cursor), &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	result = cursor_read_current(cursor, &nv);
+	if( result != BTREE_OK )
+		goto end;
+
+	// TODO: Check that we're looking at a record.
+	result =
+		btree_node_delete(cursor_tree(cursor), &nv, cursor_curr_ind(cursor));
+	if( result != BTREE_OK )
+		goto end;
+
+end:
+	noderc_release(cursor_rcer(cursor), &nv);
+
+	op->last_status = result;
+	return result;
+}
+
 bool
 btree_op_scan_done(struct OpScan* op)
 {

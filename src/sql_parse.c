@@ -21,6 +21,9 @@ sql_parse_destroy(struct SQLParse* parse)
 	case SQL_PARSE_SELECT:
 		sql_parsed_select_cleanup(&parse->parse.select);
 		break;
+	case SQL_PARSE_DELETE:
+		sql_parsed_delete_cleanup(&parse->parse.delete);
+		break;
 	case SQL_PARSE_INVALID:
 		break;
 	}

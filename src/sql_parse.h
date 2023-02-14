@@ -10,6 +10,7 @@ enum sql_parse_e
 	SQL_PARSE_CREATE_TABLE,
 	SQL_PARSE_SELECT,
 	SQL_PARSE_UPDATE,
+	SQL_PARSE_DELETE,
 };
 
 struct SQLParse
@@ -21,6 +22,7 @@ struct SQLParse
 		struct SQLParsedCreateTable create_table;
 		struct SQLParsedUpdate update;
 		struct SQLParsedSelect select;
+		struct SQLParsedDelete delete;
 	} parse;
 };
 

@@ -8,6 +8,7 @@ enum sql_token_e
 	SQL_INSERT_KW,		   // 2
 	SQL_VALUES_KW,		   // 3
 	SQL_UPDATE_KW,		   // 4
+	SQL_DELETE_KW,		   // 4
 	SQL_WHERE_KW,		   // 5
 	SQL_FROM_KW,		   // 6
 	SQL_SET_KW,			   // 7

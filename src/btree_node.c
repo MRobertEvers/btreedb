@@ -527,11 +527,7 @@ btree_node_reset(struct BTreeNode* node)
 }
 
 static enum btree_e
-gc_node(
-	struct BTreeNode* node,
-	int free_index,
-	int deleted_offset,
-	int deleted_size)
+gc_node(struct BTreeNode* node, int deleted_offset, int deleted_size)
 {
 	struct CellData cell = {0};
 	// printf("Keys After: %u > %u\n", node->header->num_keys, deleted_offset);
@@ -548,12 +544,13 @@ gc_node(
 		if( offset < deleted_offset )
 			continue;
 
-		btu_read_cell(node, free_index, &cell);
+		btu_read_cell(node, i, &cell);
+		u32 cell_size = (*cell.size + sizeof(u32));
 		// printf("%u -> %u\n", offset, offset - shift_size);
 		byte* src = btu_calc_highwater_offset(node, offset);
 		byte* dest = btu_calc_highwater_offset(node, offset - shift_size);
 
-		memmove((void*)dest, (void*)src, *cell.size);
+		memmove((void*)dest, (void*)src, cell_size);
 		node->keys[i].cell_offset -= shift_size;
 	}
 
@@ -641,7 +638,7 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	gc_node(node, index_number, deleted_offset, deleted_inline_size);
+	gc_node(node, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }
@@ -714,7 +711,7 @@ ibtree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	gc_node(node, index_number, deleted_offset, deleted_inline_size);
+	gc_node(node, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }

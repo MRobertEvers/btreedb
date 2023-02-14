@@ -81,9 +81,24 @@ struct SQLParsedSelect
 	struct SQLParsedWhereClause where;
 };
 
+/**
+ * @brief Delete
+ *
+ * @param delete
+ */
+
+struct SQLParsedDelete
+{
+	struct SQLString* table_name;
+	struct SQLString* fields[5];
+	u32 nfields;
+	struct SQLParsedWhereClause where;
+};
+
 void sql_parsed_update_cleanup(struct SQLParsedUpdate*);
 void sql_parsed_select_cleanup(struct SQLParsedSelect*);
 void sql_parsed_insert_cleanup(struct SQLParsedInsert*);
 void sql_parsed_create_table_cleanup(struct SQLParsedCreateTable*);
+void sql_parsed_delete_cleanup(struct SQLParsedDelete*);
 
 #endif

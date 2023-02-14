@@ -250,6 +250,52 @@ end:
 }
 
 static enum sql_e
+delete_record(
+	struct SQLDBScan* scan,
+	struct SQLParsedDelete* update,
+	struct SQLRecord* record)
+{
+	enum sql_e result = SQL_OK;
+
+	print_record(record);
+
+	result = sqldb_scan_delete(scan);
+	if( result != SQL_OK )
+		goto end;
+end:
+	return result;
+}
+
+static enum sql_e
+delete_s(struct SQLDB* db, struct SQLParsedDelete* delete)
+{
+	enum sql_e result = SQL_OK;
+
+	struct SQLDBScan scan = {0};
+	result = sqldb_scan_acquire(db, delete->table_name, &scan);
+	if( result != SQL_OK )
+		goto end;
+
+	do
+	{
+		result = sqldb_scan_next(&scan);
+		if( result != SQL_OK )
+			goto end;
+
+		struct SQLRecord* record = sqldb_scan_record(&scan);
+		if( !record )
+			goto end;
+
+		if( match_where(record, &delete->where) )
+			delete_record(&scan, delete, record);
+	} while( !sqldb_scan_done(&scan) && result == SQL_OK );
+
+end:
+	sqldb_scan_release(&scan);
+	return result;
+}
+
+static enum sql_e
 update(struct SQLDB* db, struct SQLParsedUpdate* update)
 {
 	enum sql_e result = SQL_OK;
@@ -297,6 +343,9 @@ sqldb_interpret(struct SQLDB* db, struct SQLParse* parsed)
 		break;
 	case SQL_PARSE_UPDATE:
 		result = update(db, &parsed->parse.update);
+		break;
+	case SQL_PARSE_DELETE:
+		result = delete_s(db, &parsed->parse.delete);
 		break;
 	}
 

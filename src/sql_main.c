@@ -72,9 +72,10 @@ main()
 {
 	// CREATE TABLE "c" ("age" INT, "name" STRING)
 	// CREATE TABLE "b" ("age" INT, "name" STRING)
-	// CREATE TABLE "a" ("age" INT, "name" STRING)
-	// INSERT INTO "a" ("name", "age") VALUES ('hello', 88)
-	// UPDATE "a" SET "age" = 9
+	// CREATE TABLE "m" ("age" INT, "name" STRING)
+	// INSERT INTO "m" ("name", "age") VALUES ('hello', 88)
+	// INSERT INTO "m" ("name", "age") VALUES ('matthew', 32)
+	// UPDATE "m" SET "age" = 9
 	// INSERT INTO "b" ("name", "age") VALUES ('hello', 88)
 	// SELECT * FROM "a"
 	remove("sql_db.db");

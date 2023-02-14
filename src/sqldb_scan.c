@@ -168,6 +168,20 @@ end:
 	return result;
 }
 
+enum sql_e
+sqldb_scan_delete(struct SQLDBScan* scan)
+{
+	enum sql_e result = SQL_OK;
+	struct ScanState* fsm = (struct ScanState*)scan->internal;
+
+	result = sqlbt_err(btree_op_scan_delete(&fsm->op));
+	if( result != SQL_OK )
+		goto end;
+
+end:
+	return result;
+}
+
 bool
 sqldb_scan_done(struct SQLDBScan* scan)
 {
