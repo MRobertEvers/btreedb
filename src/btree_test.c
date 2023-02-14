@@ -697,7 +697,10 @@ btree_test_freelist(void)
 	page_cache_create(&cache, 4);
 	pager_cstd_create(&pager, cache, db_name, page_size);
 
-	char big_payload[0x1000] = "AAAAAAAA";
+	char big_payload[0x1000] = {0};
+	for( int i = 0; i < sizeof(big_payload); i++ )
+		big_payload[i] = 'a' + i % ('z' - 'a');
+
 	struct BTreeNodeRC rcer;
 	noderc_init(&rcer, pager);
 	struct BTree* tree;
@@ -709,6 +712,19 @@ btree_test_freelist(void)
 	}
 
 	btree_insert(tree, 4, big_payload, sizeof(big_payload));
+
+	noderc_acquire(&rcer, &nv);
+	noderc_reinit_read(&rcer, &nv, 1);
+	char cmp_big_payload[sizeof(big_payload)] = {0};
+	btree_node_read(
+		tree, nv_node(&nv), 4, cmp_big_payload, sizeof(big_payload));
+
+	if( memcmp(cmp_big_payload, big_payload, sizeof(big_payload)) != 0 )
+	{
+		result = 0;
+		goto end;
+	}
+
 	cursor = cursor_create(tree);
 	char found = 0;
 	cursor_traverse_to(cursor, 4, &found);
@@ -716,7 +732,6 @@ btree_test_freelist(void)
 	if( !found )
 		goto fail;
 
-	noderc_acquire(&rcer, &nv);
 	cursor_read_current(cursor, &nv);
 
 	btree_node_delete(
@@ -738,15 +753,31 @@ btree_test_freelist(void)
 	if( meta.next_free_page != 2 )
 		goto fail;
 
-	char* smaller_payload = (char*)malloc(page_size * 3);
-	btree_insert(tree, 4, smaller_payload, page_size * 3);
+	int SMALL_PAYLOAD_SIZE = page_size * 3 - 112;
+	char* smaller_payload = (char*)malloc(SMALL_PAYLOAD_SIZE);
+	for( int i = 0; i < SMALL_PAYLOAD_SIZE; i++ )
+		smaller_payload[i] = 'A' + i % ('Z' - 'A');
+
+	btree_insert(tree, 4, smaller_payload, SMALL_PAYLOAD_SIZE);
 
 	noderc_reinit_read(&rcer, &nv, 1);
 
 	pagemeta_read(&meta, nv_page(&nv));
 
-	if( meta.next_free_page != 6 )
+	if( meta.next_free_page != 5 )
 		goto fail;
+
+	char* cmp_buf = (char*)malloc(SMALL_PAYLOAD_SIZE);
+	memset(cmp_buf, 0x00, SMALL_PAYLOAD_SIZE);
+
+	btree_node_read(tree, nv_node(&nv), 4, cmp_buf, SMALL_PAYLOAD_SIZE);
+
+	if( memcmp(cmp_buf, smaller_payload, SMALL_PAYLOAD_SIZE) != 0 )
+	{
+		result = 0;
+		goto end;
+	}
+
 end:
 	remove(db_name);
 

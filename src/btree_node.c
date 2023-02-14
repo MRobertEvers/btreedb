@@ -641,8 +641,7 @@ btree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	if( node->header->num_keys > 0 )
-		gc_node(node, index_number, deleted_offset, deleted_inline_size);
+	gc_node(node, index_number, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }
@@ -715,8 +714,7 @@ ibtree_node_remove(
 	node->header->num_keys -= 1;
 
 	// Garbage collection in the heap.
-	if( node->header->num_keys > 0 )
-		gc_node(node, index_number, deleted_offset, deleted_inline_size);
+	gc_node(node, index_number, deleted_offset, deleted_inline_size);
 
 	return BTREE_OK;
 }
